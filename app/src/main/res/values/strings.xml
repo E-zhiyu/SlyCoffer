@@ -234,6 +234,8 @@
     <string name="accessibility_warning_answer">A : 您不用担心本APP危害隐私安全，系统弹出提示仅仅是因为没从应用商店下载本APP，本APP除了应用更新外所有功能都不需要联网，您无需担心隐私泄露问题。</string>
     <string name="data_save_question">Q : 我在使用过程中产生的数据存放在哪里，我要如何迁移这些数据？</string>
     <string name="data_save_answer">A : 您在使用过程中产生的所有数据都保存在本地，不会上传至互联网。如果您需要迁移应用数据，请前往数据管理界面导出您需要的数据。</string>
+    <string name="update_question">Q : 我要如何更新软件版本？</string>
+    <string name="update_answer">A : 您可以直接访问项目仓库，从发行版(Release)中下载安装包。更推荐的方式是通过APP内的更新检测功能，APP会自动从仓库中下载最新版安装包，下载完成后点击立刻更新即可安装新版本。部分用户可能在安装时出现问题，此时您可以尝试进入手机上的文件管理应用，进入Downloads文件夹并手动安装新版本。</string>
 
     <string-array name="tips_array">
         <item>如果设置了自动备份目录，进行软件更新时会自动备份一次。</item>
