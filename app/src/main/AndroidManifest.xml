@@ -54,16 +54,20 @@
         tools:targetApi="33">
         <activity
             android:name=".ui.pages.main.settings.sub.AboutActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:parentActivityName=".ui.pages.main.MainActivity" />
         <activity
             android:name=".ui.pages.main.settings.sub.DataManageActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:parentActivityName=".ui.pages.main.MainActivity" />
         <activity
             android:name=".ui.pages.main.settings.sub.AutoBookkeepingActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:parentActivityName=".ui.pages.main.MainActivity" />
         <activity
             android:name=".ui.pages.main.settings.sub.PermissionManageActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:parentActivityName=".ui.pages.main.MainActivity" />
         <activity
             android:name=".ui.pages.budget.BudgetInputActivity"
             android:exported="false"
@@ -153,6 +157,11 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".ui.pages.main.settings.sub.TroubleshootingActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.pages.main.settings.sub.AboutActivity"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".ui.pages.main.MainActivity"
             android:exported="true">
             <intent-filter>
@@ -239,11 +248,6 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/pick_accessibility_service_config" />
         </service>
-
-        <activity
-            android:name=".ui.pages.main.settings.sub.TroubleshootingActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>
