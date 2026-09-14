@@ -41,6 +41,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.sly.coffer.R;
 import com.sly.coffer.SlyCoffer;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
+import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
 import com.sly.coffer.auxiliary.enums.unique.TransitionName;
 import com.sly.coffer.auxiliary.enums.bottom_options.MediaAddOption;
 import com.sly.coffer.data.save.db.BookkeepingDb;
@@ -864,7 +865,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
 
-        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, dateTime);
+        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, dateTime, AutoBookkeepingType.NONE.ordinal());
         AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
         if (initBundle == null) {
             disposable.add(AccountService.addNewAccount(account, transfer, copiedMediaUriList, tagIdList, this)

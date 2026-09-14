@@ -26,6 +26,7 @@ import com.sly.coffer.automation.broadcast.AbNotificationActionsReceiver;
 import com.sly.coffer.automation.broadcast.BroadcastActions;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.ChannelInfo;
+import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.auxiliary.enums.unique.NotificationID;
@@ -386,6 +387,7 @@ public class AbAccessibilityService extends AccessibilityService {
             bundle.putString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v(), exportAccount); //转出账户
             bundle.putString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v(), importAccount); //转入账户
         }
+        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TYPE.v(), AutoBookkeepingType.ACCESSIBILITY.ordinal());   //自动记账种类
 
         return bundle;
     }
@@ -570,7 +572,7 @@ public class AbAccessibilityService extends AccessibilityService {
                 .collect(Collectors.toList());
 
         //实例化实体类
-        AccountEntity account = new AccountEntity(amount, remark, type, LocalDateTime.now());
+        AccountEntity account = new AccountEntity(amount, remark, type, LocalDateTime.now(), AutoBookkeepingType.ACCESSIBILITY.ordinal());
         AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
 
         //保存数据

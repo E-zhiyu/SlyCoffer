@@ -1,6 +1,7 @@
 package com.sly.coffer.auxiliary.enums.unique;
 
 public enum KeyStrings {
+    AUTO_BOOKKEEPING_TYPE("auto_bookkeeping_type"),         //自动记账的种类
     RESTORE_IS_OLD_DATA("restore_is_old_data"),             //导入数据时是否为旧数据
     BACKUP_CHOICES("backup_choices"),                       //备份时的选择情况
     BACKUP_TARGET("backup_target"),                         //备份时的目标文件(夹)

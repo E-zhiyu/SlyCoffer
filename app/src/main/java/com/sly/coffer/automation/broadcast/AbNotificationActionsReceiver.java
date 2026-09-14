@@ -25,6 +25,7 @@ import com.sly.coffer.auxiliary.enums.PendingRequestCode;
 import com.sly.coffer.helpers.NotificationHelper;
 import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -144,7 +145,9 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
         String importAccount = bundle.getString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v());
 
         //实例化实体类
-        AccountEntity account = new AccountEntity(amount, remark, type, DateTimeConverter.toLocalDateTime(dateTimeMillis));
+        int autoBookkeepingType = bundle.getInt(KeyStrings.AUTO_BOOKKEEPING_TYPE.v(), 0);
+        LocalDateTime dateTime = DateTimeConverter.toLocalDateTime(dateTimeMillis);
+        AccountEntity account = new AccountEntity(amount, remark, type, dateTime, autoBookkeepingType);
         AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
 
         //保存数据

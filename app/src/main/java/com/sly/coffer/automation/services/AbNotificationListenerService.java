@@ -15,6 +15,7 @@ import androidx.core.app.TaskStackBuilder;
 import com.sly.coffer.R;
 import com.sly.coffer.automation.broadcast.AbNotificationActionsReceiver;
 import com.sly.coffer.auxiliary.enums.ChannelInfo;
+import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.automation.broadcast.BroadcastActions;
 import com.sly.coffer.auxiliary.enums.settings.NotificationClickBehaviour;
@@ -291,6 +292,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
             bundle.putString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v(), exportAccount); //转出账户
             bundle.putString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v(), importAccount); //转入账户
         }
+        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TYPE.v(), AutoBookkeepingType.NOTIFICATION.ordinal());    //自动记账种类
 
         return bundle;
     }
@@ -514,7 +516,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
                 .collect(Collectors.toList());
 
         //实例化实体类
-        AccountEntity account = new AccountEntity(amount, remark, type, LocalDateTime.now());
+        AccountEntity account = new AccountEntity(amount, remark, type, LocalDateTime.now(), AutoBookkeepingType.NOTIFICATION.ordinal());
         AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
 
         //保存数据
