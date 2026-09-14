@@ -28,6 +28,7 @@ import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
 import com.sly.coffer.helpers.file.FileHelper;
+import com.sly.coffer.helpers.file.MediaHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.media.FullScreenMediaActivity;
 
@@ -37,6 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Map;
 import java.util.Objects;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -256,8 +258,9 @@ public class MediaListActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(@NonNull File file) {
                         try {
-                            //获取原始文件
+                            //获取原始文件及其 EXIF 数据
                             File originFile = new File(Objects.requireNonNull(uri.getPath()));
+                            Map<String, String> originExifMap = MediaHelper.getExifFromFile(originFile);
 
                             //判断文件大小
                             long originSize = Files.readAttributes(originFile.toPath(), BasicFileAttributes.class).size();
@@ -269,19 +272,21 @@ public class MediaListActivity extends AppCompatActivity {
                                 return;
                             }
 
-                            //替换文件
+                            //替换文件并写回 EXIF 数据
                             long originModifiedTime = originFile.lastModified();
                             Path copiedPath = Files.copy(file.toPath(), originFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                             boolean isLastModifyTimeRestored = copiedPath.toFile().setLastModified(originModifiedTime);
                             if (!isLastModifyTimeRestored) {
                                 Log.w(LogTags.MEDIA_LIST_ACTIVITY.n(), "无法恢复原来的最后编辑时间");
                             }
+                            MediaHelper.writeExifToFile(copiedPath.toFile(), originExifMap);
 
                             //更新列表
                             MediaListViewModel viewModel = new ViewModelProvider(MediaListActivity.this)
                                     .get(MediaListViewModel.class);
                             viewModel.setInOrder(viewModel.isInOrder());
 
+                            //提示并清理
                             Toast.makeText(MediaListActivity.this, "压缩成功", Toast.LENGTH_SHORT).show();
                             FileHelper.clearMediaTempDir(MediaListActivity.this);
                         } catch (IOException e) {
