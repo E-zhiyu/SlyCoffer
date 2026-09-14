@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_filter_account"
+        android:icon="@drawable/outline_filter_alt_24"
+        android:title="@string/filter_account"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_skip_date"
+        android:icon="@drawable/outline_date_range_24"
+        android:title="@string/skip_date"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_clear_selection"
+        android:icon="@drawable/outline_delete_24"
+        android:title="@string/clear_selection"
+        app:showAsAction="ifRoom" />
+</menu>

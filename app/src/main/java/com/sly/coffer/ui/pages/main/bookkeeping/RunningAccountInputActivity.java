@@ -41,7 +41,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.sly.coffer.R;
 import com.sly.coffer.SlyCoffer;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
-import com.sly.coffer.auxiliary.enums.TransitionName;
+import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
+import com.sly.coffer.auxiliary.enums.unique.TransitionName;
 import com.sly.coffer.auxiliary.enums.bottom_options.MediaAddOption;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
@@ -53,10 +54,10 @@ import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityRunningAccountInputBinding;
 import com.sly.coffer.auxiliary.enums.DirectoryPaths;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
-import com.sly.coffer.auxiliary.enums.AccountType;
-import com.sly.coffer.auxiliary.enums.LogTags;
-import com.sly.coffer.auxiliary.enums.TagStrings;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
 import com.sly.coffer.helpers.time.DateTimePickerHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
@@ -864,7 +865,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
 
-        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, dateTime);
+        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, dateTime, AutoBookkeepingType.NONE.ordinal());
         AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
         if (initBundle == null) {
             disposable.add(AccountService.addNewAccount(account, transfer, copiedMediaUriList, tagIdList, this)

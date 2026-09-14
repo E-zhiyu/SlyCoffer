@@ -23,8 +23,8 @@ import com.sly.coffer.data.save.db.entities.composite.BudgetWithDetailModel;
 import com.sly.coffer.data.save.db.services.BudgetService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityBudgetInputBinding;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
-import com.sly.coffer.auxiliary.enums.TagStrings;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.helpers.time.DateTimePickerHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.ImmHelper;
@@ -86,6 +86,8 @@ public class BudgetInputActivity extends AppCompatActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
+
+        disposable.dispose();
         binding = null;
     }
 
@@ -236,7 +238,7 @@ public class BudgetInputActivity extends AppCompatActivity {
 
         //标签说明按钮
         binding.tagExplainBtn.setOnClickListener(view -> {
-            final String EXPLANATION = "当包含下列标签的流水记录变更时自动更新余额";
+            final String EXPLANATION = "当包含下列标签的流水记录变更时自动更新余额，\n若无标签则任何记录变更时都会更新余额";
             TipPreference.showTipWithoutKey(view, Gravity.START, EXPLANATION);
         });
 
@@ -375,7 +377,6 @@ public class BudgetInputActivity extends AppCompatActivity {
         String initAmountStr = String.valueOf(binding.initAmountInput.getText()).trim();
         String leftAmountStr = String.valueOf(binding.leftAmountInput.getText()).trim();
 
-
         //提取部分输入数据
         double initAmount, leftAmount;
         try {
@@ -405,8 +406,6 @@ public class BudgetInputActivity extends AppCompatActivity {
         } else if (initBundle != null && leftAmount > initAmount) {
             err = "剩余金额不能超过初始金额";
             binding.leftAmountLayout.setError(err);
-        } else if (binding.tagRecycler.getAdapter() != null && binding.tagRecycler.getAdapter().getItemCount() == 0) {
-            err = "请选择至少一个标签";
         }
 
         return err;

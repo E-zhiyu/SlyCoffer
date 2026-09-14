@@ -23,8 +23,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
-import com.sly.coffer.auxiliary.enums.TagStrings;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.auxiliary.interfaces.RecyclerViewScrollListener;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.daos.AccountDao;
@@ -148,7 +148,10 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
                                     );
                                 }
                         );
+                    } else if (id == R.id.action_clear_selection) {
+                        selectionTracker.clearSelection();
                     }
+
                     return false;
                 }
         );

@@ -1,4 +1,4 @@
-package com.sly.coffer.auxiliary.enums;
+package com.sly.coffer.auxiliary.enums.unique;
 
 public enum NotificationID {
     BUDGET_AMOUNT_WARNING,      //预算余额低

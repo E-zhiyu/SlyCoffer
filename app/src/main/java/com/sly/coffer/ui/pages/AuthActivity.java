@@ -13,7 +13,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.sly.coffer.auxiliary.enums.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.data.save.preference.SecurityPreference;
 import com.sly.coffer.databinding.ActivityAuthBinding;
 import com.sly.coffer.helpers.BiometricHelper;

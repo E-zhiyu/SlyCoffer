@@ -1,5 +1,7 @@
 package com.sly.coffer.data.backup;
 
+import android.content.Context;
+
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
@@ -42,6 +44,7 @@ import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Dao
@@ -97,7 +100,7 @@ public interface DataBackupDao {
      * @param data 流水记录数据集合
      */
     @Transaction
-    default void importRunningAccountData(RunningAccountDataMap data) {
+    default void importRunningAccountData(Context context, RunningAccountDataMap data) {
         if (data == null) return;
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
@@ -143,7 +146,24 @@ public interface DataBackupDao {
         //媒体数据
         List<MediaPojo> mediaPojoList = data.getMediaList();
         if (mediaPojoList != null && !mediaPojoList.isEmpty()) {
-            writeMedia(mapper.toMediaEntityList(mediaPojoList));
+            //替换 Uri 中的包名
+            String replacement = String.format(
+                    Locale.getDefault(),
+                    "Android/data/%s/files/",
+                    context.getPackageName()
+            );
+            List<MediaPojo> uriConvertedMediaPojoList = mediaPojoList.stream()
+                    .peek(media -> {
+                        String uriStr = media.getFileUri();
+                        String currentPackageNameUri = uriStr.replaceAll(
+                                "Android/data/([^/]+)/files/",
+                                replacement
+                        );
+                        media.setFileUri(currentPackageNameUri);
+                    })
+                    .collect(Collectors.toList());
+
+            writeMedia(mapper.toMediaEntityList(uriConvertedMediaPojoList));
         }
     }
 

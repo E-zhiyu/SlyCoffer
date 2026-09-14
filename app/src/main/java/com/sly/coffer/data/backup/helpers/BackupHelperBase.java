@@ -36,7 +36,7 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
 
     protected abstract M getAllDataInMap();             //获取数据字典的方法
 
-    protected abstract void saveDataInMapToDb(M map);   //将map中的数据保存至数据库的方法
+    protected abstract void saveDataInMapToDb(Context context, M map);   //将map中的数据保存至数据库的方法
 
     protected abstract String getTempDataFileName();    //设置临时数据文件名称
 
@@ -49,7 +49,7 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
      * @param isOldData 是否导入的是旧版数据（v1.9.0之前的版本）
      * @return 是否完成
      */
-    public Completable importDataFromTempFile(File file, boolean isOldData) {
+    public Completable importDataFromTempFile(Context context, File file, boolean isOldData) {
         return Completable.defer(() -> {
             try {
                 //读取文件内容
@@ -65,7 +65,7 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
                 }
 
                 //将对应的数据写入数据库
-                saveDataInMapToDb(dataMap);
+                saveDataInMapToDb(context, dataMap);
 
                 return Completable.complete();
             } catch (IOException e) {

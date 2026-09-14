@@ -14,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.sly.coffer.SlyCoffer;
+import com.sly.coffer.auxiliary.enums.RadiusStyle;
 import com.sly.coffer.auxiliary.enums.settings.RepositoryAddress;
 import com.sly.coffer.databinding.ActivityAboutBinding;
 import com.sly.coffer.helpers.AboutHelper;
@@ -61,10 +62,19 @@ public class AboutActivity extends AppCompatActivity {
             startActivity(skip2GitHub);
         });
         AppearanceHelper.attachMorphAnimation(binding.authorCard);
+        AppearanceHelper.setRadiusStyle(binding.authorCard, RadiusStyle.TOP);
 
         //项目地址卡片
         binding.projectAddressCard.setOnClickListener(view -> showRepositoryAddressDialog());
         AppearanceHelper.attachMorphAnimation(binding.projectAddressCard);
+        AppearanceHelper.setRadiusStyle(binding.projectAddressCard, RadiusStyle.BOTTOM);
+
+        //疑难解答卡片
+        binding.troubleshootingCard.setOnClickListener(view -> {
+            Intent intent = new Intent(this, TroubleshootingActivity.class);
+            startActivity(intent);
+        });
+        AppearanceHelper.attachMorphAnimation(binding.troubleshootingCard);
     }
 
     /**

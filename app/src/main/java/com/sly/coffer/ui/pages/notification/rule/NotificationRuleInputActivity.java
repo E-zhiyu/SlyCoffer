@@ -28,10 +28,10 @@ import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetail
 import com.sly.coffer.data.save.db.services.RuleService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityNotificationRuleInputBinding;
-import com.sly.coffer.auxiliary.enums.TagStrings;
+import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.helpers.ExceptionHelper;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
-import com.sly.coffer.auxiliary.enums.AccountType;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.helpers.ImmHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;

@@ -22,7 +22,7 @@ import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.services.BudgetService;
 import com.sly.coffer.databinding.ActivityBudgetListBinding;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;

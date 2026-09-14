@@ -28,6 +28,7 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scrollbars="none"
@@ -39,9 +40,10 @@
             android:layout_height="wrap_content"
             android:clipToPadding="false"
             android:orientation="vertical"
-            android:padding="10dp"
             android:paddingStart="30dp"
-            android:paddingEnd="30dp">
+            android:paddingTop="20dp"
+            android:paddingEnd="30dp"
+            android:paddingBottom="10dp">
 
             <!-- 时间信息 -->
             <androidx.constraintlayout.widget.ConstraintLayout

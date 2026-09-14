@@ -1,4 +1,4 @@
-package com.sly.coffer.auxiliary.enums;
+package com.sly.coffer.auxiliary.enums.types;
 
 public enum DateRangeType {
     THAT_DAY("一天"),

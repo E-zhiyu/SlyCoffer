@@ -27,19 +27,24 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 
 public class MediaHelper {
+    private final static List<String> ALL_EXIF_TAGS = getAllExifTags(); //包含所有 EXIF 标签的列表
+
     /**
      * 将媒体文件保存至相册
      *
@@ -351,5 +356,70 @@ public class MediaHelper {
                 focalLength,
                 flashFired
         );
+    }
+
+    /**
+     * 从文件中读取 EXIF 数据
+     *
+     * @param target 需要读取 EXIF 数据的目标文件
+     * @return 该目标文件的 EXIF 数据
+     */
+    @NonNull
+    public static Map<String, String> getExifFromFile(File target) throws IOException {
+        ExifInterface sourceExif = new ExifInterface(target);
+        Map<String, String> exifMap = new HashMap<>();
+
+        for (String tag : ALL_EXIF_TAGS) {
+            String value = sourceExif.getAttribute(tag);
+            if (value != null) {
+                exifMap.put(tag, value);
+            }
+        }
+        return exifMap;
+    }
+
+    /**
+     * 将 EXIF 数据写入到文件中
+     *
+     * @param target  需要写入 EXIF 的文件
+     * @param exifMap 包含 EXIF 数据的 {@link Map}对象
+     */
+    public static void writeExifToFile(File target, Map<String, String> exifMap) throws IOException {
+        if (exifMap == null || exifMap.isEmpty()) {
+            return;
+        }
+
+        ExifInterface targetExif = new ExifInterface(target);
+
+        for (Map.Entry<String, String> entry : exifMap.entrySet()) {
+            targetExif.setAttribute(entry.getKey(), entry.getValue());
+        }
+
+        // 保存属性更改到文件
+        targetExif.saveAttributes();
+    }
+
+    /**
+     * 获取所有 EXIF 的标签
+     *
+     * @return 包含所有 EXIF 标签的列表
+     */
+    @NonNull
+    private static List<String> getAllExifTags() {
+        List<String> tags = new ArrayList<>();
+        Field[] fields = ExifInterface.class.getFields();
+
+        for (Field field : fields) {
+            if (field.getName().startsWith("TAG_")) {
+                try {
+                    Object value = field.get(null);
+                    if (value instanceof String) {
+                        tags.add((String) value);
+                    }
+                } catch (IllegalAccessException ignored) {
+                }
+            }
+        }
+        return tags;
     }
 }

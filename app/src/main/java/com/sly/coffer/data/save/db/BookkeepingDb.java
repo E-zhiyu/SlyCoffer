@@ -9,7 +9,7 @@ import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
-import com.sly.coffer.auxiliary.enums.AccountType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.backup.DataBackupDao;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
 import com.sly.coffer.data.save.db.converters.UriConverter;
@@ -59,7 +59,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
                 AccessibilityRuleKeywordGroupEntity.class,
                 PickedPageEntity.class
         },
-        version = 4
+        version = 5
 )
 @TypeConverters({
         DateTimeConverter.class,
@@ -97,7 +97,8 @@ public abstract class BookkeepingDb extends RoomDatabase {
                             .addMigrations(
                                     DatabaseMigrations.MIGRATION_1_2,
                                     DatabaseMigrations.MIGRATION_2_3,
-                                    DatabaseMigrations.MIGRATION_3_4
+                                    DatabaseMigrations.MIGRATION_3_4,
+                                    DatabaseMigrations.MIGRATION_4_5
                             )
                             .build();
                 }

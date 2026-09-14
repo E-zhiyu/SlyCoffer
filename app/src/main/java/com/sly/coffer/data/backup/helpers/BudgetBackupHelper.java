@@ -5,7 +5,7 @@ import android.content.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
-import com.sly.coffer.auxiliary.enums.BackupDataType;
+import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.BudgetDataMap;
 import com.sly.coffer.data.backup.maps.old.OldBudgetDataMap;
 import com.sly.coffer.data.backup.pojo.BudgetPojo;
@@ -41,7 +41,7 @@ public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDa
     }
 
     @Override
-    protected void saveDataInMapToDb(BudgetDataMap map) {
+    protected void saveDataInMapToDb(Context context, BudgetDataMap map) {
         db.dataBackupDao().importBudgetData(map);
     }
 

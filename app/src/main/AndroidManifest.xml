@@ -54,16 +54,20 @@
         tools:targetApi="33">
         <activity
             android:name=".ui.pages.main.settings.sub.AboutActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:parentActivityName=".ui.pages.main.MainActivity" />
         <activity
             android:name=".ui.pages.main.settings.sub.DataManageActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:parentActivityName=".ui.pages.main.MainActivity" />
         <activity
             android:name=".ui.pages.main.settings.sub.AutoBookkeepingActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:parentActivityName=".ui.pages.main.MainActivity" />
         <activity
             android:name=".ui.pages.main.settings.sub.PermissionManageActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:parentActivityName=".ui.pages.main.MainActivity" />
         <activity
             android:name=".ui.pages.budget.BudgetInputActivity"
             android:exported="false"
@@ -151,6 +155,11 @@
         <activity
             android:name=".ui.pages.media.MediaInfoActivity"
             android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.pages.main.settings.sub.TroubleshootingActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.pages.main.settings.sub.AboutActivity"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".ui.pages.main.MainActivity"

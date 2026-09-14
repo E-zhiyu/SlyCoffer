@@ -15,7 +15,8 @@ import androidx.core.app.TaskStackBuilder;
 import com.sly.coffer.R;
 import com.sly.coffer.automation.broadcast.AbNotificationActionsReceiver;
 import com.sly.coffer.auxiliary.enums.ChannelInfo;
-import com.sly.coffer.auxiliary.enums.LogTags;
+import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.automation.broadcast.BroadcastActions;
 import com.sly.coffer.auxiliary.enums.settings.NotificationClickBehaviour;
 import com.sly.coffer.data.save.db.BookkeepingDb;
@@ -29,13 +30,13 @@ import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetailModel;
 import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
-import com.sly.coffer.auxiliary.enums.NotificationID;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.NotificationID;
 import com.sly.coffer.auxiliary.enums.PendingRequestCode;
 import com.sly.coffer.helpers.AppListHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.NotificationHelper;
-import com.sly.coffer.auxiliary.enums.AccountType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;
 import com.sly.coffer.ui.pages.notification.rule.NotificationRuleListActivity;
 
@@ -264,16 +265,13 @@ public class AbNotificationListenerService extends NotificationListenerService {
     ) {
         //获取规则数据
         NotificationRuleEntity rule = model.getRule();
-        String ruleName = rule.getName();                   //规则名称
+        String remark = rule.getName();                     //规则名称
         int type = rule.getType();                          //流水种类枚举序数
         long[] tagIds = model.getTagList().stream()
                 .map(TagEntity::getTagId)
                 .mapToLong(Long::longValue)
                 .toArray();                                 //标签列表
         NotificationRuleTransferEntity transfer = model.getTransfer();  //转账账户数据
-
-        //生成备注
-        String remark = "通知记账 : " + ruleName;
 
         //生成流水记录数据包
         Bundle bundle = new Bundle();
@@ -291,6 +289,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
             bundle.putString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v(), exportAccount); //转出账户
             bundle.putString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v(), importAccount); //转入账户
         }
+        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TYPE.v(), AutoBookkeepingType.NOTIFICATION.ordinal());    //自动记账种类
 
         return bundle;
     }
@@ -504,7 +503,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
     private void saveInDbDirectly(double amount, @NonNull NotificationRuleWithDetailModel model) {
         //解析规则数据
         NotificationRuleEntity rule = model.getRule();
-        String remark = "通知记账 : " + rule.getName();
+        String remark = rule.getName();
         int type = rule.getType();
         NotificationRuleTransferEntity ruleTransfer = model.getTransfer();
         String exportAccount = ruleTransfer.getExportAccount();
@@ -514,7 +513,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
                 .collect(Collectors.toList());
 
         //实例化实体类
-        AccountEntity account = new AccountEntity(amount, remark, type, LocalDateTime.now());
+        AccountEntity account = new AccountEntity(amount, remark, type, LocalDateTime.now(), AutoBookkeepingType.NOTIFICATION.ordinal());
         AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
 
         //保存数据

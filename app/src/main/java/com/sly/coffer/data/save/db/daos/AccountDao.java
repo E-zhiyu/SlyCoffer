@@ -14,7 +14,7 @@ import androidx.room.Transaction;
 import androidx.room.Update;
 import androidx.sqlite.db.SupportSQLiteQuery;
 
-import com.sly.coffer.auxiliary.enums.AccountType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
@@ -186,8 +186,11 @@ public interface AccountDao {
      * @param accountDateTime 流水记录的日期和时间
      */
     @Query("UPDATE budgets SET balance = balance + :increase " +
-            "WHERE startDate <= :accountDateTime AND budgetId IN (SELECT budgetId FROM budgetTagRef WHERE tagId IN (:tagIdList))")
-    void updateBudgetListAmountByTagId(double increase, List<Long> tagIdList, LocalDateTime accountDateTime);
+            "WHERE startDate <= :accountDateTime AND " +
+            "budgetId NOT IN (" +
+            "   SELECT budgetId FROM budgetTagRef WHERE tagId NOT IN (:tagIdList)" +
+            ")")
+    void updateBudgetBalanceByTagId(double increase, List<Long> tagIdList, LocalDateTime accountDateTime);
 
     /**
      * 将预算余额限制在初始金额 ~ 0的范围内
@@ -196,8 +199,11 @@ public interface AccountDao {
      * @param accountDateTime 流水记录的日期和时间
      */
     @Query("UPDATE budgets SET balance = MAX(0, MIN(initAmount, balance)) " +
-            "WHERE startDate <= :accountDateTime AND budgetId IN (SELECT budgetId FROM budgetTagRef WHERE tagId IN (:tagIdList))")
-    void limitBudgetLeftAmountByTagId(List<Long> tagIdList, LocalDateTime accountDateTime);
+            "WHERE startDate <= :accountDateTime AND " +
+            "budgetId NOT IN (" +
+            "   SELECT budgetId FROM budgetTagRef WHERE tagId NOT IN (:tagIdList)" +
+            ")")
+    void limitBudgetBalanceByTagId(List<Long> tagIdList, LocalDateTime accountDateTime);
 
     /**
      * 流水记录添加事务
@@ -234,8 +240,8 @@ public interface AccountDao {
         }
 
         //更新预算余额
-        updateBudgetListAmountByTagId(-account.getAmount(), tagIdList, account.getDateTime());
-        limitBudgetLeftAmountByTagId(tagIdList, account.getDateTime());
+        updateBudgetBalanceByTagId(-account.getAmount(), tagIdList, account.getDateTime());
+        limitBudgetBalanceByTagId(tagIdList, account.getDateTime());
 
         return accountId;
     }
@@ -331,10 +337,10 @@ public interface AccountDao {
         //更新预算余额
         double amount = account.getAmount();
         LocalDateTime dateTime = account.getDateTime();
-        updateBudgetListAmountByTagId(amount, oldTagIdList, oldDateTime);
-        updateBudgetListAmountByTagId(-amount, tagIdList, dateTime);
-        limitBudgetLeftAmountByTagId(oldTagIdList, oldDateTime);
-        limitBudgetLeftAmountByTagId(tagIdList, dateTime);
+        updateBudgetBalanceByTagId(amount, oldTagIdList, oldDateTime);
+        updateBudgetBalanceByTagId(-amount, tagIdList, dateTime);
+        limitBudgetBalanceByTagId(oldTagIdList, oldDateTime);
+        limitBudgetBalanceByTagId(tagIdList, dateTime);
 
         return oldMediaUriSet;
     }
@@ -360,8 +366,8 @@ public interface AccountDao {
         //更新预算
         LocalDateTime oldDateTime = getAccountDateTimeById(account.getAccountId());
         List<Long> oldTagIdList = getTagIdListByAccountId(account.getAccountId());
-        updateBudgetListAmountByTagId(account.getAmount(), oldTagIdList, oldDateTime);
-        limitBudgetLeftAmountByTagId(oldTagIdList, oldDateTime);
+        updateBudgetBalanceByTagId(account.getAmount(), oldTagIdList, oldDateTime);
+        limitBudgetBalanceByTagId(oldTagIdList, oldDateTime);
 
         //删除流水记录
         deleteAccount(account);

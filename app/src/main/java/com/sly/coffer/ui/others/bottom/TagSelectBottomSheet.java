@@ -23,7 +23,7 @@ import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.composite.ui.TagGroupUiModel;
 import com.sly.coffer.data.save.db.services.TagService;
 import com.sly.coffer.databinding.BottomSheetTagSelectBinding;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
 import com.sly.coffer.ui.others.adapters.GroupTagMultiSelectAdapter;

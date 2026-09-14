@@ -1,4 +1,4 @@
-package com.sly.coffer.auxiliary.enums;
+package com.sly.coffer.auxiliary.enums.types;
 
 public enum AccountType {
     EXPENSE("支出", -1, "EXPENSE"),

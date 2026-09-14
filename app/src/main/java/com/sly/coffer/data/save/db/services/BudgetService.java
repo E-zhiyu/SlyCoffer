@@ -10,7 +10,7 @@ import androidx.core.app.TaskStackBuilder;
 
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.enums.ChannelInfo;
-import com.sly.coffer.auxiliary.enums.NotificationID;
+import com.sly.coffer.auxiliary.enums.unique.NotificationID;
 import com.sly.coffer.auxiliary.enums.PendingRequestCode;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;

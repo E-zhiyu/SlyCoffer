@@ -50,4 +50,12 @@ public class DatabaseMigrations {
             db.execSQL("UPDATE notificationRules SET contentRegex = REPLACE(contentRegex, '(\\d+\\.?\\d{0,2})', '(\\d{1,3}(?:,\\d{3})*(?:\\.\\d{1,2})?)')");
         }
     };
+
+    //流水记录添加自动记账标签字段
+    static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE accounts ADD COLUMN autoTag INTEGER NOT NULL DEFAULT 0");
+        }
+    };
 }

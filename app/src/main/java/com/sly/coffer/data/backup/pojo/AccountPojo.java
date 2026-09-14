@@ -9,6 +9,7 @@ public class AccountPojo {
     private String remark;
     private int type;
     private long dateTime;
+    private int autoTag;
 
     public AccountPojo() {
     }
@@ -51,5 +52,13 @@ public class AccountPojo {
 
     public void setDateTime(long dateTime) {
         this.dateTime = dateTime;
+    }
+
+    public int getAutoTag() {
+        return autoTag;
+    }
+
+    public void setAutoTag(int autoTag) {
+        this.autoTag = autoTag;
     }
 }

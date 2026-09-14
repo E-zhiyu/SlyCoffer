@@ -5,8 +5,8 @@ import android.content.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
-import com.sly.coffer.auxiliary.enums.AccountType;
-import com.sly.coffer.auxiliary.enums.BackupDataType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
+import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.RunningAccountDataMap;
 import com.sly.coffer.data.backup.maps.old.OldRunningAccountDataMap;
 import com.sly.coffer.data.backup.pojo.AccountPojo;
@@ -43,8 +43,8 @@ public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, 
     }
 
     @Override
-    protected void saveDataInMapToDb(RunningAccountDataMap map) {
-        db.dataBackupDao().importRunningAccountData(map);
+    protected void saveDataInMapToDb(Context context, RunningAccountDataMap map) {
+        db.dataBackupDao().importRunningAccountData(context, map);
     }
 
     @Override
