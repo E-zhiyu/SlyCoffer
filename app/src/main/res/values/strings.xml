@@ -224,11 +224,11 @@
     <string name="floating_notification_answer">A : 部分定制安卓系统修改了通知发送逻辑，只允许部分经过厂商验证的应用发送悬浮通知。您可以尝试长按应用图标进入应用设置界面，在通知设置中手动为特定通知渠道允许发送悬浮通知。</string>
     <string name="invalid_auto_bookkeeping_question">Q : 为什么开启自动记账后不起作用？</string>
     <string name="invalid_auto_bookkeeping_answer">A : 自动记账功能需要APP持续在后台运行，而部分定制安卓系统对于后台管理较为严格，需要手动授予相关权限并锁定后台才能稳定运行。您可以尝试如下步骤进行排查：\n1. 前往系统设置，为本APP授予自启动权限（如果有自启动权限）；\n2. 前往本APP的权限管理界面，将电池优化策略改为“无限制”；\n3. 在最近任务中锁定本APP，降低系统杀后台的几率；\n4. 退出省电模式，在省电模式下可能无法保障APP后台运行。\n若执行上述步骤仍无法使用自动记账，请前往权限管理界面重新授予通知管理权限或重新开启自动记账无障碍服务。</string>
-    <string name="privacy_data_question">Q : 这个APP会收集隐私数据吗？</string>
+    <string name="privacy_data_question">Q : APP会收集隐私数据吗？</string>
     <string name="privacy_data_answer">A : 本APP不收集任何数据，且使用过程中产生的所有数据都仅保存到本地，您无需担心任何隐私泄露问题。</string>
-    <string name="power_consumption_question">Q : 这个APP在后台运行时会特别耗电吗？</string>
+    <string name="power_consumption_question">Q : APP在后台运行时会特别耗电吗？</string>
     <string name="power_consumption_answer">A : 本APP十分注重性能优化，没有太多需要后台运行的功能，对性能的开销并不算太大，而且在后续的更新中作者也会持续优化旧功能的性能。</string>
-    <string name="ad_integration_question">Q : 作者会为这个APP接入广告吗？</string>
+    <string name="ad_integration_question">Q : 作者会为APP接入广告吗？</string>
     <string name="ad_integration_answer">A : 就目前的看法来说，不会。这个APP只是我做出来练手的，一开始也只想给自己用，而且我非常讨厌APP里面塞各种牛皮癣广告，也并不希望像某些APP一样随意收集个人信息，因此我并不打算接入广告，也算坚守某种初心吧？</string>
     <string name="accessibility_warning_question">Q : 我在启动无障碍服务后，系统弹出提示说可能危害隐私安全，这是真的吗？</string>
     <string name="accessibility_warning_answer">A : 您不用担心本APP危害隐私安全，系统弹出提示仅仅是因为没从应用商店下载本APP，本APP除了应用更新外所有功能都不需要联网，您无需担心隐私泄露问题。</string>
