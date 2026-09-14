@@ -21,7 +21,7 @@
             android:layout_height="wrap_content"
             android:hint="@string/search_remark"
             app:layout_scrollFlags="scroll|enterAlways|snap"
-            app:menu="@menu/menu_account_list_search_bar" />
+            app:menu="@menu/menu_account_select_search_bar" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton

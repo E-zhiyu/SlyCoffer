@@ -148,7 +148,10 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
                                     );
                                 }
                         );
+                    } else if (id == R.id.action_clear_selection) {
+                        selectionTracker.clearSelection();
                     }
+
                     return false;
                 }
         );
