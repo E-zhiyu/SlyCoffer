@@ -74,33 +74,4 @@ public class AlarmHelper {
         LocalDateTime tomorrowStart = LocalDate.now().plusDays(1).atStartOfDay();
         setAlarm(tomorrowStart, PendingRequestCode.BUDGET_RESET_ALARM.ordinal(), intent, context);
     }
-
-    /**
-     * 取消已设置的定时任务
-     *
-     * @param requestCode 已设置的定时任务的请求代码
-     * @param intent      已设置的定时任务的意图对象
-     * @param context     上下文
-     */
-    public static void cancelAlarm(int requestCode, Intent intent, Context context) {
-        // 重新构建 PendingIntent（注意：这里的 Flag 可以是 FLAG_NO_CREATE 或 FLAG_UPDATE_CURRENT）
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context,
-                requestCode,
-                intent,
-                PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE // FLAG_NO_CREATE 表示如果不存在就不创建
-        );
-
-        // 如果 PendingIntent 存在，调用 cancel
-        if (pendingIntent != null) {
-            AlarmManager alarmManager = context.getSystemService(AlarmManager.class);
-            alarmManager.cancel(pendingIntent);
-
-            // 彻底释放这个 PendingIntent
-            pendingIntent.cancel();
-            Log.d(LogTags.ALARM_HELPER.n(), "定时任务已成功取消");
-        } else {
-            Log.d(LogTags.ALARM_HELPER.n(), "没有找到匹配的定时任务，无需取消");
-        }
-    }
 }
