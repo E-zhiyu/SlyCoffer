@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.entities;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
@@ -22,6 +23,7 @@ public class AccountEntity {
     private String remark;          //备注
     private int type;               //种类
     private LocalDateTime dateTime; //日期和时间
+    @ColumnInfo(defaultValue = "0")
     private int autoTag;            //自动记账标识
 
     public AccountEntity(double amount, String remark, int type, LocalDateTime dateTime, int autoTag) {
