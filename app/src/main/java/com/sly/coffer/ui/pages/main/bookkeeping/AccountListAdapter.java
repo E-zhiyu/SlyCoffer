@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.RadiusStyle;
+import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
 import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnClickListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnLongClickListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.ViewHolderListener;
@@ -205,14 +206,29 @@ public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView
             //获取流水数据
             String type = AccountType.values()[account.getType()].getTitle();
             String datetime = account.getDateTime().format(CustomDateTimeFormatter.TIME);
-            String typeAndDatetime = String.format(Locale.getDefault(), "%s·%s", type, datetime);
             String remark = account.getRemark();
             double amount = account.getAmount();
+
+            //生成自动记账种类字符串
+            String autoBookkeepingType;
+            int autoTag = account.getAutoTag();
+            if (autoTag == AutoBookkeepingType.NOTIFICATION.ordinal()) {
+                autoBookkeepingType = "通知记账·";
+            } else if (autoTag == AutoBookkeepingType.ACCESSIBILITY.ordinal()) {
+                autoBookkeepingType = "无障碍记账·";
+            } else {
+                autoBookkeepingType = "";
+            }
 
             //初始化文本视图
             itemHolder.binding.amountText.setText(TextHelper.abbreviate(amount, 1));
             itemHolder.binding.remarkText.setText(remark.isEmpty() ? "<无备注>" : remark);
-            itemHolder.binding.typeDatetimeText.setText(typeAndDatetime);
+            String typeTimeAutoTag = String.format(
+                    Locale.getDefault(),
+                    "%s%s·%s",
+                    autoBookkeepingType, type, datetime
+            );
+            itemHolder.binding.typeTimeAutoTagText.setText(typeTimeAutoTag);
 
             //设置圆角
             setRadius(itemHolder.binding.getRoot(), holder.getBindingAdapterPosition());

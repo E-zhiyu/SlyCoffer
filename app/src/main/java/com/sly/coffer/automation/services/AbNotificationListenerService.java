@@ -265,16 +265,13 @@ public class AbNotificationListenerService extends NotificationListenerService {
     ) {
         //获取规则数据
         NotificationRuleEntity rule = model.getRule();
-        String ruleName = rule.getName();                   //规则名称
+        String remark = rule.getName();                     //规则名称
         int type = rule.getType();                          //流水种类枚举序数
         long[] tagIds = model.getTagList().stream()
                 .map(TagEntity::getTagId)
                 .mapToLong(Long::longValue)
                 .toArray();                                 //标签列表
         NotificationRuleTransferEntity transfer = model.getTransfer();  //转账账户数据
-
-        //生成备注
-        String remark = "通知记账 : " + ruleName;
 
         //生成流水记录数据包
         Bundle bundle = new Bundle();
@@ -506,7 +503,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
     private void saveInDbDirectly(double amount, @NonNull NotificationRuleWithDetailModel model) {
         //解析规则数据
         NotificationRuleEntity rule = model.getRule();
-        String remark = "通知记账 : " + rule.getName();
+        String remark = rule.getName();
         int type = rule.getType();
         NotificationRuleTransferEntity ruleTransfer = model.getTransfer();
         String exportAccount = ruleTransfer.getExportAccount();

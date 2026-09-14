@@ -360,16 +360,13 @@ public class AbAccessibilityService extends AccessibilityService {
     ) {
         //获取规则数据
         AccessibilityRuleEntity rule = model.getRule();
-        String ruleName = rule.getName();                   //规则名称
+        String remark = rule.getName();                   //规则名称
         int type = rule.getType();                          //流水种类枚举序数
         long[] tagIds = model.getTagList().stream()
                 .map(TagEntity::getTagId)
                 .mapToLong(Long::longValue)
                 .toArray();                                 //标签列表
         AccessibilityRuleTransferEntity transfer = model.getTransfer(); //转账账户数据
-
-        //生成备注
-        String remark = "无障碍记账 : " + ruleName;
 
         //生成流水记录数据包
         Bundle bundle = new Bundle();
@@ -562,7 +559,7 @@ public class AbAccessibilityService extends AccessibilityService {
     private void saveInDbDirectly(double amount, @NonNull AccessibilityRuleWithDetailModel model) {
         //解析规则数据
         AccessibilityRuleEntity rule = model.getRule();
-        String remark = "无障碍记账 : " + rule.getName();
+        String remark = rule.getName();
         int type = rule.getType();
         AccessibilityRuleTransferEntity ruleTransfer = model.getTransfer();
         String exportAccount = ruleTransfer.getExportAccount();
