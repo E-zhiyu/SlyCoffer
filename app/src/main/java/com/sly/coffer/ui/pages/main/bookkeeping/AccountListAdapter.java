@@ -23,7 +23,7 @@ import com.sly.coffer.databinding.ViewHolderSeparatorTextChipBinding;
 import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.decoration.sticky.StickyHeaderAdapter;
-import com.sly.coffer.auxiliary.enums.AccountType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 
 import java.util.Locale;
 

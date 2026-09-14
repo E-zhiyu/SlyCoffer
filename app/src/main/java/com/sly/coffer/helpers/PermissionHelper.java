@@ -33,7 +33,7 @@ import com.sly.coffer.SlyCoffer;
 import com.sly.coffer.automation.services.AbAccessibilityService;
 import com.sly.coffer.automation.services.PickAccessibilityService;
 import com.sly.coffer.data.save.preference.AppSettingsPreference;
-import com.sly.coffer.auxiliary.enums.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 import java.util.ArrayList;

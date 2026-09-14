@@ -1,4 +1,4 @@
-package com.sly.coffer.auxiliary.enums;
+package com.sly.coffer.auxiliary.enums.types;
 
 import android.content.Context;
 

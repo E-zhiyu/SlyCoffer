@@ -16,7 +16,7 @@ import androidx.transition.TransitionManager;
 import androidx.transition.TransitionSet;
 
 import com.sly.coffer.R;
-import com.sly.coffer.auxiliary.enums.AccountType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.daos.AccountDao;
 import com.sly.coffer.data.save.db.entities.AccountEntity;

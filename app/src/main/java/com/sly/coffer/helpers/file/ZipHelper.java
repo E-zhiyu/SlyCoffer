@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.sly.coffer.auxiliary.enums.DirectoryPaths;
-import com.sly.coffer.auxiliary.enums.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 
 import java.io.File;
 import java.io.FileInputStream;

@@ -15,7 +15,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.search.SearchView;
 import com.sly.coffer.R;
-import com.sly.coffer.auxiliary.enums.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.data.save.preference.VersionPreference;
 import com.sly.coffer.databinding.ActivityMainBinding;
 import com.sly.coffer.data.save.preference.AppSettingsPreference;

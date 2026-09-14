@@ -12,7 +12,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.databinding.ActivityMediaInfoBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.TextHelper;

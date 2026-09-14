@@ -20,9 +20,9 @@ import androidx.recyclerview.widget.GridLayoutManager;
 
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.enums.DirectoryPaths;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
-import com.sly.coffer.auxiliary.enums.LogTags;
-import com.sly.coffer.auxiliary.enums.TransitionName;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.TransitionName;
 import com.sly.coffer.databinding.ActivityMediaListBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;

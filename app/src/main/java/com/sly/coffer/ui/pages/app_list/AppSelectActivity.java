@@ -18,7 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.sly.coffer.R;
 import com.sly.coffer.data.save.preference.SearchHistoryPreference;
 import com.sly.coffer.databinding.ActivityPackageNameSelectBinding;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.PermissionHelper;

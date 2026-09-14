@@ -2,7 +2,7 @@ package com.sly.coffer.ui.pages.notification.capture;
 
 import androidx.lifecycle.ViewModel;
 
-import com.sly.coffer.auxiliary.enums.AccountType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 
 public class CNRInputViewModel extends ViewModel {
     private int groupPos = 1;   //金额捕获组的位置

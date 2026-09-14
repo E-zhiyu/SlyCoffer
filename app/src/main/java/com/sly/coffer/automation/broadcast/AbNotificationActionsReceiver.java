@@ -20,7 +20,7 @@ import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
 import com.sly.coffer.auxiliary.enums.ChannelInfo;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.PendingRequestCode;
 import com.sly.coffer.helpers.NotificationHelper;
 import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;

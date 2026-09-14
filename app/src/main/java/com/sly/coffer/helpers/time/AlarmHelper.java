@@ -10,7 +10,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.sly.coffer.automation.broadcast.BudgetResetReceiver;
-import com.sly.coffer.auxiliary.enums.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.auxiliary.enums.PendingRequestCode;
 
 import java.time.LocalDate;

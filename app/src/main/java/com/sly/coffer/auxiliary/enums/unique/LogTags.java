@@ -1,4 +1,4 @@
-package com.sly.coffer.auxiliary.enums;
+package com.sly.coffer.auxiliary.enums.unique;
 
 public enum LogTags {
     RESTORE_WORKER("RestoreWorker"),

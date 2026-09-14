@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
-import com.sly.coffer.auxiliary.enums.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.time.AlarmHelper;
 import com.sly.coffer.ui.pages.budget.ResetFrequency;

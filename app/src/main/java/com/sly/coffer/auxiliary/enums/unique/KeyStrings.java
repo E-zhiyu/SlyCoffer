@@ -1,4 +1,4 @@
-package com.sly.coffer.auxiliary.enums;
+package com.sly.coffer.auxiliary.enums.unique;
 
 public enum KeyStrings {
     RESTORE_IS_OLD_DATA("restore_is_old_data"),             //导入数据时是否为旧数据

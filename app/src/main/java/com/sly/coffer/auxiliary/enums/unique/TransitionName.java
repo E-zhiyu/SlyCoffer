@@ -1,4 +1,4 @@
-package com.sly.coffer.auxiliary.enums;
+package com.sly.coffer.auxiliary.enums.unique;
 
 public enum TransitionName {
     FULLSCREEN_MEDIA("fullscreen_media");

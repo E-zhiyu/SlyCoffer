@@ -27,13 +27,13 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.sly.coffer.databinding.ActivityFullScreenMediaBinding;
-import com.sly.coffer.auxiliary.enums.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
 import com.sly.coffer.helpers.file.FileHelper;
 import com.sly.coffer.helpers.file.MediaHelper;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 
 import java.io.File;
 import java.util.ArrayList;

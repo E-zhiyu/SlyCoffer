@@ -9,7 +9,7 @@ import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
-import com.sly.coffer.auxiliary.enums.AccountType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.backup.DataBackupDao;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
 import com.sly.coffer.data.save.db.converters.UriConverter;

@@ -4,7 +4,7 @@ import android.content.Context;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sly.coffer.auxiliary.enums.BackupDataType;
+import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.AccessibilityRuleDataMap;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 

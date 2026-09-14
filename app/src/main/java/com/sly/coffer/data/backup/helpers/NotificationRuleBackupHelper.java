@@ -4,8 +4,8 @@ import android.content.Context;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sly.coffer.auxiliary.enums.AccountType;
-import com.sly.coffer.auxiliary.enums.BackupDataType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
+import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.NotificationRuleDataMap;
 import com.sly.coffer.data.backup.maps.old.OldNotificationRuleDataMap;
 import com.sly.coffer.data.backup.pojo.NotificationRulePojo;

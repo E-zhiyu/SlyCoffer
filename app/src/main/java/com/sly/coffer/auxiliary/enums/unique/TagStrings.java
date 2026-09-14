@@ -1,4 +1,4 @@
-package com.sly.coffer.auxiliary.enums;
+package com.sly.coffer.auxiliary.enums.unique;
 
 public enum TagStrings {
     BACKUP_WORKER("backup_worker"),             //自动备份的 Worker

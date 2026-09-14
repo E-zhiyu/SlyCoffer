@@ -7,8 +7,8 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.sly.coffer.auxiliary.enums.LogTags;
-import com.sly.coffer.auxiliary.enums.ViewTags;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.ViewTags;
 import com.sly.coffer.auxiliary.interfaces.RecyclerViewScrollListener;
 import com.sly.coffer.ui.others.scroller.CustomOffsetSmoothScroller;
 

@@ -21,11 +21,11 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
-import com.sly.coffer.auxiliary.enums.AccountType;
-import com.sly.coffer.auxiliary.enums.DateRangeType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
+import com.sly.coffer.auxiliary.enums.types.DateRangeType;
 import com.sly.coffer.auxiliary.classes.AmountProportionInfo;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
-import com.sly.coffer.auxiliary.enums.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;

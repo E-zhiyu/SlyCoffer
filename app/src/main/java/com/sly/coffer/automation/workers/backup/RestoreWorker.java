@@ -8,10 +8,10 @@ import androidx.work.Data;
 import androidx.work.WorkerParameters;
 import androidx.work.rxjava3.RxWorker;
 
-import com.sly.coffer.auxiliary.enums.BackupDataType;
-import com.sly.coffer.auxiliary.enums.KeyStrings;
-import com.sly.coffer.auxiliary.enums.LogTags;
-import com.sly.coffer.auxiliary.enums.NotificationID;
+import com.sly.coffer.auxiliary.enums.types.BackupDataType;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.NotificationID;
 import com.sly.coffer.data.backup.helpers.BackupHelperBase;
 import com.sly.coffer.helpers.NotificationHelper;
 import com.sly.coffer.helpers.file.ZipHelper;

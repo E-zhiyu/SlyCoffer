@@ -13,7 +13,7 @@ import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.datepicker.MaterialPickerOnPositiveButtonClickListener;
 import com.google.android.material.timepicker.MaterialTimePicker;
 import com.google.android.material.timepicker.TimeFormat;
-import com.sly.coffer.auxiliary.enums.TagStrings;
+import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 
 import java.time.Instant;
 import java.time.LocalDate;

@@ -16,7 +16,7 @@ import androidx.documentfile.provider.DocumentFile;
 
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.DirectoryPaths;
-import com.sly.coffer.auxiliary.enums.LogTags;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

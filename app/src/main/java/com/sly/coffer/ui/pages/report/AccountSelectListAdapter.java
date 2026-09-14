@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
-import com.sly.coffer.auxiliary.enums.AccountType;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.RadiusStyle;
 import com.sly.coffer.auxiliary.interfaces.adapter.ViewHolderListener;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
