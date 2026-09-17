@@ -29,6 +29,8 @@ import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
@@ -46,6 +48,8 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
                 NotificationRuleEntity.class,
                 NotificationRuleTransferEntity.class,
                 NotificationRuleTagRefEntity.class,
+                NotificationRuleGroupEntity.class,
+                NotificationRuleGroupRefEntity.class,
                 AccountEntity.class,
                 AccountTransferEntity.class,
                 AccountTagRefEntity.class,
@@ -59,7 +63,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
                 AccessibilityRuleKeywordGroupEntity.class,
                 PickedPageEntity.class
         },
-        version = 5
+        version = 6
 )
 @TypeConverters({
         DateTimeConverter.class,
@@ -98,7 +102,8 @@ public abstract class BookkeepingDb extends RoomDatabase {
                                     DatabaseMigrations.MIGRATION_1_2,
                                     DatabaseMigrations.MIGRATION_2_3,
                                     DatabaseMigrations.MIGRATION_3_4,
-                                    DatabaseMigrations.MIGRATION_4_5
+                                    DatabaseMigrations.MIGRATION_4_5,
+                                    DatabaseMigrations.MIGRATION_5_6
                             )
                             .build();
                 }

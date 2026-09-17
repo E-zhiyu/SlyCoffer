@@ -12,6 +12,8 @@ import com.sly.coffer.data.backup.pojo.AccountTransferPojo;
 import com.sly.coffer.data.backup.pojo.BudgetPojo;
 import com.sly.coffer.data.backup.pojo.BudgetTagRefPojo;
 import com.sly.coffer.data.backup.pojo.MediaPojo;
+import com.sly.coffer.data.backup.pojo.NotificationRuleGroupPojo;
+import com.sly.coffer.data.backup.pojo.NotificationRuleGroupRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRulePojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTagRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTransferPojo;
@@ -30,6 +32,8 @@ import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
@@ -155,6 +159,22 @@ public interface EntityPojoMapper {
     NotificationRuleTransferPojo toNotificationRuleTransferPojo(NotificationRuleTransferEntity entity);
 
     List<NotificationRuleTransferPojo> toNotificationRuleTransferPojoList(List<NotificationRuleTransferEntity> entityList);
+
+    NotificationRuleGroupEntity toNotificationRuleGroupEntity(NotificationRuleGroupPojo pojo);
+
+    List<NotificationRuleGroupEntity> toNotificationRuleGroupEntityList(List<NotificationRuleGroupPojo> pojoList);
+
+    NotificationRuleGroupPojo toNotificationRuleGroupPojo(NotificationRuleGroupEntity entity);
+
+    List<NotificationRuleGroupPojo> toNotificationRuleGroupPojoList(List<NotificationRuleGroupEntity> entityList);
+
+    NotificationRuleGroupRefEntity toNotificationRuleGroupRefEntity(NotificationRuleGroupRefPojo pojo);
+
+    List<NotificationRuleGroupRefEntity> toNotificationRuleGroupRefEntityList(List<NotificationRuleGroupRefPojo> pojoList);
+
+    NotificationRuleGroupRefPojo toNotificationRuleGroupRefPojo(NotificationRuleGroupRefEntity entity);
+
+    List<NotificationRuleGroupRefPojo> toNotificationRuleGroupRefPojoList(List<NotificationRuleGroupRefEntity> entityList);
 
     TagEntity toTagEntity(TagPojo pojo);
 
