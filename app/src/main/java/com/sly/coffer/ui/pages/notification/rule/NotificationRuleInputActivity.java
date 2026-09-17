@@ -22,6 +22,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.sly.coffer.R;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetailModel;
@@ -59,6 +60,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> packageNameSelectLauncher;   //包名选择启动器
     private ActivityNotificationRuleInputBinding binding;           //绑定的XML视图引用
     private final CompositeDisposable disposable = new CompositeDisposable();
+    private NotificationRuleGroupListAdapter groupAdapter;          //规则分组适配器
     private AccountTagAdapter tagAdapter;                           //标签适配器
 
     @Override
@@ -101,14 +103,13 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
      * 初始化视图
      */
     private void initViews() {
-        //标签 Recycler
-        tagAdapter = new AccountTagAdapter(
+        //分组 Recycler
+        groupAdapter = new NotificationRuleGroupListAdapter(
                 (entity, anchor, adapter) -> {
-                    //切换视图可见性
-                    List<TagEntity> removedList = new ArrayList<>(adapter.getCurrentList());
+                    List<NotificationRuleGroupEntity> removedList = new ArrayList<>(adapter.getCurrentList());
                     removedList.remove(entity);
                     if (!removedList.isEmpty()) {
-                        tagAdapter.submitList(
+                        adapter.submitList(
                                 removedList,
                                 () -> VisibilityHelper.toggleViewExpansion(
                                         binding.scrollLayout,
@@ -121,7 +122,41 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                         VisibilityHelper.toggleViewExpansion(
                                 binding.scrollLayout,
                                 false,
-                                () -> tagAdapter.submitList(removedList),
+                                () -> adapter.submitList(removedList),
+                                binding.tagRecycler
+                        );
+                    }
+
+                    //更新 ViewModel 中的数据
+                    GroupSelectViewModel viewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
+                    if (viewModel.getGroupIdSetLiveData().getValue() != null) {
+                        viewModel.getGroupIdSetLiveData().getValue().remove(entity.getGroupId());
+                    }
+                }
+        );
+        binding.groupRecycler.setAdapter(groupAdapter);
+
+        //标签 Recycler
+        tagAdapter = new AccountTagAdapter(
+                (entity, anchor, adapter) -> {
+                    //切换视图可见性
+                    List<TagEntity> removedList = new ArrayList<>(adapter.getCurrentList());
+                    removedList.remove(entity);
+                    if (!removedList.isEmpty()) {
+                        adapter.submitList(
+                                removedList,
+                                () -> VisibilityHelper.toggleViewExpansion(
+                                        binding.scrollLayout,
+                                        true,
+                                        null,
+                                        binding.tagRecycler
+                                )
+                        );
+                    } else {
+                        VisibilityHelper.toggleViewExpansion(
+                                binding.scrollLayout,
+                                false,
+                                () -> adapter.submitList(removedList),
                                 binding.tagRecycler
                         );
                     }
@@ -321,6 +356,17 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
             editable.insert(cursorPosition, INSERT_REGEX);
         });
 
+        //分组选择按钮
+        binding.groupSelectBtn.setOnClickListener(view -> {
+            //TODO:选择分组
+        });
+
+        //分组解释按钮
+        binding.groupExplainBtn.setOnClickListener(view -> {
+            final String EXPLANATION = "处于同一分组下的规则仅会触发一个";
+            TipPreference.showTipWithoutKey(view, Gravity.START, EXPLANATION);
+        });
+
         //标签选择按钮
         binding.tagSelectBtn.setOnClickListener(view -> {
             TagSelectBottomSheet bottomSheet = new TagSelectBottomSheet();
@@ -385,6 +431,39 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                         )
                 );
             }
+        });
+
+        //分组选择
+        GroupSelectViewModel groupSelectViewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
+        groupSelectViewModel.getGroupIdSetLiveData().observe(this, checkedIdSet -> {
+            BookkeepingDb db = BookkeepingDb.getInstance(this);
+            disposable.add(db.notificationRuleDao().getRuleGroupById(checkedIdSet)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(
+                            groupList -> {
+                                if (!groupList.isEmpty()) {
+                                    groupAdapter.submitList(
+                                            groupList,
+                                            () -> VisibilityHelper.toggleViewExpansion(
+                                                    binding.scrollLayout,
+                                                    true,
+                                                    null,
+                                                    binding.groupRecycler
+                                            )
+                                    );
+                                } else {
+                                    VisibilityHelper.toggleViewExpansion(
+                                            binding.scrollLayout,
+                                            false,
+                                            () -> groupAdapter.submitList(groupList),
+                                            binding.groupRecycler
+                                    );
+                                }
+                            },
+                            e -> ExceptionHelper.showExceptionDialog(this, e)
+                    )
+            );
         });
     }
 

@@ -12,12 +12,14 @@ import androidx.room.Update;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetailModel;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Completable;
@@ -192,7 +194,8 @@ public interface NotificationRuleDao {
 
     /**
      * 获取所有符合搜索条件的被捕获的通知
-     * @param keyword 搜索关键词
+     *
+     * @param keyword         搜索关键词
      * @param useSearchFilter 是否需要过滤搜索条件
      * @return 捕获的通知列表，支持响应式更新
      */
@@ -238,4 +241,21 @@ public interface NotificationRuleDao {
      */
     @Query("SELECT * FROM capturedNotifications WHERE notificationId = :id")
     Single<Optional<CapturedNotificationEntity>> getCapturedNotificationById(long id);
+
+    /**
+     * 通过分组编号获取通知规则分组
+     *
+     * @param idSet 分组编号集合
+     * @return 编号处于集合中的通知规则分组
+     */
+    @Query("SELECT * FROM notificationRuleGroups WHERE groupId IN (:idSet)")
+    Single<List<NotificationRuleGroupEntity>> getRuleGroupById(Set<Long> idSet);
+
+    /**
+     * 获取所有通知规则分组数据
+     *
+     * @return 所有通知规则分组，支持响应式更新
+     */
+    @Query("SELECT * FROM notificationRuleGroups")
+    Flowable<List<NotificationRuleGroupEntity>> getRuleGroupFlowable();
 }
