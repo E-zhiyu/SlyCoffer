@@ -1,6 +1,5 @@
 package com.sly.coffer.data.save.db.daos;
 
-import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -13,6 +12,7 @@ import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetailModel;
@@ -98,14 +98,29 @@ public interface NotificationRuleDao {
     void insertNotificationTagRef(List<NotificationRuleTagRefEntity> refList);
 
     /**
+     * 插入通知规则与分组的映射关系
+     *
+     * @param refList 需要插入的映射关系数据
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    void insertNotificationRuleGroupRef(List<NotificationRuleGroupRefEntity> refList);
+
+    /**
      * 新增通知规则事务
      *
-     * @param rule      新增的通知规则
-     * @param transfer  通知规则的转账账户数据
-     * @param tagIdList 标签编号列表
+     * @param rule        新增的通知规则
+     * @param transfer    通知规则的转账账户数据
+     * @param tagIdList   标签编号列表
+     * @param groupIdList 规则分组编号列表
      */
     @Transaction
-    default void addNotificationRule(NotificationRuleEntity rule, NotificationRuleTransferEntity transfer, List<Long> tagIdList) {
+    default void addNotificationRule(
+            NotificationRuleEntity rule,
+            NotificationRuleTransferEntity transfer,
+            List<Long> tagIdList,
+            List<Long> groupIdList
+    ) {
+        if (rule == null) return;
         long ruleId = insertNotificationRule(rule);
 
         //转入转出账户
@@ -119,6 +134,12 @@ public interface NotificationRuleDao {
                 .map(id -> new NotificationRuleTagRefEntity(ruleId, id))
                 .collect(Collectors.toList());
         insertNotificationTagRef(tagRefList);
+
+        //分组
+        List<NotificationRuleGroupRefEntity> groupRefList = groupIdList.stream()
+                .map(id -> new NotificationRuleGroupRefEntity(ruleId, id))
+                .collect(Collectors.toList());
+        insertNotificationRuleGroupRef(groupRefList);
     }
 
     /**
@@ -137,18 +158,38 @@ public interface NotificationRuleDao {
     @Query("DELETE FROM notificationruletransfers WHERE ruleId = :ruleId")
     void deleteNotificationRuleTransferByRuleId(long ruleId);
 
+    /**
+     * 通过规则 ID 删除规则与标签的映射关系
+     *
+     * @param ruleId 规则 ID
+     */
     @Query("DELETE FROM notificationRuleTagRef WHERE ruleId = :ruleId")
     void deleteNotificationRuleTagRefByRuleId(long ruleId);
 
     /**
+     * 通过规则 ID 删除规则与分组的映射关系
+     *
+     * @param ruleId 规则 ID
+     */
+    @Query("DELETE FROM notificationRuleGroupRef WHERE ruleId = :ruleId")
+    void deleteNotificationRuleGroupRefByRuleId(long ruleId);
+
+    /**
      * 修改通知规则事务
      *
-     * @param rule      修改后的通知规则
-     * @param transfer  修改后的转账账户数据
-     * @param tagIdList 修改后的标签 ID 列表
+     * @param rule        修改后的通知规则
+     * @param transfer    修改后的转账账户数据
+     * @param tagIdList   修改后的标签 ID 列表
+     * @param groupIdList 规则分组编号列表
      */
     @Transaction
-    default void modifyNotificationRule(@NonNull NotificationRuleEntity rule, NotificationRuleTransferEntity transfer, List<Long> tagIdList) {
+    default void modifyNotificationRule(
+            NotificationRuleEntity rule,
+            NotificationRuleTransferEntity transfer,
+            List<Long> tagIdList,
+            List<Long> groupIdList
+    ) {
+        if (rule == null) return;
         long ruleId = rule.getRuleId();
 
         //获取旧数据
@@ -165,12 +206,19 @@ public interface NotificationRuleDao {
             insertNotificationTransfer(transfer);
         }
 
-        //标签数据
+        //标签
         deleteNotificationRuleTagRefByRuleId(ruleId);
         List<NotificationRuleTagRefEntity> tagRefList = tagIdList.stream()
                 .map(id -> new NotificationRuleTagRefEntity(ruleId, id))
                 .collect(Collectors.toList());
         insertNotificationTagRef(tagRefList);
+
+        //分组
+        deleteNotificationRuleGroupRefByRuleId(ruleId);
+        List<NotificationRuleGroupRefEntity> groupRefList = groupIdList.stream()
+                .map(id -> new NotificationRuleGroupRefEntity(ruleId, id))
+                .collect(Collectors.toList());
+        insertNotificationRuleGroupRef(groupRefList);
     }
 
     /**
@@ -261,6 +309,7 @@ public interface NotificationRuleDao {
 
     /**
      * 添加通知规则分组
+     *
      * @param group 待添加的通知规则分组
      * @return 是否完成
      */

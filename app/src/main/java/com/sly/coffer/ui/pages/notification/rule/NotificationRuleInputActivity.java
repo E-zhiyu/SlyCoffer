@@ -579,9 +579,24 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
         String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
 
         //生成标签 ID 列表
-        List<Long> tagIdList = tagAdapter.getCurrentList().stream()
-                .map(TagEntity::getTagId)
-                .collect(Collectors.toList());
+        List<Long> tagIdList;
+        if (tagAdapter == null) {
+            tagIdList = new ArrayList<>();
+        } else {
+            tagIdList = tagAdapter.getCurrentList().stream()
+                    .map(TagEntity::getTagId)
+                    .collect(Collectors.toList());
+        }
+
+        //生成规则分组 ID 列表
+        List<Long> groupIdList;
+        if (groupAdapter == null) {
+            groupIdList = new ArrayList<>();
+        } else {
+            groupIdList = groupAdapter.getCurrentList().stream()
+                    .map(NotificationRuleGroupEntity::getGroupId)
+                    .collect(Collectors.toList());
+        }
 
         //保存数据
         NotificationRuleEntity rule = new NotificationRuleEntity(
@@ -595,7 +610,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
         NotificationRuleTransferEntity transfer = new NotificationRuleTransferEntity(exportAccount, importAccount);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         if (initBundle == null) {
-            disposable.add(RuleService.addNewNotificationRule(rule, transfer, tagIdList, db)
+            disposable.add(RuleService.addNewNotificationRule(rule, transfer, tagIdList, groupIdList, db)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -609,7 +624,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
         } else {
             long ruleId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_ID.v());
             rule.setRuleId(ruleId);
-            disposable.add(RuleService.modifyNotificationRule(rule, transfer, tagIdList, db)
+            disposable.add(RuleService.modifyNotificationRule(rule, transfer, tagIdList, groupIdList, db)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
