@@ -214,7 +214,7 @@ public class PickedPageInputActivity extends AppCompatActivity {
                     .subscribeOn(Schedulers.io())
                     .subscribe(
                             () -> {
-                                Toast.makeText(this, "视图修改成功", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(this, "界面信息修改成功", Toast.LENGTH_SHORT).show();
                                 finish();
                             },
                             e -> ExceptionHelper.showExceptionDialog(this, e)
@@ -226,8 +226,12 @@ public class PickedPageInputActivity extends AppCompatActivity {
                     .subscribeOn(Schedulers.io())
                     .subscribe(
                             id -> {
-                                Toast.makeText(this, "视图添加成功", Toast.LENGTH_SHORT).show();
-                                finish();
+                                if (id >= 0) {
+                                    Toast.makeText(this, "界面信息添加成功", Toast.LENGTH_SHORT).show();
+                                    finish();
+                                } else {
+                                    Toast.makeText(this, "界面信息添加失败", Toast.LENGTH_SHORT).show();
+                                }
                             },
                             e -> ExceptionHelper.showExceptionDialog(this, e)
                     )

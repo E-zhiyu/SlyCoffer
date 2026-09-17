@@ -1,6 +1,5 @@
 package com.sly.coffer.data.save.db.daos;
 
-import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -196,11 +195,12 @@ public interface AccessibilityRuleDao {
      */
     @Transaction
     default void modifyAccessibilityRule(
-            @NonNull AccessibilityRuleEntity rule,
+            AccessibilityRuleEntity rule,
             AccessibilityRuleTransferEntity transfer,
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
             List<Long> tagIdList
     ) {
+        if (rule == null) return;
         long ruleId = rule.getRuleId();
 
         //获取旧数据
@@ -283,7 +283,8 @@ public interface AccessibilityRuleDao {
      * @return 为新视图记录分配的编号
      */
     @Transaction
-    default long addPickedPage(@NonNull PickedPageEntity view) {
+    default long addPickedPage(PickedPageEntity view) {
+        if (view == null) return -1;
         String packageName = view.getPackageName();
         String activityName = view.getActivityName();
 

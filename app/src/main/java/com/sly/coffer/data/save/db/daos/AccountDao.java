@@ -2,7 +2,6 @@ package com.sly.coffer.data.save.db.daos;
 
 import android.net.Uri;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.Dao;
 import androidx.room.Delete;
@@ -297,11 +296,12 @@ public interface AccountDao {
      */
     @Transaction
     default Set<Uri> modifyAccount(
-            @NonNull AccountEntity account,
+            AccountEntity account,
             AccountTransferEntity transfer,
-            @NonNull List<MediaEntity> mediaEntityList,
-            @NonNull List<Long> tagIdList
+            List<MediaEntity> mediaEntityList,
+            List<Long> tagIdList
     ) {
+        if (account == null) return null;
         long accountId = account.getAccountId();
 
         //获取在数据库中的媒体文件 Uri，并计算需要删除的媒体文件的 Uri
@@ -359,7 +359,9 @@ public interface AccountDao {
      * @param account 需要删除的流水记录
      * @return 需要删除的媒体文件的 Uri
      */
-    default Set<Uri> removeAccount(@NonNull AccountEntity account) {
+    default Set<Uri> removeAccount(AccountEntity account) {
+        if (account == null) return null;
+
         //获取媒体数据
         Set<Uri> uriSet = new HashSet<>(getMediaUriByAccountId(account.getAccountId()));
 

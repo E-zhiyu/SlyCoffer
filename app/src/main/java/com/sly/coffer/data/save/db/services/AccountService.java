@@ -211,8 +211,10 @@ public class AccountService {
             Set<Uri> oldMediaUriSet = db.accountDao().modifyAccount(account, transfer, mediaEntityList, tagIdList);
 
             //删除旧媒体文件
-            for (Uri uri : oldMediaUriSet) {
-                FileHelper.deleteFile(uri, context);
+            if (oldMediaUriSet != null) {
+                for (Uri uri : oldMediaUriSet) {
+                    FileHelper.deleteFile(uri, context);
+                }
             }
 
             //检查预算
@@ -235,8 +237,10 @@ public class AccountService {
             Set<Uri> oldMediaUriSet = db.accountDao().removeAccount(account);
 
             //移除媒体文件
-            for (Uri uri : oldMediaUriSet) {
-                FileHelper.deleteFile(uri, context);
+            if (oldMediaUriSet != null) {
+                for (Uri uri : oldMediaUriSet) {
+                    FileHelper.deleteFile(uri, context);
+                }
             }
 
             //检查预算
