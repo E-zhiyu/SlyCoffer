@@ -25,7 +25,7 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleUnionModel;
 import com.sly.coffer.data.save.db.services.RuleService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityNotificationRuleInputBinding;
@@ -187,7 +187,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                 if (optional.isEmpty()) return;
 
                                 //解析数据
-                                NotificationRuleWithDetailModel model = optional.get();
+                                NotificationRuleUnionModel model = optional.get();
                                 NotificationRuleEntity rule = model.getRule();
                                 NotificationRuleTransferEntity transfer = model.getTransfer();
                                 List<TagEntity> tagList = model.getTagList();

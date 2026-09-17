@@ -27,7 +27,7 @@ import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleUnionModel;
 import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
@@ -57,7 +57,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class AbNotificationListenerService extends NotificationListenerService {
     private final CompositeDisposable disposable = new CompositeDisposable();
-    private final Map<RuleKey, List<NotificationRuleWithDetailModel>> ruleMap = new HashMap<>(); //解析规则哈希表
+    private final Map<RuleKey, List<NotificationRuleUnionModel>> ruleMap = new HashMap<>(); //解析规则哈希表
     private String lastPackageName = "";                                //上一次接收通知的包名
     private String lastTitle = "";                                      //上一次通知的标题
     private long lastReceiveEpochMilli = 0;                             //上一次接收消息的时间（毫秒）
@@ -106,7 +106,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
                 .subscribe(
                         modelList -> {
                             ruleMap.clear();
-                            Map<RuleKey, List<NotificationRuleWithDetailModel>> map = modelList.stream()
+                            Map<RuleKey, List<NotificationRuleUnionModel>> map = modelList.stream()
                                     .collect(Collectors.groupingBy(
                                             model -> {
                                                 NotificationRuleEntity rule = model.getRule();
@@ -170,9 +170,9 @@ public class AbNotificationListenerService extends NotificationListenerService {
 
         //处理通知内容
         RuleKey key = new RuleKey(packageName, title);
-        List<NotificationRuleWithDetailModel> ruleList = ruleMap.get(key);
+        List<NotificationRuleUnionModel> ruleList = ruleMap.get(key);
         if (ruleList != null) {
-            for (NotificationRuleWithDetailModel model : ruleList) {
+            for (NotificationRuleUnionModel model : ruleList) {
                 NotificationRuleEntity rule = model.getRule();
                 String contentRegex = rule.getContentRegex();
                 String name = rule.getName();
@@ -261,7 +261,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
     @NonNull
     private Bundle getNewAccountData(
             double amount,
-            @NonNull NotificationRuleWithDetailModel model
+            @NonNull NotificationRuleUnionModel model
     ) {
         //获取规则数据
         NotificationRuleEntity rule = model.getRule();
@@ -339,7 +339,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
      * @param amount 提取的金额
      * @param model  触发自动记账的规则（包含抓张账户等其他数据）
      */
-    private void sendConfirmNotification(double amount, @NonNull NotificationRuleWithDetailModel model) {
+    private void sendConfirmNotification(double amount, @NonNull NotificationRuleUnionModel model) {
         //生成数据包
         NotificationRuleEntity rule = model.getRule();
         Bundle bundle = getNewAccountData(amount, model);
@@ -500,7 +500,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
      * @param amount 提取的金额数据
      * @param model  触发的通知规则（包含转账账户等其他数据）
      */
-    private void saveInDbDirectly(double amount, @NonNull NotificationRuleWithDetailModel model) {
+    private void saveInDbDirectly(double amount, @NonNull NotificationRuleUnionModel model) {
         //解析规则数据
         NotificationRuleEntity rule = model.getRule();
         String remark = rule.getName();

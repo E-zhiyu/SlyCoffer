@@ -15,7 +15,7 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleUnionModel;
 
 import java.util.List;
 import java.util.Optional;
@@ -52,7 +52,7 @@ public interface NotificationRuleDao {
      */
     @Transaction
     @Query("SELECT * FROM notificationRules WHERE ruleId = :ruleId")
-    Single<Optional<NotificationRuleWithDetailModel>> getNotificationRuleWithDetailSingleById(long ruleId);
+    Single<Optional<NotificationRuleUnionModel>> getNotificationRuleWithDetailSingleById(long ruleId);
 
     /**
      * 通过编号获取规则数据
@@ -70,7 +70,7 @@ public interface NotificationRuleDao {
      */
     @Transaction
     @Query("SELECT * FROM notificationRules WHERE enabled = 1")
-    Flowable<List<NotificationRuleWithDetailModel>> getEnabledNotificationRuleFlowable();
+    Flowable<List<NotificationRuleUnionModel>> getEnabledNotificationRuleFlowable();
 
     /**
      * 插入通知规则

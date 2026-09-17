@@ -1,4 +1,4 @@
-package com.sly.coffer.data.save.db.entities.composite;
+package com.sly.coffer.data.save.db.entities.composite.union;
 
 import androidx.room.Embedded;
 import androidx.room.Junction;
@@ -12,7 +12,7 @@ import com.sly.coffer.data.save.db.entities.TagEntity;
 
 import java.util.List;
 
-public class AccountWithDetailModel {
+public class AccountUnionModel {
     @Embedded
     private final AccountEntity account;
     @Relation(
@@ -34,7 +34,7 @@ public class AccountWithDetailModel {
     )
     private final List<MediaEntity> mediaList;
 
-    public AccountWithDetailModel(AccountEntity account, AccountTransferEntity transfer, List<TagEntity> tagList, List<MediaEntity> mediaList) {
+    public AccountUnionModel(AccountEntity account, AccountTransferEntity transfer, List<TagEntity> tagList, List<MediaEntity> mediaList) {
         this.account = account;
         this.transfer = transfer;
         this.tagList = tagList;

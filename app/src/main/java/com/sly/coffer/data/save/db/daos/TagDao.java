@@ -10,7 +10,7 @@ import androidx.room.Update;
 
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
-import com.sly.coffer.data.save.db.entities.composite.TagWithGroupModel;
+import com.sly.coffer.data.save.db.entities.composite.union.TagUnionModel;
 
 import java.util.List;
 import java.util.Optional;
@@ -64,7 +64,7 @@ public interface TagDao {
      */
     @Transaction
     @Query("SELECT * FROM tags WHERE tagId = :tagId")
-    Single<Optional<TagWithGroupModel>> getTagWithGroupSingleById(long tagId);
+    Single<Optional<TagUnionModel>> getTagWithGroupSingleById(long tagId);
 
     /**
      * 根据标签 ID 获取标签数据

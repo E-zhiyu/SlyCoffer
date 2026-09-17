@@ -14,7 +14,7 @@ import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
-import com.sly.coffer.data.save.db.entities.composite.AccessibilityRuleWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccessibilityRuleUnionModel;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +36,7 @@ public interface AccessibilityRuleDao {
 
     @Transaction
     @Query("SELECT * FROM accessibilityRules WHERE enabled = 1")
-    Flowable<List<AccessibilityRuleWithDetailModel>> getOpenedAccessibilityRuleWithDetailFlowable();
+    Flowable<List<AccessibilityRuleUnionModel>> getOpenedAccessibilityRuleWithDetailFlowable();
 
     /**
      * 删除无障碍规则
@@ -73,7 +73,7 @@ public interface AccessibilityRuleDao {
      */
     @Transaction
     @Query("SELECT * FROM accessibilityRules WHERE ruleId = :id")
-    Single<Optional<AccessibilityRuleWithDetailModel>> getRuleWithDetailById(long id);
+    Single<Optional<AccessibilityRuleUnionModel>> getRuleWithDetailById(long id);
 
     /**
      * 插入一条新的无障碍规则

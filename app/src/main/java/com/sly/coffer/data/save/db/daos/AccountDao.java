@@ -18,7 +18,7 @@ import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
-import com.sly.coffer.data.save.db.entities.composite.AccountWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -78,7 +78,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE accountId = :accountId")
-    Single<Optional<AccountWithDetailModel>> getAccountWithDetailSingleById(long accountId);
+    Single<Optional<AccountUnionModel>> getAccountWithDetailSingleById(long accountId);
 
     /**
      * 通过日期区间获取流水记录的 ID
@@ -99,7 +99,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE dateTime >= :start AND dateTime < :end")
-    Flowable<List<AccountWithDetailModel>> getAccountWithDetailFlowableByDateRange(LocalDate start, LocalDate end);
+    Flowable<List<AccountUnionModel>> getAccountWithDetailFlowableByDateRange(LocalDate start, LocalDate end);
 
     /**
      * 通过流水记录的 ID 获取流水记录数据
@@ -109,7 +109,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE accountId IN (:ids)")
-    Flowable<List<AccountWithDetailModel>> getAccountWithDetailFlowableById(Set<Long> ids);
+    Flowable<List<AccountUnionModel>> getAccountWithDetailFlowableById(Set<Long> ids);
 
     /**
      * 获取数据库中储存的转出和转入账户

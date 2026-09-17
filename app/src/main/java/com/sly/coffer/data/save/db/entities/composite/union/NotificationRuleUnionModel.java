@@ -1,4 +1,4 @@
-package com.sly.coffer.data.save.db.entities.composite;
+package com.sly.coffer.data.save.db.entities.composite.union;
 
 import androidx.room.Embedded;
 import androidx.room.Junction;
@@ -13,7 +13,7 @@ import com.sly.coffer.data.save.db.entities.TagEntity;
 
 import java.util.List;
 
-public class NotificationRuleWithDetailModel {
+public class NotificationRuleUnionModel {
     @Embedded
     private final NotificationRuleEntity rule;
     @Relation(
@@ -35,7 +35,7 @@ public class NotificationRuleWithDetailModel {
     )
     private final List<NotificationRuleGroupEntity> groupList;
 
-    public NotificationRuleWithDetailModel(NotificationRuleEntity rule, NotificationRuleTransferEntity transfer, List<TagEntity> tagList, List<NotificationRuleGroupEntity> groupList) {
+    public NotificationRuleUnionModel(NotificationRuleEntity rule, NotificationRuleTransferEntity transfer, List<TagEntity> tagList, List<NotificationRuleGroupEntity> groupList) {
         this.rule = rule;
         this.transfer = transfer;
         this.tagList = tagList;

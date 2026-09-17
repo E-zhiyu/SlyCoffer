@@ -10,7 +10,7 @@ import androidx.room.Update;
 
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
-import com.sly.coffer.data.save.db.entities.composite.BudgetWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.BudgetUnionModel;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -83,7 +83,7 @@ public interface BudgetDao {
      */
     @Transaction
     @Query("SELECT * FROM budgets WHERE budgetId = :budgetId")
-    Single<Optional<BudgetWithDetailModel>> getBudgetWithDetailById(long budgetId);
+    Single<Optional<BudgetUnionModel>> getBudgetWithDetailById(long budgetId);
 
     /**
      * 插入预算和标签的映射关系数据

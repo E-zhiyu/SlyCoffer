@@ -1,4 +1,4 @@
-package com.sly.coffer.data.save.db.entities.composite;
+package com.sly.coffer.data.save.db.entities.composite.union;
 
 import androidx.room.Embedded;
 import androidx.room.Junction;
@@ -10,7 +10,7 @@ import com.sly.coffer.data.save.db.entities.TagEntity;
 
 import java.util.List;
 
-public class BudgetWithDetailModel {
+public class BudgetUnionModel {
     @Embedded
     private final BudgetEntity budget;
     @Relation(
@@ -20,7 +20,7 @@ public class BudgetWithDetailModel {
     )
     private final List<TagEntity> tagList;
 
-    public BudgetWithDetailModel(BudgetEntity budget, List<TagEntity> tagList) {
+    public BudgetUnionModel(BudgetEntity budget, List<TagEntity> tagList) {
         this.budget = budget;
         this.tagList = tagList;
     }

@@ -29,7 +29,7 @@ import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.AccountWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
 import com.sly.coffer.databinding.ActivityReportBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.TextHelper;
@@ -157,7 +157,7 @@ public class ReportActivity extends AppCompatActivity {
                             Log.d(LogTags.REPORT_ACTIVITY.n(), "流水数据更新");
 
                             //收入来源
-                            List<AccountWithDetailModel> incomeModelList = modelList.stream()
+                            List<AccountUnionModel> incomeModelList = modelList.stream()
                                     .filter(model -> model.getAccount().getType() == AccountType.INCOME.ordinal())
                                     .collect(Collectors.toList());
                             Pair<List<AmountProportionInfo>, Double> incomePair = convertToTagProportions(incomeModelList);
@@ -182,7 +182,7 @@ public class ReportActivity extends AppCompatActivity {
                             }
 
                             //支出来源
-                            List<AccountWithDetailModel> expenseModelList = modelList.stream()
+                            List<AccountUnionModel> expenseModelList = modelList.stream()
                                     .filter(model -> model.getAccount().getType() == AccountType.EXPENSE.ordinal())
                                     .collect(Collectors.toList());
                             Pair<List<AmountProportionInfo>, Double> expensePair = convertToTagProportions(expenseModelList);
@@ -333,7 +333,7 @@ public class ReportActivity extends AppCompatActivity {
      */
     @NonNull
     @Contract("null -> new")
-    private Pair<List<AmountProportionInfo>, Double> convertToTagProportions(List<AccountWithDetailModel> modelList) {
+    private Pair<List<AmountProportionInfo>, Double> convertToTagProportions(List<AccountUnionModel> modelList) {
         if (modelList == null || modelList.isEmpty()) {
             return new Pair<>(new ArrayList<>(), 0.0);
         }
@@ -341,7 +341,7 @@ public class ReportActivity extends AppCompatActivity {
         final String OTHERS_NAME = ContextCompat.getString(this, R.string.others);
         Map<String, Double> amountMap = new HashMap<>();
         double totalAmount = 0.0;
-        for (AccountWithDetailModel model : modelList) {
+        for (AccountUnionModel model : modelList) {
             AccountEntity account = model.getAccount();
             List<TagEntity> tagList = model.getTagList();
             double amount = account.getAmount();
@@ -396,7 +396,7 @@ public class ReportActivity extends AppCompatActivity {
      * @return 金额占比数据列表
      */
     @NonNull
-    private List<AmountProportionInfo> convertToMonthProportions(@NonNull List<AccountWithDetailModel> modelList) {
+    private List<AmountProportionInfo> convertToMonthProportions(@NonNull List<AccountUnionModel> modelList) {
         Map<Integer, Double> amountMap = new HashMap<>();
         double totalBalance = 0.0;
         AccountType[] types = AccountType.values();
@@ -405,7 +405,7 @@ public class ReportActivity extends AppCompatActivity {
         }
 
         //根据月份分类并存放到 Map 中
-        for (AccountWithDetailModel model : modelList) {
+        for (AccountUnionModel model : modelList) {
             AccountEntity account = model.getAccount();
             AccountType type = types[account.getType()];
             double amount = account.getAmount();
