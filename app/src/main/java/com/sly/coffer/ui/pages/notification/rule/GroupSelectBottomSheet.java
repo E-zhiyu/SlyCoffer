@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,11 +17,14 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.sly.coffer.R;
 import com.sly.coffer.data.save.db.BookkeepingDb;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.databinding.BottomSheetNotificationRuleGroupSelectBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
 import com.sly.coffer.ui.others.bottom.BaseBottomSheetDialogFragment;
+import com.sly.coffer.ui.others.dialogs.EditTextDialogBuilder;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -100,9 +104,27 @@ public class GroupSelectBottomSheet extends BaseBottomSheetDialogFragment {
         initMainRecycler();
 
         //角色添加按钮
-        binding.addBtn.setOnClickListener(view -> {
-            //TODO:添加逻辑
-        });
+        binding.addBtn.setOnClickListener(view ->
+                new EditTextDialogBuilder(requireContext(), getString(R.string.add_notification_rule_group), "输入分组名称")
+                        .setPositiveButton("确定", inputStr -> {
+                            if (inputStr.trim().isEmpty()) {
+                                Toast.makeText(requireContext(), "输入的字符串不能为空", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+
+                            NotificationRuleGroupEntity group = new NotificationRuleGroupEntity(inputStr.trim());
+                            BookkeepingDb db = BookkeepingDb.getInstance(requireContext());
+                            disposable.add(db.notificationRuleDao().addRuleGroupCompletable(group)
+                                    .subscribeOn(Schedulers.io())
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .subscribe(
+                                            () -> Toast.makeText(requireContext(), "分组添加成功", Toast.LENGTH_SHORT).show(),
+                                            e -> ExceptionHelper.showExceptionDialog(requireContext(), e)
+                                    )
+                            );
+                        })
+                        .setNegativeButton("取消", null)
+                        .show());
     }
 
     /**

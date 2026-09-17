@@ -358,7 +358,8 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
 
         //分组选择按钮
         binding.groupSelectBtn.setOnClickListener(view -> {
-            //TODO:选择分组
+            GroupSelectBottomSheet bottomSheet = new GroupSelectBottomSheet();
+            bottomSheet.show(getSupportFragmentManager(), TagStrings.NOTIFICATION_RULE_GROUP_SELECT_BOTTOM.t());
         });
 
         //分组解释按钮

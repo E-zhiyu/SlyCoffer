@@ -240,6 +240,7 @@
     <string name="notification_rule_group">通知规则分组</string>
     <string name="select_notification_rule_group">选择通知规则分组</string>
     <string name="no_notification_rule_group">无通知规则分组</string>
+    <string name="add_notification_rule_group">添加通知规则分组</string>
 
     <string-array name="tips_array">
         <item>如果设置了自动备份目录，进行软件更新时会自动备份一次。</item>

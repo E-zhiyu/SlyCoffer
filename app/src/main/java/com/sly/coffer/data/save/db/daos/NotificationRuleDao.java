@@ -258,4 +258,12 @@ public interface NotificationRuleDao {
      */
     @Query("SELECT * FROM notificationRuleGroups")
     Flowable<List<NotificationRuleGroupEntity>> getRuleGroupFlowable();
+
+    /**
+     * 添加通知规则分组
+     * @param group 待添加的通知规则分组
+     * @return 是否完成
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Completable addRuleGroupCompletable(NotificationRuleGroupEntity group);
 }

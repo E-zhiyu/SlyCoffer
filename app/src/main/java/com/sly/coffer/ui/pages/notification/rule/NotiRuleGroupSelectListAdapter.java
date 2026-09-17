@@ -43,6 +43,7 @@ public class NotiRuleGroupSelectListAdapter extends ListAdapter<NotificationRule
 
             binding.chip.setCloseIconVisible(false);
             binding.chip.setCheckable(true);
+            binding.chip.setCheckedIconVisible(true);
 
             //关闭监听
             binding.chip.setOnCheckedChangeListener((compoundButton, b) -> {
