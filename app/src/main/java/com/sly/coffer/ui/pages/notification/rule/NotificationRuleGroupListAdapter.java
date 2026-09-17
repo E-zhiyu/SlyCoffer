@@ -45,7 +45,7 @@ public class NotificationRuleGroupListAdapter extends ListAdapter<NotificationRu
         }
     }
 
-    NotificationRuleGroupListAdapter(AdapterOnChipCloseListener<NotificationRuleGroupEntity, NotificationRuleGroupListAdapter> closeListener) {
+    public NotificationRuleGroupListAdapter(AdapterOnChipCloseListener<NotificationRuleGroupEntity, NotificationRuleGroupListAdapter> closeListener) {
         super(ITEM_CALLBACK);
         this.closeListener = closeListener;
     }

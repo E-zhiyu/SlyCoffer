@@ -179,6 +179,7 @@
                     android:inputType="number" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- 规则分组 -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -193,7 +194,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <!-- 标签选择按钮 -->
+                <!-- 选择按钮 -->
                 <ImageButton
                     android:id="@+id/group_select_btn"
                     style="@style/ImageButtonStyle"
