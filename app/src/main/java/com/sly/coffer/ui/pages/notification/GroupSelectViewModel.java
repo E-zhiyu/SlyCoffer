@@ -1,4 +1,4 @@
-package com.sly.coffer.ui.pages.notification.rule;
+package com.sly.coffer.ui.pages.notification;
 
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;

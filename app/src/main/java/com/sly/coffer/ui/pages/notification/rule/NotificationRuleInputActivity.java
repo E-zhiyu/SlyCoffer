@@ -41,9 +41,13 @@ import com.sly.coffer.ui.others.bottom.TagSelectBottomSheet;
 import com.sly.coffer.ui.others.viewmodel.TagMultiSelectViewModel;
 import com.sly.coffer.ui.pages.main.bookkeeping.AccountTagAdapter;
 import com.sly.coffer.ui.pages.app_list.AppSelectActivity;
+import com.sly.coffer.ui.pages.notification.GroupSelectBottomSheet;
+import com.sly.coffer.ui.pages.notification.GroupSelectViewModel;
+import com.sly.coffer.ui.pages.notification.NotificationRuleGroupListAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -187,6 +191,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                 NotificationRuleEntity rule = model.getRule();
                                 NotificationRuleTransferEntity transfer = model.getTransfer();
                                 List<TagEntity> tagList = model.getTagList();
+                                List<NotificationRuleGroupEntity> groupList = model.getGroupList();
 
                                 //填充文本框
                                 binding.nameInput.setText(rule.getName());                      //名称
@@ -205,7 +210,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                 }
 
                                 //显示标签
-                                if (!tagList.isEmpty()) {
+                                if (!tagList.isEmpty() && tagAdapter != null) {
                                     tagAdapter.submitList(tagList);
                                     binding.tagRecycler.setVisibility(View.VISIBLE);
                                 } else {
@@ -217,6 +222,19 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                 TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
                                 tagMultiSelectViewModel.getCheckedTagIdSet().clear();
                                 tagMultiSelectViewModel.getCheckedTagIdSet().addAll(tagIdList);
+
+                                //显示分组
+                                if (!groupList.isEmpty() && groupAdapter != null) {
+                                    groupAdapter.submitList(groupList);
+                                    binding.groupRecycler.setVisibility(View.VISIBLE);
+                                } else {
+                                    binding.groupRecycler.setVisibility(View.GONE);
+                                }
+                                List<Long> groupIdList = groupList.stream()
+                                        .map(NotificationRuleGroupEntity::getGroupId)
+                                        .collect(Collectors.toList());
+                                GroupSelectViewModel groupSelectViewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
+                                groupSelectViewModel.updateCheckedGroupId(new HashSet<>(groupIdList));
                             },
                             e -> ExceptionHelper.showExceptionDialog(this, e)
                     )

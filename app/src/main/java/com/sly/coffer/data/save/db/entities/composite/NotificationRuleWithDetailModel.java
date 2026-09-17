@@ -5,6 +5,8 @@ import androidx.room.Junction;
 import androidx.room.Relation;
 
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
@@ -26,11 +28,18 @@ public class NotificationRuleWithDetailModel {
             associateBy = @Junction(NotificationRuleTagRefEntity.class)
     )
     private final List<TagEntity> tagList;
+    @Relation(
+            parentColumn = "ruleId",
+            entityColumn = "groupId",
+            associateBy = @Junction(NotificationRuleGroupRefEntity.class)
+    )
+    private final List<NotificationRuleGroupEntity> groupList;
 
-    public NotificationRuleWithDetailModel(NotificationRuleEntity rule, NotificationRuleTransferEntity transfer, List<TagEntity> tagList) {
+    public NotificationRuleWithDetailModel(NotificationRuleEntity rule, NotificationRuleTransferEntity transfer, List<TagEntity> tagList, List<NotificationRuleGroupEntity> groupList) {
         this.rule = rule;
         this.transfer = transfer;
         this.tagList = tagList;
+        this.groupList = groupList;
     }
 
     public NotificationRuleEntity getRule() {
@@ -43,5 +52,9 @@ public class NotificationRuleWithDetailModel {
 
     public List<TagEntity> getTagList() {
         return tagList;
+    }
+
+    public List<NotificationRuleGroupEntity> getGroupList() {
+        return groupList;
     }
 }

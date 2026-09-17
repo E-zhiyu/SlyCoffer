@@ -37,9 +37,9 @@ import com.sly.coffer.ui.others.adapters.NoFilteringArrayAdapter;
 import com.sly.coffer.ui.others.bottom.TagSelectBottomSheet;
 import com.sly.coffer.ui.others.viewmodel.TagMultiSelectViewModel;
 import com.sly.coffer.ui.pages.main.bookkeeping.AccountTagAdapter;
-import com.sly.coffer.ui.pages.notification.rule.GroupSelectBottomSheet;
-import com.sly.coffer.ui.pages.notification.rule.GroupSelectViewModel;
-import com.sly.coffer.ui.pages.notification.rule.NotificationRuleGroupListAdapter;
+import com.sly.coffer.ui.pages.notification.GroupSelectBottomSheet;
+import com.sly.coffer.ui.pages.notification.GroupSelectViewModel;
+import com.sly.coffer.ui.pages.notification.NotificationRuleGroupListAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -1,4 +1,4 @@
-package com.sly.coffer.ui.pages.notification.rule;
+package com.sly.coffer.ui.pages.notification;
 
 import android.app.Dialog;
 import android.os.Bundle;
