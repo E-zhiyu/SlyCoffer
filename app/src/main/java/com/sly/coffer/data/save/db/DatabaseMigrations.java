@@ -59,10 +59,13 @@ public class DatabaseMigrations {
         }
     };
 
+    //添加通知规则分组相关表格
     static final Migration MIGRATION_5_6 = new Migration(5, 6) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase db) {
-            //TODO:完成升级逻辑
+            db.execSQL("CREATE TABLE IF NOT EXISTS `notificationRuleGroups` (`groupId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT)");
+            db.execSQL("CREATE TABLE IF NOT EXISTS `notificationRuleGroupRef` (`ruleId` INTEGER NOT NULL, `groupId` INTEGER NOT NULL, `order` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`ruleId`, `groupId`), FOREIGN KEY(`ruleId`) REFERENCES `notificationRules`(`ruleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`groupId`) REFERENCES `notificationRuleGroups`(`groupId`) ON UPDATE NO ACTION ON DELETE CASCADE )");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_notificationRuleGroupRef_order` ON `notificationRuleGroupRef` (`order`)");
         }
     };
 }
