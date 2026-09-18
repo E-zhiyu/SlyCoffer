@@ -15,6 +15,7 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleGroupUnionModel;
 import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleUnionModel;
 
 import java.util.List;
@@ -304,8 +305,10 @@ public interface NotificationRuleDao {
      *
      * @return 所有通知规则分组，支持响应式更新
      */
-    @Query("SELECT * FROM notificationRuleGroups")
-    Flowable<List<NotificationRuleGroupEntity>> getRuleGroupFlowable();
+    @Query("SELECT g.*, " +
+            "(SELECT COUNT(*) FROM notificationRuleGroupRef ref WHERE ref.groupId = g.groupId) AS count " +
+            "FROM notificationRuleGroups g")
+    Flowable<List<NotificationRuleGroupUnionModel>> getRuleGroupFlowable();
 
     /**
      * 添加通知规则分组
@@ -315,4 +318,13 @@ public interface NotificationRuleDao {
      */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     Completable addRuleGroupCompletable(NotificationRuleGroupEntity group);
+
+    /**
+     * 删除通知规则分组
+     *
+     * @param group 待删除的分组
+     * @return 是否完成
+     */
+    @Delete
+    Completable deleteRuleGroupCompletable(NotificationRuleGroupEntity group);
 }

@@ -14,7 +14,7 @@ import com.sly.coffer.auxiliary.interfaces.adapter.ChipViewHolderListener;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.databinding.ViewHolderChipTextBinding;
 
-public class NotificationRuleGroupListAdapter extends ListAdapter<NotificationRuleGroupEntity, NotificationRuleGroupListAdapter.ItemViewHolder> {
+public class RuleGroupChipListAdapter extends ListAdapter<NotificationRuleGroupEntity, RuleGroupChipListAdapter.ItemViewHolder> {
     private final static DiffUtil.ItemCallback<NotificationRuleGroupEntity> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
         @Override
         public boolean areItemsTheSame(@NonNull NotificationRuleGroupEntity oldItem, @NonNull NotificationRuleGroupEntity newItem) {
@@ -27,7 +27,7 @@ public class NotificationRuleGroupListAdapter extends ListAdapter<NotificationRu
         }
     };
 
-    private final AdapterOnChipCloseListener<NotificationRuleGroupEntity, NotificationRuleGroupListAdapter> closeListener;
+    private final AdapterOnChipCloseListener<NotificationRuleGroupEntity, RuleGroupChipListAdapter> closeListener;
 
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
         ViewHolderChipTextBinding binding;
@@ -45,7 +45,7 @@ public class NotificationRuleGroupListAdapter extends ListAdapter<NotificationRu
         }
     }
 
-    public NotificationRuleGroupListAdapter(AdapterOnChipCloseListener<NotificationRuleGroupEntity, NotificationRuleGroupListAdapter> closeListener) {
+    public RuleGroupChipListAdapter(AdapterOnChipCloseListener<NotificationRuleGroupEntity, RuleGroupChipListAdapter> closeListener) {
         super(ITEM_CALLBACK);
         this.closeListener = closeListener;
     }
@@ -68,7 +68,7 @@ public class NotificationRuleGroupListAdapter extends ListAdapter<NotificationRu
                     @Override
                     public void onClose(int pos, View anchor) {
                         NotificationRuleGroupEntity tag = getItem(pos);
-                        closeListener.onClose(tag, anchor, NotificationRuleGroupListAdapter.this);
+                        closeListener.onClose(tag, anchor, RuleGroupChipListAdapter.this);
                     }
 
                     @Override

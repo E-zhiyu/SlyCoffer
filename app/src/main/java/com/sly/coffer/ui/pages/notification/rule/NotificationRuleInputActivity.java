@@ -43,7 +43,7 @@ import com.sly.coffer.ui.pages.main.bookkeeping.AccountTagAdapter;
 import com.sly.coffer.ui.pages.app_list.AppSelectActivity;
 import com.sly.coffer.ui.pages.notification.GroupSelectBottomSheet;
 import com.sly.coffer.ui.pages.notification.GroupSelectViewModel;
-import com.sly.coffer.ui.pages.notification.NotificationRuleGroupListAdapter;
+import com.sly.coffer.ui.pages.notification.RuleGroupChipListAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,7 +64,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> packageNameSelectLauncher;   //包名选择启动器
     private ActivityNotificationRuleInputBinding binding;           //绑定的XML视图引用
     private final CompositeDisposable disposable = new CompositeDisposable();
-    private NotificationRuleGroupListAdapter groupAdapter;          //规则分组适配器
+    private RuleGroupChipListAdapter groupAdapter;          //规则分组适配器
     private AccountTagAdapter tagAdapter;                           //标签适配器
 
     @Override
@@ -108,7 +108,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
      */
     private void initViews() {
         //分组 Recycler
-        groupAdapter = new NotificationRuleGroupListAdapter(
+        groupAdapter = new RuleGroupChipListAdapter(
                 (entity, anchor, adapter) -> {
                     List<NotificationRuleGroupEntity> removedList = new ArrayList<>(adapter.getCurrentList());
                     removedList.remove(entity);

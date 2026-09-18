@@ -28,6 +28,7 @@ import com.sly.coffer.helpers.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.notification.capture.NotificationCaptureListActivity;
+import com.sly.coffer.ui.pages.notification.group.NotificationRuleGroupListActivity;
 
 import java.util.Locale;
 
@@ -46,7 +47,6 @@ public class NotificationRuleListActivity extends AppCompatActivity {
 
         binding = ActivityNotificationRuleListBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
         ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, 0, systemBars.right, 0);
@@ -121,8 +121,15 @@ public class NotificationRuleListActivity extends AppCompatActivity {
             startActivity(skip2RuleInput);
             return true;
         });
-        AppearanceHelper.setMarginToNavigation(binding.addFab, this);
         AppearanceHelper.attachMorphAnimation(binding.addFab);
+
+        //分组列表界面按钮
+        binding.groupListFab.setOnClickListener(view -> {
+            Intent intent = new Intent(this, NotificationRuleGroupListActivity.class);
+            startActivity(intent);
+        });
+        AppearanceHelper.attachMorphAnimation(binding.groupListFab);
+        AppearanceHelper.setMarginToNavigation(binding.fabLayout, this);
 
         //列表
         NotificationRuleListAdapter adapter = new NotificationRuleListAdapter(

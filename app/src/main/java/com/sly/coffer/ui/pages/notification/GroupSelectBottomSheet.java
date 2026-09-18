@@ -137,9 +137,9 @@ public class GroupSelectBottomSheet extends BaseBottomSheetDialogFragment {
                 viewModel.getGroupIdSetLiveData().getValue(),
                 (entity, isChecked, anchor) -> {
                     if (isChecked) {
-                        checkedIdSet.add(entity.getGroupId());
+                        checkedIdSet.add(entity.getGroup().getGroupId());
                     } else {
-                        checkedIdSet.remove(entity.getGroupId());
+                        checkedIdSet.remove(entity.getGroup().getGroupId());
                     }
                 }
         );

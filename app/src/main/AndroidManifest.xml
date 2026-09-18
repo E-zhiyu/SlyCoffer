@@ -162,6 +162,11 @@
             android:parentActivityName=".ui.pages.main.settings.sub.AboutActivity"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".ui.pages.notification.group.NotificationRuleGroupListActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.pages.notification.rule.NotificationRuleListActivity"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".ui.pages.main.MainActivity"
             android:exported="true">
             <intent-filter>
