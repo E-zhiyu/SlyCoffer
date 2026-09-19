@@ -114,7 +114,7 @@ public class GroupSelectBottomSheet extends BaseBottomSheetDialogFragment {
 
                             NotificationRuleGroupEntity group = new NotificationRuleGroupEntity(inputStr.trim());
                             BookkeepingDb db = BookkeepingDb.getInstance(requireContext());
-                            disposable.add(db.notificationRuleDao().addRuleGroupCompletable(group)
+                            disposable.add(db.notificationRuleDao().insertRuleGroupCompletable(group)
                                     .subscribeOn(Schedulers.io())
                                     .observeOn(AndroidSchedulers.mainThread())
                                     .subscribe(

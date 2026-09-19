@@ -32,10 +32,10 @@ public class NotificationRuleGroupRefEntity {
     @ColumnInfo(defaultValue = "0")
     private int order;      //排序优先级（越大优先级越高）
 
-    public NotificationRuleGroupRefEntity(long ruleId, long groupId) {
+    public NotificationRuleGroupRefEntity(long ruleId, long groupId,int order) {
         this.ruleId = ruleId;
         this.groupId = groupId;
-        this.order = 0;
+        this.order = order;
     }
 
     public long getRuleId() {

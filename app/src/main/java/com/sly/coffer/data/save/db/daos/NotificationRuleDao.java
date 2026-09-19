@@ -161,7 +161,7 @@ public interface NotificationRuleDao {
 
         //分组
         List<NotificationRuleGroupRefEntity> groupRefList = groupIdList.stream()
-                .map(id -> new NotificationRuleGroupRefEntity(ruleId, id))
+                .map(id -> new NotificationRuleGroupRefEntity(ruleId, id, 0))
                 .collect(Collectors.toList());
         insertNotificationRuleGroupRef(groupRefList);
     }
@@ -240,7 +240,7 @@ public interface NotificationRuleDao {
         //分组
         deleteNotificationRuleGroupRefByRuleId(ruleId);
         List<NotificationRuleGroupRefEntity> groupRefList = groupIdList.stream()
-                .map(id -> new NotificationRuleGroupRefEntity(ruleId, id))
+                .map(id -> new NotificationRuleGroupRefEntity(ruleId, id, 0))
                 .collect(Collectors.toList());
         insertNotificationRuleGroupRef(groupRefList);
     }
@@ -349,7 +349,7 @@ public interface NotificationRuleDao {
      * @return 是否完成
      */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    Completable addRuleGroupCompletable(NotificationRuleGroupEntity group);
+    Completable insertRuleGroupCompletable(NotificationRuleGroupEntity group);
 
     /**
      * 删除通知规则分组
@@ -359,4 +359,84 @@ public interface NotificationRuleDao {
      */
     @Delete
     Completable deleteRuleGroupCompletable(NotificationRuleGroupEntity group);
+
+    /**
+     * 添加通知规则分组
+     *
+     * @param group 待添加的通知规则分组
+     * @return 自动分配的编号
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    long insertRuleGroup(NotificationRuleGroupEntity group);
+
+    /**
+     * 添加规则分组事务
+     *
+     * @param group      待添加的规则分组
+     * @param ruleIdList 该分组包含的规则编号列表
+     */
+    @Transaction
+    default void addRuleGroup(
+            NotificationRuleGroupEntity group,
+            List<Long> ruleIdList
+    ) {
+        if (group == null) return;
+        long groupId = insertRuleGroup(group);
+
+        //规则与分组的映射
+        if (!ruleIdList.isEmpty()) {
+            List<NotificationRuleGroupRefEntity> ruleRefefList = new ArrayList<>();
+            int order = 1;
+            for (Long ruleId : ruleIdList) {
+                ruleRefefList.add(new NotificationRuleGroupRefEntity(ruleId, groupId, order));
+                order++;
+            }
+            insertNotificationRuleGroupRef(ruleRefefList);
+        }
+    }
+
+    /**
+     * 通过分组编号删除通知规则与分组的映射关系
+     *
+     * @param groupId 分组编号
+     */
+    @Query("DELETE FROM notificationRuleGroupRef WHERE groupId = :groupId")
+    void deleteNotificationRuleGroupRefByGroupId(long groupId);
+
+    /**
+     * 更新通知规则分组
+     *
+     * @param group 更新后的通知规则分组
+     */
+    @Update
+    void updateRuleGroup(NotificationRuleGroupEntity group);
+
+    /**
+     * 修改通知规则分组事务
+     *
+     * @param group      修改后的通知规则分组
+     * @param ruleIdList 规则编号列表
+     */
+    @Transaction
+    default void modifyRuleGroup(
+            NotificationRuleGroupEntity group,
+            List<Long> ruleIdList
+    ) {
+        if (group == null || group.getGroupId() == 0) return;
+        long groupId = group.getGroupId();
+
+        updateRuleGroup(group);
+
+        //规则与分组的映射
+        deleteNotificationRuleGroupRefByGroupId(groupId);
+        if (!ruleIdList.isEmpty()) {
+            List<NotificationRuleGroupRefEntity> ruleRefefList = new ArrayList<>();
+            int order = 1;
+            for (Long ruleId : ruleIdList) {
+                ruleRefefList.add(new NotificationRuleGroupRefEntity(ruleId, groupId, order));
+                order++;
+            }
+            insertNotificationRuleGroupRef(ruleRefefList);
+        }
+    }
 }

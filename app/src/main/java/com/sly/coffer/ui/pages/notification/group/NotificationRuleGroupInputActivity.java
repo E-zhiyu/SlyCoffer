@@ -214,7 +214,49 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
      * 保存数据
      */
     private void saveData() {
-        //TODO:待实现
+        //获取输入内容
+        String name = String.valueOf(binding.nameInput.getEditableText()).trim();
+
+        //生成选择的规则编号的列表
+        List<Long> ruleIdList;
+        if (ruleAdapter == null) {
+            ruleIdList = new ArrayList<>();
+        } else {
+            ruleIdList = ruleAdapter.getCurrentList().stream()
+                    .map(NotificationRuleEntity::getRuleId)
+                    .collect(Collectors.toList());
+        }
+
+        //保存数据
+        NotificationRuleGroupEntity group = new NotificationRuleGroupEntity(name);
+        BookkeepingDb db = BookkeepingDb.getInstance(this);
+        if (initBundle == null) {
+            disposable.add(NotificationRuleService.addNotificationRuleGroup(group, ruleIdList, db)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            () -> {
+                                Toast.makeText(this, "分组添加成功", Toast.LENGTH_SHORT).show();
+                                finish();
+                            },
+                            e -> ExceptionHelper.showExceptionDialog(this, e)
+                    )
+            );
+        } else {
+            long groupId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_GROUP_ID.v(), 0);
+            group.setGroupId(groupId);
+            disposable.add(NotificationRuleService.modifyNotificationRuleGroup(group, ruleIdList, db)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            () -> {
+                                Toast.makeText(this, "分组修改成功", Toast.LENGTH_SHORT).show();
+                                finish();
+                            },
+                            e -> ExceptionHelper.showExceptionDialog(this, e)
+                    )
+            );
+        }
     }
 
     /**

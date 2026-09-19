@@ -2,6 +2,7 @@ package com.sly.coffer.data.save.db.services;
 
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 
 import java.util.List;
@@ -70,6 +71,44 @@ public class NotificationRuleService {
         return Single.defer(() -> {
             List<NotificationRuleEntity> list = db.notificationRuleDao().getNotificationRuleByIdInOrder(idList);
             return Single.just(list);
+        });
+    }
+
+    /**
+     * 添加通知规则分组
+     *
+     * @param group      通知规则分组
+     * @param ruleIdList 通知规则编号列表
+     * @param db         数据库实例
+     * @return 是否完成
+     */
+    public static Completable addNotificationRuleGroup(
+            NotificationRuleGroupEntity group,
+            List<Long> ruleIdList,
+            BookkeepingDb db
+    ) {
+        return Completable.defer(() -> {
+            db.notificationRuleDao().addRuleGroup(group, ruleIdList);
+            return Completable.complete();
+        });
+    }
+
+    /**
+     * 修改通知规则分组
+     *
+     * @param group      修改后的通知规则分组
+     * @param ruleIdList 通知规则编号列表
+     * @param db         数据库实例
+     * @return 是否完成
+     */
+    public static Completable modifyNotificationRuleGroup(
+            NotificationRuleGroupEntity group,
+            List<Long> ruleIdList,
+            BookkeepingDb db
+    ) {
+        return Completable.defer(() -> {
+            db.notificationRuleDao().modifyRuleGroup(group, ruleIdList);
+            return Completable.complete();
         });
     }
 }
