@@ -10,8 +10,6 @@ import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.sly.coffer.auxiliary.enums.types.AccountType;
-import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnClickListener;
-import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnLongClickListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.ViewHolderListener;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.databinding.ViewHolderNotificationRuleInGroupInputBinding;
@@ -34,8 +32,11 @@ public class RuleListAdapter extends ListAdapter<NotificationRuleEntity, RuleLis
                     oldItem.getPackageName().equals(newItem.getPackageName());
         }
     };
-    private final AdapterOnClickListener<NotificationRuleEntity> clickListener;
-    private final AdapterOnLongClickListener<NotificationRuleEntity> longClickListener;
+    private final PositionListener listener;
+
+    public interface PositionListener {
+        void onClickOrLongClick(NotificationRuleEntity rule, View anchor, int position);
+    }
 
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
         ViewHolderNotificationRuleInGroupInputBinding binding;
@@ -60,10 +61,12 @@ public class RuleListAdapter extends ListAdapter<NotificationRuleEntity, RuleLis
         }
     }
 
-    RuleListAdapter(AdapterOnClickListener<NotificationRuleEntity> clickListener, AdapterOnLongClickListener<NotificationRuleEntity> longClickListener) {
+    /**
+     * @param listener 点击和长按监听器
+     */
+    RuleListAdapter(PositionListener listener) {
         super(ITEM_CALLBACK);
-        this.clickListener = clickListener;
-        this.longClickListener = longClickListener;
+        this.listener = listener;
 
         //注册数据变更监听器，用于自动更新圆角
         registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
@@ -85,6 +88,7 @@ public class RuleListAdapter extends ListAdapter<NotificationRuleEntity, RuleLis
                 notifyItemChanged(fromPosition);                //更新后面的
 
                 notifyItemChanged(toPosition - 1);      //更新前面的
+                notifyItemChanged(toPosition);                  //更新自己
                 notifyItemChanged(toPosition + 1);      //更新后面的
             }
         });
@@ -103,12 +107,12 @@ public class RuleListAdapter extends ListAdapter<NotificationRuleEntity, RuleLis
                 new ViewHolderListener() {
                     @Override
                     public void onClick(int pos, View anchor) {
-                        clickListener.onClick(getItem(pos), anchor);
+                        listener.onClickOrLongClick(getItem(pos), anchor, pos);
                     }
 
                     @Override
                     public void onLongClick(int pos, View anchor) {
-                        longClickListener.onLongClick(getItem(pos), anchor);
+                        listener.onClickOrLongClick(getItem(pos), anchor, pos);
                     }
 
                     @Override

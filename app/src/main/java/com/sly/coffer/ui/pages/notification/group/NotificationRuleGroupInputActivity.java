@@ -2,15 +2,18 @@ package com.sly.coffer.ui.pages.notification.group;
 
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
@@ -25,6 +28,7 @@ import com.sly.coffer.helpers.ImmHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -78,14 +82,7 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
      */
     private void initViews() {
         //规则列表
-        ruleAdapter = new RuleListAdapter(
-                (entity, anchor) -> {
-                    //TODO:点击监听
-                },
-                (entity, anchor) -> {
-                    //TODO:长按监听
-                }
-        );
+        ruleAdapter = new RuleListAdapter(this::showMenu);
         binding.ruleRecycler.setAdapter(ruleAdapter);
 
         //工具栏
@@ -218,5 +215,60 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
      */
     private void saveData() {
         //TODO:待实现
+    }
+
+    /**
+     * 显示悬浮菜单
+     *
+     * @param rule   选择的规则
+     * @param anchor 菜单的锚点
+     * @param pos    选择的规则所处的下标
+     */
+    private void showMenu(NotificationRuleEntity rule, View anchor, int pos) {
+        if (ruleAdapter == null) return;
+
+        PopupMenu menu = new PopupMenu(this, anchor, Gravity.END);
+        menu.getMenuInflater().inflate(R.menu.menu_notification_rule_group_move, menu.getMenu());
+
+        //设置点击监听
+        menu.setOnMenuItemClickListener(item -> {
+            List<NotificationRuleEntity> ruleList = new ArrayList<>(ruleAdapter.getCurrentList());
+
+            int id = item.getItemId();
+            boolean result = false; //返回值
+            if (id == R.id.action_move_to_top) {
+                if (pos <= 0) return true;
+
+                NotificationRuleEntity poopedRule = ruleList.remove(pos);
+                ruleList.add(0, poopedRule);
+                result = true;
+            } else if (id == R.id.action_move_up) {
+                if (pos <= 0) return true;
+
+                NotificationRuleEntity poopedRule = ruleList.remove(pos);
+                ruleList.add(pos - 1, poopedRule);
+                result = true;
+            } else if (id == R.id.action_move_down) {
+                if (pos >= ruleList.size()) return true;
+
+                NotificationRuleEntity poopedRule = ruleList.remove(pos);
+                ruleList.add(pos + 1, poopedRule);
+                result = true;
+            } else if (id == R.id.action_move_to_bottom) {
+                if (pos >= ruleList.size() - 1) return true;
+
+                NotificationRuleEntity poopedRule = ruleList.remove(pos);
+                ruleList.add(poopedRule);
+                result = true;
+            }
+
+            if (result) {
+                ruleAdapter.submitList(ruleList);
+            }
+
+            return result;
+        });
+
+        menu.show();
     }
 }
