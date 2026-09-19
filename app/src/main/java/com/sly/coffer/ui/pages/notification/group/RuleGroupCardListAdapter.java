@@ -84,6 +84,7 @@ public class RuleGroupCardListAdapter extends ListAdapter<NotificationRuleGroupL
                 notifyItemChanged(fromPosition);                //更新后面的
 
                 notifyItemChanged(toPosition - 1);      //更新前面的
+                notifyItemChanged(toPosition);                  //更新自己
                 notifyItemChanged(toPosition + 1);      //更新后面的
             }
         });
