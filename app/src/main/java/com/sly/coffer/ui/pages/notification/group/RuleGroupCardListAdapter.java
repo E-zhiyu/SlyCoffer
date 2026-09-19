@@ -18,6 +18,9 @@ import com.sly.coffer.helpers.appearence.AppearanceHelper;
 
 import java.util.Locale;
 
+/**
+ * 列表界面的适配器
+ */
 public class RuleGroupCardListAdapter extends ListAdapter<NotificationRuleGroupListUnionModel, RuleGroupCardListAdapter.ItemViewHolder> {
     private static final DiffUtil.ItemCallback<NotificationRuleGroupListUnionModel> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
         @Override

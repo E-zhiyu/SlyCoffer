@@ -17,6 +17,9 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.databinding.ViewHolderNotificationRuleInGroupInputBinding;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 
+/**
+ * 分组输入界面的规则列表适配器
+ */
 public class RuleListAdapter extends ListAdapter<NotificationRuleEntity, RuleListAdapter.ItemViewHolder> {
     private final static DiffUtil.ItemCallback<NotificationRuleEntity> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
         @Override

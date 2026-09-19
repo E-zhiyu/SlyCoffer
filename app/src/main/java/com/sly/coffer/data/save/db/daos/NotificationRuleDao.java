@@ -45,7 +45,7 @@ public interface NotificationRuleDao {
      * @return 由通知规则组成的列表，支持响应式更新
      */
     @Query("SELECT * FROM notificationRules ORDER BY type")
-    Flowable<List<NotificationRuleEntity>> getAllNotificationRuleFlowable();
+    Flowable<List<NotificationRuleEntity>> getNotificationRuleFlowable();
 
     /**
      * 通过规则 ID 查询通知规则的详细数据

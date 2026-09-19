@@ -14,6 +14,9 @@ import com.sly.coffer.auxiliary.interfaces.adapter.ChipViewHolderListener;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.databinding.ViewHolderChipTextBinding;
 
+/**
+ * 规则输入界面用于显示已选分组的列表的适配器
+ */
 public class RuleGroupChipListAdapter extends ListAdapter<NotificationRuleGroupEntity, RuleGroupChipListAdapter.ItemViewHolder> {
     private final static DiffUtil.ItemCallback<NotificationRuleGroupEntity> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
         @Override

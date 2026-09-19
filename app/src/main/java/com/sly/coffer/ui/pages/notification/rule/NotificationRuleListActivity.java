@@ -179,7 +179,7 @@ public class NotificationRuleListActivity extends AppCompatActivity {
         );
         binding.recycler.setAdapter(adapter);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        disposable.add(db.notificationRuleDao().getAllNotificationRuleFlowable()
+        disposable.add(db.notificationRuleDao().getNotificationRuleFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(

@@ -1,4 +1,4 @@
-package com.sly.coffer.ui.pages.notification;
+package com.sly.coffer.ui.pages.notification.group;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,27 +12,26 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnChipCheckedChangeListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.ChipViewHolderListener;
-import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
-import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleGroupListUnionModel;
+import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.databinding.ViewHolderChipTextBinding;
 
-import java.util.Set;
+import java.util.List;
 
-public class NotiRuleGroupSelectListAdapter extends ListAdapter<NotificationRuleGroupListUnionModel, NotiRuleGroupSelectListAdapter.ItemViewHolder> {
-    private final static DiffUtil.ItemCallback<NotificationRuleGroupListUnionModel> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
+public class RuleSelectListAdapter extends ListAdapter<NotificationRuleEntity, RuleSelectListAdapter.ItemViewHolder> {
+    private static final DiffUtil.ItemCallback<NotificationRuleEntity> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
         @Override
-        public boolean areItemsTheSame(@NonNull NotificationRuleGroupListUnionModel oldItem, @NonNull NotificationRuleGroupListUnionModel newItem) {
-            return oldItem.getGroup().getGroupId() == newItem.getGroup().getGroupId();
+        public boolean areItemsTheSame(@NonNull NotificationRuleEntity oldItem, @NonNull NotificationRuleEntity newItem) {
+            return oldItem.getRuleId() == newItem.getRuleId();
         }
 
         @Override
-        public boolean areContentsTheSame(@NonNull NotificationRuleGroupListUnionModel oldItem, @NonNull NotificationRuleGroupListUnionModel newItem) {
-            return oldItem.getGroup().getName().equals(newItem.getGroup().getName());
+        public boolean areContentsTheSame(@NonNull NotificationRuleEntity oldItem, @NonNull NotificationRuleEntity newItem) {
+            return oldItem.getName().equals(newItem.getName());
         }
     };
-    private final AdapterOnChipCheckedChangeListener<NotificationRuleGroupListUnionModel> checkedChangeListener;
+    private final AdapterOnChipCheckedChangeListener<NotificationRuleEntity> checkedChangeListener;
     @Nullable
-    private final Set<Long> initCheckSet;
+    private final List<Long> initCheckedList;
 
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
         ViewHolderChipTextBinding binding;
@@ -55,14 +54,10 @@ public class NotiRuleGroupSelectListAdapter extends ListAdapter<NotificationRule
         }
     }
 
-    /**
-     * @param initCheckSet          初始选中的项的编号集合
-     * @param checkedChangeListener 选择状态变更监听器
-     */
-    NotiRuleGroupSelectListAdapter(@Nullable Set<Long> initCheckSet, AdapterOnChipCheckedChangeListener<NotificationRuleGroupListUnionModel> checkedChangeListener) {
+    RuleSelectListAdapter(@Nullable List<Long> initCheckedList, AdapterOnChipCheckedChangeListener<NotificationRuleEntity> checkedChangeListener) {
         super(ITEM_CALLBACK);
-        this.initCheckSet = initCheckSet;
         this.checkedChangeListener = checkedChangeListener;
+        this.initCheckedList = initCheckedList;
     }
 
     @NonNull
@@ -94,13 +89,14 @@ public class NotiRuleGroupSelectListAdapter extends ListAdapter<NotificationRule
 
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
-        NotificationRuleGroupListUnionModel model = getItem(position);
-        NotificationRuleGroupEntity group = model.getGroup();
-        holder.binding.chip.setText(group.getName());
+        NotificationRuleEntity rule = getItem(position);
+
+        //名称
+        holder.binding.chip.setText(rule.getName());
 
         //设置选择状态
         holder.isBlocked = true;
-        boolean isChecked = initCheckSet != null && initCheckSet.contains(group.getGroupId());
+        boolean isChecked = initCheckedList != null && initCheckedList.contains(rule.getRuleId());
         holder.binding.chip.setChecked(isChecked);
         holder.isBlocked = false;
     }

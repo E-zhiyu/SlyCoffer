@@ -1,4 +1,4 @@
-package com.sly.coffer.ui.pages.notification;
+package com.sly.coffer.ui.pages.notification.group;
 
 import android.app.Dialog;
 import android.os.Bundle;
@@ -6,7 +6,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,31 +16,28 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.sly.coffer.R;
 import com.sly.coffer.data.save.db.BookkeepingDb;
-import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
-import com.sly.coffer.databinding.BottomSheetNotificationRuleGroupSelectBinding;
+import com.sly.coffer.databinding.BottomSheetNotificationRuleSelectBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
 import com.sly.coffer.ui.others.bottom.BaseBottomSheetDialogFragment;
-import com.sly.coffer.ui.others.dialogs.EditTextDialogBuilder;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
-public class GroupSelectBottomSheet extends BaseBottomSheetDialogFragment {
-    private BottomSheetNotificationRuleGroupSelectBinding binding;
-    private final Set<Long> checkedIdSet = new HashSet<>();
+public class NotificationRuleSelectBottomSheet extends BaseBottomSheetDialogFragment {
+    private BottomSheetNotificationRuleSelectBinding binding;
+    private final List<Long> checkedIdList = new ArrayList<>();
     private final CompositeDisposable disposable = new CompositeDisposable();
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        binding = BottomSheetNotificationRuleGroupSelectBinding.inflate(inflater, container, false);
+        binding = BottomSheetNotificationRuleSelectBinding.inflate(inflater, container, false);
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -54,8 +50,8 @@ public class GroupSelectBottomSheet extends BaseBottomSheetDialogFragment {
 
         //绑定消失监听器
         setOnDismissListener(() -> {
-            GroupSelectViewModel viewModel = new ViewModelProvider(requireActivity()).get(GroupSelectViewModel.class);
-            viewModel.updateCheckedGroupId(checkedIdSet);
+            NotificationRuleSelectViewModel viewModel = new ViewModelProvider(requireActivity()).get(NotificationRuleSelectViewModel.class);
+            viewModel.updateRuleLiveData(checkedIdList);
         });
 
         return binding.getRoot();
@@ -100,52 +96,22 @@ public class GroupSelectBottomSheet extends BaseBottomSheetDialogFragment {
      * 初始化视图
      */
     private void initViews() {
-        //主 Recycler
-        initMainRecycler();
-
-        //添加按钮
-        binding.addBtn.setOnClickListener(view ->
-                new EditTextDialogBuilder(requireContext(), getString(R.string.add_notification_rule_group), "输入分组名称")
-                        .setPositiveButton("确定", inputStr -> {
-                            if (inputStr.trim().isEmpty()) {
-                                Toast.makeText(requireContext(), "输入的字符串不能为空", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-
-                            NotificationRuleGroupEntity group = new NotificationRuleGroupEntity(inputStr.trim());
-                            BookkeepingDb db = BookkeepingDb.getInstance(requireContext());
-                            disposable.add(db.notificationRuleDao().addRuleGroupCompletable(group)
-                                    .subscribeOn(Schedulers.io())
-                                    .observeOn(AndroidSchedulers.mainThread())
-                                    .subscribe(
-                                            () -> Toast.makeText(requireContext(), "分组添加成功", Toast.LENGTH_SHORT).show(),
-                                            e -> ExceptionHelper.showExceptionDialog(requireContext(), e)
-                                    )
-                            );
-                        })
-                        .setNegativeButton("取消", null)
-                        .show());
-    }
-
-    /**
-     * 初始化主列表
-     */
-    private void initMainRecycler() {
         //初始化已选择的 ID
-        GroupSelectViewModel viewModel = new ViewModelProvider(requireActivity()).get(GroupSelectViewModel.class);
-        Set<Long> initSet = viewModel.getGroupIdSetLiveData().getValue();
-        if (initSet != null) {
-            checkedIdSet.addAll(initSet);
+        NotificationRuleSelectViewModel viewModel = new ViewModelProvider(requireActivity()).get(NotificationRuleSelectViewModel.class);
+        List<Long> initList = viewModel.getRuleIdLiveData().getValue();
+        if (initList != null && !initList.isEmpty()) {
+            checkedIdList.addAll(initList);
         }
 
         //设置适配器
-        RuleGroupSelectListAdapter adapter = new RuleGroupSelectListAdapter(
-                checkedIdSet,
+        RuleSelectListAdapter adapter = new RuleSelectListAdapter(
+                checkedIdList,
                 (entity, isChecked, anchor) -> {
-                    if (isChecked) {
-                        checkedIdSet.add(entity.getGroup().getGroupId());
+                    long ruleId = entity.getRuleId();
+                    if (isChecked && !checkedIdList.contains(ruleId)) {
+                        checkedIdList.add(ruleId);
                     } else {
-                        checkedIdSet.remove(entity.getGroup().getGroupId());
+                        checkedIdList.remove(ruleId);
                     }
                 }
         );
@@ -153,19 +119,19 @@ public class GroupSelectBottomSheet extends BaseBottomSheetDialogFragment {
 
         //订阅数据
         BookkeepingDb db = BookkeepingDb.getInstance(requireContext());
-        disposable.add(db.notificationRuleDao().getRuleGroupFlowable()
+        disposable.add(db.notificationRuleDao().getNotificationRuleFlowable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                        groupList -> {
+                        ruleList -> {
                             VisibilityHelper.toggleVisibilityWithFade(binding.loadingIndicator, false);
-                            if (groupList.isEmpty()) {
+                            if (ruleList.isEmpty()) {
                                 VisibilityHelper.toggleVisibilityWithFade(binding.emptyText, true);
                             } else {
                                 binding.emptyText.setVisibility(View.GONE);
                             }
 
-                            adapter.submitList(groupList);
+                            adapter.submitList(ruleList);
                         },
                         e -> ExceptionHelper.showExceptionDialog(requireContext(), e)
                 )

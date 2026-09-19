@@ -66,7 +66,8 @@ public class NotificationRuleGroupListActivity extends AppCompatActivity {
 
         //添加规则按钮
         binding.addFab.setOnClickListener(v -> {
-            //TODO:添加按钮点击监听
+            Intent intent = new Intent(this, NotificationRuleGroupInputActivity.class);
+            startActivity(intent);
         });
         AppearanceHelper.setMarginToNavigation(binding.addFab, this);
         AppearanceHelper.attachMorphAnimation(binding.addFab);

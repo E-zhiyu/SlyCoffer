@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
+import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
@@ -133,7 +134,8 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
 
         //规则选择按钮
         binding.ruleSelectBtn.setOnClickListener(view -> {
-            //TODO:选择规则
+            NotificationRuleSelectBottomSheet bottomSheet = new NotificationRuleSelectBottomSheet();
+            bottomSheet.show(getSupportFragmentManager(), TagStrings.NOTIFICATION_RULE_SELECT_BOTTOM.t());
         });
 
         //规则解释按钮
