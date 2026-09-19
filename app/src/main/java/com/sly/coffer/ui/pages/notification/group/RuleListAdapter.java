@@ -9,46 +9,47 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnClickListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnLongClickListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.ViewHolderListener;
-import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleGroupListUnionModel;
-import com.sly.coffer.databinding.ViewHolderNotificationRuleGroupListBinding;
+import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.databinding.ViewHolderNotificationRuleInGroupInputBinding;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 
-import java.util.Locale;
-
-public class RuleGroupCardListAdapter extends ListAdapter<NotificationRuleGroupListUnionModel, RuleGroupCardListAdapter.ItemViewHolder> {
-    private static final DiffUtil.ItemCallback<NotificationRuleGroupListUnionModel> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
+public class RuleListAdapter extends ListAdapter<NotificationRuleEntity, RuleListAdapter.ItemViewHolder> {
+    private final static DiffUtil.ItemCallback<NotificationRuleEntity> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
         @Override
-        public boolean areItemsTheSame(@NonNull NotificationRuleGroupListUnionModel oldItem, @NonNull NotificationRuleGroupListUnionModel newItem) {
-            return false;
+        public boolean areItemsTheSame(@NonNull NotificationRuleEntity oldItem, @NonNull NotificationRuleEntity newItem) {
+            return oldItem.getRuleId() == newItem.getRuleId();
         }
 
         @Override
-        public boolean areContentsTheSame(@NonNull NotificationRuleGroupListUnionModel oldItem, @NonNull NotificationRuleGroupListUnionModel newItem) {
-            return false;
+        public boolean areContentsTheSame(@NonNull NotificationRuleEntity oldItem, @NonNull NotificationRuleEntity newItem) {
+            return oldItem.getName().equals(newItem.getName()) &&
+                    oldItem.getType() == newItem.getType() &&
+                    oldItem.getPackageName().equals(newItem.getPackageName());
         }
     };
-    private final AdapterOnClickListener<NotificationRuleGroupListUnionModel> clickListener;
-    private final AdapterOnLongClickListener<NotificationRuleGroupListUnionModel> longClickListener;
+    private final AdapterOnClickListener<NotificationRuleEntity> clickListener;
+    private final AdapterOnLongClickListener<NotificationRuleEntity> longClickListener;
 
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
-        ViewHolderNotificationRuleGroupListBinding binding;
+        ViewHolderNotificationRuleInGroupInputBinding binding;
 
-        public ItemViewHolder(@NonNull ViewHolderNotificationRuleGroupListBinding binding, ViewHolderListener listener) {
+        public ItemViewHolder(@NonNull ViewHolderNotificationRuleInGroupInputBinding binding, ViewHolderListener listener) {
             super(binding.getRoot());
             this.binding = binding;
 
             //设置触摸动画
             AppearanceHelper.attachMorphAnimation(binding.getRoot());
 
-            //设置点击监听
+            //点击监听器
             binding.getRoot().setOnClickListener(v ->
                     listener.onClick(getBindingAdapterPosition(), binding.getRoot())
             );
 
-            //设置长按监听
+            //长按监听器
             binding.getRoot().setOnLongClickListener(view -> {
                 listener.onLongClick(getBindingAdapterPosition(), binding.getRoot());
                 return true;
@@ -56,7 +57,7 @@ public class RuleGroupCardListAdapter extends ListAdapter<NotificationRuleGroupL
         }
     }
 
-    public RuleGroupCardListAdapter(AdapterOnClickListener<NotificationRuleGroupListUnionModel> clickListener, AdapterOnLongClickListener<NotificationRuleGroupListUnionModel> longClickListener) {
+    RuleListAdapter(AdapterOnClickListener<NotificationRuleEntity> clickListener, AdapterOnLongClickListener<NotificationRuleEntity> longClickListener) {
         super(ITEM_CALLBACK);
         this.clickListener = clickListener;
         this.longClickListener = longClickListener;
@@ -89,7 +90,7 @@ public class RuleGroupCardListAdapter extends ListAdapter<NotificationRuleGroupL
     @NonNull
     @Override
     public ItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        ViewHolderNotificationRuleGroupListBinding binding = ViewHolderNotificationRuleGroupListBinding.inflate(
+        ViewHolderNotificationRuleInGroupInputBinding binding = ViewHolderNotificationRuleInGroupInputBinding.inflate(
                 LayoutInflater.from(parent.getContext()),
                 parent,
                 false
@@ -109,6 +110,7 @@ public class RuleGroupCardListAdapter extends ListAdapter<NotificationRuleGroupL
 
                     @Override
                     public void onCheckedChange(int pos, boolean finalStat, View anchor) {
+
                     }
                 }
         );
@@ -116,18 +118,16 @@ public class RuleGroupCardListAdapter extends ListAdapter<NotificationRuleGroupL
 
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
-        NotificationRuleGroupListUnionModel model = getItem(position);
+        NotificationRuleEntity rule = getItem(position);
 
         //名称
-        holder.binding.nameText.setText(model.getGroup().getName());
+        holder.binding.nameText.setText(rule.getName());
 
-        //数量
-        String count = String.format(
-                Locale.getDefault(),
-                "包含%d个规则",
-                model.getCount()
-        );
-        holder.binding.countText.setText(count);
+        //类型
+        holder.binding.typeText.setText(AccountType.values()[rule.getType()].getTitle());
+
+        //包名
+        holder.binding.packageNameText.setText(rule.getPackageName());
 
         //设置圆角
         AppearanceHelper.setRecyclerItemRadius(holder.itemView, getItemCount(), position);

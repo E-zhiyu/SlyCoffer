@@ -4,12 +4,12 @@ import androidx.room.Embedded;
 
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 
-public class NotificationRuleGroupUnionModel {
+public class NotificationRuleGroupListUnionModel {
     @Embedded
     private final NotificationRuleGroupEntity group;    //分组实体
     private final int count;                            //包含的规则数量
 
-    public NotificationRuleGroupUnionModel(NotificationRuleGroupEntity group, int count) {
+    public NotificationRuleGroupListUnionModel(NotificationRuleGroupEntity group, int count) {
         this.group = group;
         this.count = count;
     }

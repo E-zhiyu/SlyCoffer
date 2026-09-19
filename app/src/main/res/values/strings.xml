@@ -242,6 +242,7 @@
     <string name="no_notification_rule_group">无通知规则分组</string>
     <string name="add_notification_rule_group">添加通知规则分组</string>
     <string name="delete_notification_rule_group">删除通知规则分组</string>
+    <string name="notification_rule_group_name_help">通知规则分组的显示名称</string>
 
     <string-array name="tips_array">
         <item>如果设置了自动备份目录，进行软件更新时会自动备份一次。</item>

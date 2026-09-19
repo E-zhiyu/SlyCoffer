@@ -7,8 +7,9 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import java.util.List;
 
 import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 
-public class RuleService {
+public class NotificationRuleService {
     /**
      * 添加新的通知规则
      *
@@ -52,6 +53,23 @@ public class RuleService {
         return Completable.defer(() -> {
             db.notificationRuleDao().modifyNotificationRule(rule, transfer, tagIdList, groupIdList);
             return Completable.complete();
+        });
+    }
+
+    /**
+     * 通过编号有序获取通知规则
+     *
+     * @param idList 通知规则编号列表
+     * @param db     数据库实例
+     * @return 依照规则列表中的排序获取到的通知规则
+     */
+    public static Single<List<NotificationRuleEntity>> getNotificationByIdInOrder(
+            List<Long> idList,
+            BookkeepingDb db
+    ) {
+        return Single.defer(() -> {
+            List<NotificationRuleEntity> list = db.notificationRuleDao().getNotificationRuleByIdInOrder(idList);
+            return Single.just(list);
         });
     }
 }

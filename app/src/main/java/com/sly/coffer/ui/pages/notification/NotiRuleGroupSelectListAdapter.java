@@ -13,24 +13,24 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnChipCheckedChangeListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.ChipViewHolderListener;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
-import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleGroupUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleGroupListUnionModel;
 import com.sly.coffer.databinding.ViewHolderChipTextBinding;
 
 import java.util.Set;
 
-public class NotiRuleGroupSelectListAdapter extends ListAdapter<NotificationRuleGroupUnionModel, NotiRuleGroupSelectListAdapter.ItemViewHolder> {
-    private final static DiffUtil.ItemCallback<NotificationRuleGroupUnionModel> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
+public class NotiRuleGroupSelectListAdapter extends ListAdapter<NotificationRuleGroupListUnionModel, NotiRuleGroupSelectListAdapter.ItemViewHolder> {
+    private final static DiffUtil.ItemCallback<NotificationRuleGroupListUnionModel> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
         @Override
-        public boolean areItemsTheSame(@NonNull NotificationRuleGroupUnionModel oldItem, @NonNull NotificationRuleGroupUnionModel newItem) {
+        public boolean areItemsTheSame(@NonNull NotificationRuleGroupListUnionModel oldItem, @NonNull NotificationRuleGroupListUnionModel newItem) {
             return oldItem.getGroup().getGroupId() == newItem.getGroup().getGroupId();
         }
 
         @Override
-        public boolean areContentsTheSame(@NonNull NotificationRuleGroupUnionModel oldItem, @NonNull NotificationRuleGroupUnionModel newItem) {
+        public boolean areContentsTheSame(@NonNull NotificationRuleGroupListUnionModel oldItem, @NonNull NotificationRuleGroupListUnionModel newItem) {
             return oldItem.getGroup().getName().equals(newItem.getGroup().getName());
         }
     };
-    private final AdapterOnChipCheckedChangeListener<NotificationRuleGroupUnionModel> checkedChangeListener;
+    private final AdapterOnChipCheckedChangeListener<NotificationRuleGroupListUnionModel> checkedChangeListener;
     @Nullable
     private final Set<Long> initCheckSet;
 
@@ -59,7 +59,7 @@ public class NotiRuleGroupSelectListAdapter extends ListAdapter<NotificationRule
      * @param initCheckSet          初始选中的项的编号集合
      * @param checkedChangeListener 选择状态变更监听器
      */
-    NotiRuleGroupSelectListAdapter(@Nullable Set<Long> initCheckSet, AdapterOnChipCheckedChangeListener<NotificationRuleGroupUnionModel> checkedChangeListener) {
+    NotiRuleGroupSelectListAdapter(@Nullable Set<Long> initCheckSet, AdapterOnChipCheckedChangeListener<NotificationRuleGroupListUnionModel> checkedChangeListener) {
         super(ITEM_CALLBACK);
         this.initCheckSet = initCheckSet;
         this.checkedChangeListener = checkedChangeListener;
@@ -94,7 +94,7 @@ public class NotiRuleGroupSelectListAdapter extends ListAdapter<NotificationRule
 
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
-        NotificationRuleGroupUnionModel model = getItem(position);
+        NotificationRuleGroupListUnionModel model = getItem(position);
         NotificationRuleGroupEntity group = model.getGroup();
         holder.binding.chip.setText(group.getName());
 

@@ -15,9 +15,11 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleGroupUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleAndGroupUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleGroupListUnionModel;
 import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleUnionModel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -63,6 +65,27 @@ public interface NotificationRuleDao {
      */
     @Query("SELECT * FROM notificationRules WHERE ruleId = :id")
     Optional<NotificationRuleEntity> getNotificationRuleOptionalById(long id);
+
+    /**
+     * 通过编号有序获取通知规则
+     *
+     * @param idList 通知规则列表
+     * @return 依照规则列表中的排序获取到的通知规则
+     */
+    @Transaction
+    default List<NotificationRuleEntity> getNotificationRuleByIdInOrder(List<Long> idList) {
+        if (idList == null || idList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<NotificationRuleEntity> result = new ArrayList<>();
+        for (Long id : idList) {
+            Optional<NotificationRuleEntity> optional = getNotificationRuleOptionalById(id);
+            optional.ifPresent(result::add);
+        }
+
+        return result;
+    }
 
     /**
      * 获取已启用的通知规则
@@ -298,7 +321,16 @@ public interface NotificationRuleDao {
      * @return 编号处于集合中的通知规则分组
      */
     @Query("SELECT * FROM notificationRuleGroups WHERE groupId IN (:idSet)")
-    Single<List<NotificationRuleGroupEntity>> getRuleGroupById(Set<Long> idSet);
+    Single<List<NotificationRuleGroupEntity>> getRuleGroupSingleById(Set<Long> idSet);
+
+    /**
+     * 通过通知规则分组编号获取通知规则分组和其所包含的通知规则
+     *
+     * @param groupId 分组编号
+     * @return 该编号对应的通知规则和分组的联合模型
+     */
+    @Query("SELECT * FROM notificationRuleGroups WHERE groupId = :groupId")
+    Single<Optional<NotificationRuleAndGroupUnionModel>> getGroupAndRuleSingleById(long groupId);
 
     /**
      * 获取所有通知规则分组数据
@@ -308,7 +340,7 @@ public interface NotificationRuleDao {
     @Query("SELECT g.*, " +
             "(SELECT COUNT(*) FROM notificationRuleGroupRef ref WHERE ref.groupId = g.groupId) AS count " +
             "FROM notificationRuleGroups g")
-    Flowable<List<NotificationRuleGroupUnionModel>> getRuleGroupFlowable();
+    Flowable<List<NotificationRuleGroupListUnionModel>> getRuleGroupFlowable();
 
     /**
      * 添加通知规则分组

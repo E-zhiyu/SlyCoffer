@@ -1,5 +1,6 @@
 package com.sly.coffer.ui.pages.notification.group;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -15,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.sly.coffer.R;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.databinding.ActivityNotificationRuleGroupListBinding;
@@ -72,7 +74,14 @@ public class NotificationRuleGroupListActivity extends AppCompatActivity {
         //列表
         RuleGroupCardListAdapter adapter = new RuleGroupCardListAdapter(
                 (entity, anchor) -> {
-                    //TODO:点击监听
+                    //生成数据包
+                    Bundle bundle = new Bundle();
+                    bundle.putLong(KeyStrings.NOTIFICATION_RULE_GROUP_ID.v(), entity.getGroup().getGroupId());
+
+                    //生成 Intent
+                    Intent intent = new Intent(this, NotificationRuleGroupInputActivity.class);
+                    intent.putExtras(bundle);
+                    startActivity(intent);
                 },
                 (entity, anchor) -> {
                     PopupMenu popupMenu = new PopupMenu(this, anchor, Gravity.END);

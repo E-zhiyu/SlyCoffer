@@ -25,7 +25,7 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.services.RuleService;
+import com.sly.coffer.data.save.db.services.NotificationRuleService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityCapturedNotificationRuleInputBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
@@ -392,7 +392,7 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         GroupSelectViewModel groupSelectViewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
         groupSelectViewModel.getGroupIdSetLiveData().observe(this, checkedIdSet -> {
             BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.notificationRuleDao().getRuleGroupById(checkedIdSet)
+            disposable.add(db.notificationRuleDao().getRuleGroupSingleById(checkedIdSet)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -507,7 +507,7 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         );
         NotificationRuleTransferEntity transfer = new NotificationRuleTransferEntity(importAccount, exportAccount);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        disposable.add(RuleService.addNewNotificationRule(rule, transfer, tagIdList, groupIdList, db)
+        disposable.add(NotificationRuleService.addNewNotificationRule(rule, transfer, tagIdList, groupIdList, db)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
