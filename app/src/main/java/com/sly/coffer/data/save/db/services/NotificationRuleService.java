@@ -4,8 +4,10 @@ import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleAndGroupUnionModel;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
@@ -109,6 +111,24 @@ public class NotificationRuleService {
         return Completable.defer(() -> {
             db.notificationRuleDao().modifyRuleGroup(group, ruleIdList);
             return Completable.complete();
+        });
+    }
+
+    /**
+     * 通过分组编号获取通知规则分组及其包含的规则
+     *
+     * @param groupId 通知规则分组编号
+     * @param db      数据库实例
+     * @return 该编号对应的规则分组及其包含的规则
+     */
+    public static Single<Optional<NotificationRuleAndGroupUnionModel>> getRuleGroupAndRuleByGroupId(long groupId, BookkeepingDb db) {
+        return Single.defer(() -> {
+            NotificationRuleAndGroupUnionModel model = db.notificationRuleDao().getRuleGroupAndRuleByGroupId(groupId);
+            if (model == null) {
+                return Single.just(Optional.empty());
+            } else {
+                return Single.just(Optional.of(model));
+            }
         });
     }
 }

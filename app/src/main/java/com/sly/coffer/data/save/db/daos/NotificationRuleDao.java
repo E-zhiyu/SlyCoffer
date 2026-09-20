@@ -325,14 +325,42 @@ public interface NotificationRuleDao {
     Single<List<NotificationRuleGroupEntity>> getRuleGroupSingleById(Set<Long> idSet);
 
     /**
-     * 通过通知规则分组编号获取通知规则分组和其所包含的通知规则
+     * 通过分组编号获取通知规则
      *
-     * @param groupId 分组编号
-     * @return 该编号对应的通知规则和分组的联合模型
+     * @param groupId 规则分组编号
+     * @return 该分组包含的通知规则列表
+     */
+    @Query("SELECT r.* FROM notificationRules r " +
+            "INNER JOIN (" +
+            "    SELECT ruleId, `order` FROM notificationRuleGroupRef " +
+            "    WHERE groupId = :groupId" +
+            ") ref ON r.ruleId = ref.ruleId " +
+            "ORDER BY ref.`order` ASC")
+    List<NotificationRuleEntity> getNotificationRuleByGroupId(long groupId);
+
+    /**
+     * 通过分组编号获取通知规则分组，并按照规则的排序序号升序排序
+     *
+     * @param groupId 通知规则分组编号
+     * @return 该编号对应的通知分组
+     */
+    @Query("SELECT * FROM notificationRuleGroups WHERE groupId = :groupId")
+    Optional<NotificationRuleGroupEntity> getRuleGroupOptionalById(long groupId);
+
+    /**
+     * 通过分组编号获取通知规则分组及其包含的规则
+     *
+     * @param groupId 通知规则分组编号
+     * @return 该编号对应的规则分组及其包含的规则
      */
     @Transaction
-    @Query("SELECT * FROM notificationRuleGroups WHERE groupId = :groupId")
-    Single<Optional<NotificationRuleAndGroupUnionModel>> getGroupAndRuleSingleById(long groupId);
+    default NotificationRuleAndGroupUnionModel getRuleGroupAndRuleByGroupId(long groupId) {
+        Optional<NotificationRuleGroupEntity> groupOptional = getRuleGroupOptionalById(groupId);
+        if (groupOptional.isEmpty()) return null;
+
+        List<NotificationRuleEntity> ruleList = getNotificationRuleByGroupId(groupId);
+        return new NotificationRuleAndGroupUnionModel(groupOptional.get(), ruleList);
+    }
 
     /**
      * 获取所有通知规则分组数据

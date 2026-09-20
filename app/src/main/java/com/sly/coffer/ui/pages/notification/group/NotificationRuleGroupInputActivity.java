@@ -90,7 +90,7 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
         if (initBundle != null) {
             long groupId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_GROUP_ID.v());
             BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.notificationRuleDao().getGroupAndRuleSingleById(groupId)
+            disposable.add(NotificationRuleService.getRuleGroupAndRuleByGroupId(groupId, db)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
