@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -64,7 +65,8 @@ public class AbNotificationListenerService extends NotificationListenerService {
     private String lastPackageName = "";                                //上一次接收通知的包名
     private String lastTitle = "";                                      //上一次通知的标题
     private long lastReceiveEpochMilli = 0;                             //上一次接收消息的时间（毫秒）
-    private final HashMap<Long, Integer> minOrderMap = new HashMap<>(); //用于实现互斥功能的哈希表，k:分组编号,v:该分组能够触发的规则中最低的排序（即最高优先级）
+    private final HashMap<Long, List<RuleWaitToTrigger>> ruleGroupMap = new HashMap<>();  //用于实现互斥功能的哈希表，k:分组编号,v:该分组等待触发的规则及其识别到的金额
+    private final static long NO_GROUP_KEY = Long.MIN_VALUE;            //待触发的规则没有处于任何一个分组的键
     private final HashSet<Long> usedRuleIdSet = new HashSet<>();        //单次通知发送时已经使用过的规则编号集合，防止重复触发同一规则
 
     private static class NotificationKey {
@@ -96,13 +98,15 @@ public class AbNotificationListenerService extends NotificationListenerService {
     /**
      * 等待被触发的通知规则与金额的集合类
      */
-    private static class RuleNeedTrigger {
-        BookkeepingNotiRuleUnionModel model;    //规则模型
-        double amount;                          //该规则识别到的金额数据
+    private static class RuleWaitToTrigger {
+        final BookkeepingNotiRuleUnionModel model;    //规则模型
+        final double amount;                          //该规则识别到的金额数据
+        final int order;                              //该规则在分组中的排序序号
 
-        public RuleNeedTrigger(BookkeepingNotiRuleUnionModel model, double amount) {
+        public RuleWaitToTrigger(BookkeepingNotiRuleUnionModel model, double amount, int order) {
             this.model = model;
             this.amount = amount;
+            this.order = order;
         }
     }
 
@@ -191,11 +195,10 @@ public class AbNotificationListenerService extends NotificationListenerService {
         List<BookkeepingNotiRuleUnionModel> ruleModelList = ruleMap.get(key);
         if (ruleModelList != null && !ruleModelList.isEmpty()) {
             //清空用于排斥的工具属性
-            minOrderMap.clear();
+            ruleGroupMap.clear();
             usedRuleIdSet.clear();
 
             //获取待触发的规则
-            List<RuleNeedTrigger> ruleNeedTriggerList = new ArrayList<>(); //待触发的规则模型列表
             for (BookkeepingNotiRuleUnionModel model : ruleModelList) {
                 //解析数据
                 NotificationRuleEntity rule = model.getRule();
@@ -204,11 +207,11 @@ public class AbNotificationListenerService extends NotificationListenerService {
                 long ruleId = rule.getRuleId();
 
                 //编译正则表达式
-                Matcher matcher;                                        //通知内容匹配器
+                Matcher matcher;
                 try {
                     Pattern pattern = Pattern.compile(contentRegex);
                     matcher = pattern.matcher(text);
-                } catch (PatternSyntaxException e) {                    //处理无法编译为Matcher的情况
+                } catch (PatternSyntaxException e) {
                     Log.e(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "正则表达式编译出错");
                     String err = String.format(
                             Locale.getDefault(),
@@ -235,64 +238,153 @@ public class AbNotificationListenerService extends NotificationListenerService {
                     }
                     Log.i(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "流水数据生成成功");
 
-                    //更新该规则所在分组的最低排序序号
-                    for (NotificationRuleGroupRefEntity ref : model.getGroupRefList()) {
-                        int order = ref.getOrder();
-                        long groupId = ref.getGroupId();
+                    //将该规则的分组映射保存至哈希表的值中
+                    List<NotificationRuleGroupRefEntity> refList = model.getGroupRefList();
+                    if (!refList.isEmpty()) {
+                        for (NotificationRuleGroupRefEntity ref : model.getGroupRefList()) {
+                            long groupId = ref.getGroupId();
+                            List<RuleWaitToTrigger> waitToTriggerList = ruleGroupMap.get(groupId);
 
-                        Integer savedOrder = minOrderMap.get(groupId);
-                        if (savedOrder == null || savedOrder > order) {
-                            minOrderMap.put(groupId, order);
+                            RuleWaitToTrigger waitToTrigger = new RuleWaitToTrigger(model, amount, ref.getOrder());
+                            if (waitToTriggerList == null) {
+                                List<RuleWaitToTrigger> newList = new ArrayList<>();
+                                newList.add(waitToTrigger);
+                                ruleGroupMap.put(groupId, newList);
+                            } else {
+                                waitToTriggerList.add(waitToTrigger);
+                            }
+                        }
+                    } else {
+                        RuleWaitToTrigger waitToTrigger = new RuleWaitToTrigger(model, amount, -1);
+                        List<RuleWaitToTrigger> waitToTriggerList = ruleGroupMap.get(NO_GROUP_KEY);
+                        if (waitToTriggerList == null) {
+                            List<RuleWaitToTrigger> newList = new ArrayList<>();
+                            newList.add(waitToTrigger);
+                            ruleGroupMap.put(NO_GROUP_KEY, newList);
+                        } else {
+                            waitToTriggerList.add(waitToTrigger);
                         }
                     }
+                }
+            }
 
-                    //将该规则模型与获取的金额存放至列表中
-                    ruleNeedTriggerList.add(new RuleNeedTrigger(model, amount));
+            //逐个分组触发真正能够触发的规则
+            for (Map.Entry<Long, List<RuleWaitToTrigger>> entry : ruleGroupMap.entrySet()) {
+                long groupId = entry.getKey();
+                List<RuleWaitToTrigger> waitToTriggerList = entry.getValue();
+
+                //判断一些条件
+                if (groupId == NO_GROUP_KEY) continue;    //跳过没有处于任何一个分组的规则
+                if (waitToTriggerList.isEmpty()) continue;  //跳过列表为空的分组
+
+                //获取未使用的排序序号最低的规则位置
+                int pos = 0, index = 0;
+                int minOrder = Integer.MAX_VALUE;
+                for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
+                    int ruleOrder = waitToTrigger.order;
+                    long ruleId = waitToTrigger.model.getRule().getRuleId();
+                    if (ruleOrder <= minOrder && !usedRuleIdSet.contains(ruleId)) {
+                        pos = index;
+                        minOrder = ruleOrder;
+                    }
+
+                    index++;
+                }
+
+                //触发排序序号最低的规则
+                RuleWaitToTrigger minOrderRule = waitToTriggerList.get(pos);
+                usedRuleIdSet.add(minOrderRule.model.getRule().getRuleId());
+                if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
+                    sendConfirmNotification(minOrderRule.amount, minOrderRule.model);
+                } else {
+                    saveInDbDirectly(minOrderRule.amount, minOrderRule.model);
+                }
+
+                //将优先级比触发规则低的规则编号添加至“已使用”
+                Set<Long> excludedRuleIdSet = waitToTriggerList.stream()
+                        .filter(rule -> rule.order >= minOrderRule.order)
+                        .map(rule -> rule.model.getRule().getRuleId())
+                        .collect(Collectors.toSet());
+                usedRuleIdSet.addAll(excludedRuleIdSet);
+            }
+
+            //触发完处于分组的规则后触发不属于任何一个分组的规则
+            List<RuleWaitToTrigger> noGroupRuleList = ruleGroupMap.get(NO_GROUP_KEY);
+            if (noGroupRuleList != null && !noGroupRuleList.isEmpty()) {
+                for (RuleWaitToTrigger waitToTrigger : noGroupRuleList) {
+                    //判断是否被使用过
+                    long ruleId = waitToTrigger.model.getRule().getRuleId();
+                    if (usedRuleIdSet.contains(ruleId)) continue;
+
+                    //触发该规则
+                    usedRuleIdSet.add(ruleId);
+                    if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
+                        sendConfirmNotification(waitToTrigger.amount, waitToTrigger.model);
+                    } else {
+                        saveInDbDirectly(waitToTrigger.amount, waitToTrigger.model);
+                    }
                 }
             }
 
             //触发真正需要触发的规则
-            for (RuleNeedTrigger needTrigger : ruleNeedTriggerList) {
-                //获取数据
-                NotificationRuleEntity rule = needTrigger.model.getRule();
-                long ruleId = rule.getRuleId();
-
-                //根据是否存在于某个分组中，分情况触发规则
-                List<NotificationRuleGroupRefEntity> groupRefList = needTrigger.model.getGroupRefList();
-                if (!groupRefList.isEmpty()) {
-                    //遍历映射关系列表，决定是否触发
-                    for (NotificationRuleGroupRefEntity ref : groupRefList) {
-                        //若当前规则被使用过，直接跳出循环
-                        if (usedRuleIdSet.contains(ruleId)) {
-                            break;
-                        }
-
-                        //若保存的排序序号大于等于当前序号，则触发规则
-                        long groupId = ref.getGroupId();
-                        int order = ref.getOrder();
-                        Integer savedOrder = minOrderMap.get(groupId);
-                        if (savedOrder != null && savedOrder >= order) {
-                            usedRuleIdSet.add(ruleId);  //将规则编号填充至使用过的集合中
-
-                            //根据偏好设置决定直接入帐还是发送通知
-                            if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
-                                sendConfirmNotification(needTrigger.amount, needTrigger.model);
-                            } else {
-                                saveInDbDirectly(needTrigger.amount, needTrigger.model);
-                            }
-                        }
-                    }
-                } else {
-                    if (usedRuleIdSet.contains(ruleId)) continue;
-
-                    //根据偏好设置决定直接入帐还是发送通知
-                    if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
-                        sendConfirmNotification(needTrigger.amount, needTrigger.model);
-                    } else {
-                        saveInDbDirectly(needTrigger.amount, needTrigger.model);
-                    }
-                }
-            }
+//            Set<Long> singleGroupUsedIdSet = new HashSet<>();
+//            for (RuleNeedTrigger waitToTrigger : ruleWaitToTriggerList) {
+//                //获取数据
+//                NotificationRuleEntity rule = waitToTrigger.model.getRule();
+//                long ruleId = rule.getRuleId();
+//
+//                //根据是否存在于某个分组中，分情况触发规则
+//                List<NotificationRuleGroupRefEntity> groupRefList = waitToTrigger.model.getGroupRefList();
+//                if (!groupRefList.isEmpty()) {
+//                    //逐个分组查询是否能够触发该规则
+//                    for (NotificationRuleGroupRefEntity ref : groupRefList) {
+//                        //若当前规则被使用过，直接跳出循环
+//                        if (usedRuleIdSet.contains(ruleId) || singleGroupUsedIdSet.contains(ruleId)) {
+//                            break;
+//                        }
+//
+//                        //清空上次循环添加的使用过的规则编号
+//                        singleGroupUsedIdSet.clear();
+//
+//                        //判断未使用的规则中是否有比该规则优先级更高的规则
+//                        long groupId = ref.getGroupId();
+//                        List<NotificationRuleGroupRefEntity> savedRefList = minOrderMap.get(groupId);
+//                        if (savedRefList != null && !savedRefList.isEmpty()) {
+//                            //遍历查询出最低的排序序号（也就是优先级最高的）
+//                            int savedMinOrder = Integer.MAX_VALUE;
+//                            for (NotificationRuleGroupRefEntity savedRef : savedRefList) {
+//                                int savedOrder = savedRef.getOrder();
+//                                if (!usedRuleIdSet.contains(savedRef.getRuleId()) && savedOrder < savedMinOrder) {
+//                                    savedMinOrder = savedOrder;
+//                                }
+//                            }
+//
+//                            //与当前排序序号比较，决定是否查找下一个分组
+//                            if (savedMinOrder < ref.getOrder()) {
+//                                continue;
+//                            }
+//                        }
+//
+//                        //触发规则
+//                        singleGroupUsedIdSet.add(ruleId);  //将规则编号填充至使用过的集合中
+//                        if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
+//                            sendConfirmNotification(waitToTrigger.amount, waitToTrigger.model);
+//                        } else {
+//                            saveInDbDirectly(waitToTrigger.amount, waitToTrigger.model);
+//                        }
+//                    }
+//                    usedRuleIdSet.addAll(singleGroupUsedIdSet);
+//                } else {
+//                    if (usedRuleIdSet.contains(ruleId)) continue;
+//
+//                    //根据偏好设置决定直接入帐还是发送通知
+//                    if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
+//                        sendConfirmNotification(waitToTrigger.amount, waitToTrigger.model);
+//                    } else {
+//                        saveInDbDirectly(waitToTrigger.amount, waitToTrigger.model);
+//                    }
+//                }
+//            }
         }
     }
 
