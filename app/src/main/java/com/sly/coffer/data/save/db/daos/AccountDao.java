@@ -169,15 +169,6 @@ public interface AccountDao {
     List<Long> getTagIdListByAccountId(long accountId);
 
     /**
-     * 通过流水编号获取流水日期和时间
-     *
-     * @param accountId 需要获取日期和时间的流水编号
-     * @return 流水日期和时间
-     */
-    @Query("SELECT dateTime FROM accounts WHERE accountId = :accountId")
-    LocalDateTime getAccountDateTimeById(long accountId);
-
-    /**
      * 通过标签编号修改预算余额
      *
      * @param increase        预算余额增加的量
@@ -287,6 +278,14 @@ public interface AccountDao {
     void updateAccount(AccountEntity account);
 
     /**
+     * 通过流水记录编号获取流水记录
+     * @param accountId 流水编号
+     * @return 该编号对应的流水记录
+     */
+    @Query("SELECT * FROM accounts WHERE accountId = :accountId")
+    Optional<AccountEntity> getAccountById(long accountId);
+
+    /**
      * 修改流水记录的事务
      *
      * @param account         修改后的流水数据
@@ -304,6 +303,17 @@ public interface AccountDao {
         if (account == null) return null;
         long accountId = account.getAccountId();
 
+        //获取旧数据
+        LocalDateTime oldDateTime;  //原来的日期和时间
+        Optional<AccountEntity> oldOptional = getAccountById(accountId);
+        if (oldOptional.isPresent()) {
+            AccountEntity oldAccount = oldOptional.get();
+            oldDateTime = oldAccount.getDateTime();
+            account.setAutoTag(oldAccount.getAutoTag());    //恢复自动记账标记
+        } else {
+            oldDateTime = account.getDateTime();
+        }
+
         //获取在数据库中的媒体文件 Uri，并计算需要删除的媒体文件的 Uri
         Set<Uri> oldMediaUriSet = new HashSet<>(getMediaUriByAccountId(accountId));
         Set<Uri> newMediaUriSet = mediaEntityList.stream()
@@ -312,7 +322,6 @@ public interface AccountDao {
         oldMediaUriSet.removeAll(newMediaUriSet);
 
         //更新流水记录
-        LocalDateTime oldDateTime = getAccountDateTimeById(accountId);  //获取原来的日期和时间
         updateAccount(account);
 
         //更新转账账户数据
@@ -359,6 +368,7 @@ public interface AccountDao {
      * @param account 需要删除的流水记录
      * @return 需要删除的媒体文件的 Uri
      */
+    @Transaction
     default Set<Uri> removeAccount(AccountEntity account) {
         if (account == null) return null;
 
@@ -366,10 +376,10 @@ public interface AccountDao {
         Set<Uri> uriSet = new HashSet<>(getMediaUriByAccountId(account.getAccountId()));
 
         //更新预算
-        LocalDateTime oldDateTime = getAccountDateTimeById(account.getAccountId());
+        LocalDateTime dateTime = account.getDateTime();
         List<Long> oldTagIdList = getTagIdListByAccountId(account.getAccountId());
-        updateBudgetBalanceByTagId(account.getAmount(), oldTagIdList, oldDateTime);
-        limitBudgetBalanceByTagId(oldTagIdList, oldDateTime);
+        updateBudgetBalanceByTagId(account.getAmount(), oldTagIdList, dateTime);
+        limitBudgetBalanceByTagId(oldTagIdList, dateTime);
 
         //删除流水记录
         deleteAccount(account);
