@@ -175,7 +175,7 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
                                                     binding.scrollLayout,
                                                     true,
                                                     null,
-                                                    binding.scrollLayout
+                                                    binding.ruleRecycler
                                             )
                                     );
                                 } else {
@@ -183,7 +183,7 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
                                             binding.scrollLayout,
                                             false,
                                             () -> ruleAdapter.submitList(ruleList),
-                                            binding.scrollLayout
+                                            binding.ruleRecycler
                                     );
                                 }
                             },

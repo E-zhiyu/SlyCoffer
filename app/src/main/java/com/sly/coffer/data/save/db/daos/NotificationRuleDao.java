@@ -15,6 +15,7 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
+import com.sly.coffer.data.save.db.entities.composite.union.BookkeepingNotiRuleUnionModel;
 import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleAndGroupUnionModel;
 import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleGroupListUnionModel;
 import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleUnionModel;
@@ -94,7 +95,7 @@ public interface NotificationRuleDao {
      */
     @Transaction
     @Query("SELECT * FROM notificationRules WHERE enabled = 1")
-    Flowable<List<NotificationRuleUnionModel>> getEnabledNotificationRuleFlowable();
+    Flowable<List<BookkeepingNotiRuleUnionModel>> getEnabledNotificationRuleFlowable();
 
     /**
      * 插入通知规则
@@ -329,6 +330,7 @@ public interface NotificationRuleDao {
      * @param groupId 分组编号
      * @return 该编号对应的通知规则和分组的联合模型
      */
+    @Transaction
     @Query("SELECT * FROM notificationRuleGroups WHERE groupId = :groupId")
     Single<Optional<NotificationRuleAndGroupUnionModel>> getGroupAndRuleSingleById(long groupId);
 
@@ -337,6 +339,7 @@ public interface NotificationRuleDao {
      *
      * @return 所有通知规则分组，支持响应式更新
      */
+    @Transaction
     @Query("SELECT g.*, " +
             "(SELECT COUNT(*) FROM notificationRuleGroupRef ref WHERE ref.groupId = g.groupId) AS count " +
             "FROM notificationRuleGroups g")
