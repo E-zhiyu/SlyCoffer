@@ -131,6 +131,15 @@ public interface NotificationRuleDao {
     void insertNotificationRuleGroupRef(List<NotificationRuleGroupRefEntity> refList);
 
     /**
+     * 获取某个分组中最大的排序序号
+     *
+     * @param groupId 规则分组编号
+     * @return 该编号对应的分组中规则的最大排序编号
+     */
+    @Query("SELECT MAX(`order`) FROM notificationRuleGroupRef WHERE groupId = :groupId")
+    Integer getNotificationRuleMaxOrderInGroupByGroupId(long groupId);
+
+    /**
      * 新增通知规则事务
      *
      * @param rule        新增的通知规则
@@ -162,7 +171,10 @@ public interface NotificationRuleDao {
 
         //分组
         List<NotificationRuleGroupRefEntity> groupRefList = groupIdList.stream()
-                .map(id -> new NotificationRuleGroupRefEntity(ruleId, id, 0))
+                .map(id -> {
+                    Integer maxOrder = getNotificationRuleMaxOrderInGroupByGroupId(id);
+                    return new NotificationRuleGroupRefEntity(ruleId, id, maxOrder == null ? 0 : maxOrder + 1);
+                })
                 .collect(Collectors.toList());
         insertNotificationRuleGroupRef(groupRefList);
     }
@@ -241,7 +253,10 @@ public interface NotificationRuleDao {
         //分组
         deleteNotificationRuleGroupRefByRuleId(ruleId);
         List<NotificationRuleGroupRefEntity> groupRefList = groupIdList.stream()
-                .map(id -> new NotificationRuleGroupRefEntity(ruleId, id, 0))
+                .map(id -> {
+                    Integer maxOrder = getNotificationRuleMaxOrderInGroupByGroupId(id);
+                    return new NotificationRuleGroupRefEntity(ruleId, id, maxOrder == null ? 0 : maxOrder + 1);
+                })
                 .collect(Collectors.toList());
         insertNotificationRuleGroupRef(groupRefList);
     }
