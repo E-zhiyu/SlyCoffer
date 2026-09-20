@@ -283,7 +283,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
                 for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
                     int ruleOrder = waitToTrigger.order;
                     long ruleId = waitToTrigger.model.getRule().getRuleId();
-                    if (ruleOrder <= minOrder && !usedRuleIdSet.contains(ruleId)) {
+                    if (ruleOrder < minOrder && !usedRuleIdSet.contains(ruleId)) {
                         pos = index;
                         minOrder = ruleOrder;
                     }
