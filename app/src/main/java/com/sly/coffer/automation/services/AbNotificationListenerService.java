@@ -275,77 +275,66 @@ public class AbNotificationListenerService extends NotificationListenerService {
             for (Map.Entry<Long, List<RuleWaitToTrigger>> entry : ruleGroupMap.entrySet()) {
                 long groupId = entry.getKey();
                 List<RuleWaitToTrigger> waitToTriggerList = entry.getValue();
+                if (waitToTriggerList == null || waitToTriggerList.isEmpty()) continue;
 
-                //判断一些条件
-                if (groupId == NO_GROUP_KEY) continue;    //跳过没有处于任何一个分组的规则
-                if (waitToTriggerList.isEmpty()) continue;  //跳过列表为空的分组
+                //根据是否有分组进行不同的处理
+                if (groupId != NO_GROUP_KEY) {
+                    //按照序号升序排序
+                    waitToTriggerList.sort(Comparator.comparing(ruleWaitToTrigger -> ruleWaitToTrigger.order));
 
-                //按照序号升序排序
-                waitToTriggerList.sort(Comparator.comparing(ruleWaitToTrigger -> ruleWaitToTrigger.order));
+                    //获取未使用的排序序号最低的规则位置
+                    int pos = -1, index = 0;
+                    Integer minOrder = groupMinOrderMap.getOrDefault(groupId, Integer.MAX_VALUE);
+                    for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
+                        int ruleOrder = waitToTrigger.order;
+                        long ruleId = waitToTrigger.model.getRule().getRuleId();
+                        if ((minOrder == null || ruleOrder <= minOrder) && !usedRuleIdSet.contains(ruleId)) {
+                            pos = index;
+                            break;
+                        }
 
-                //获取未使用的排序序号最低的规则位置
-                int pos = -1, index = 0;
-                Integer minOrder = groupMinOrderMap.getOrDefault(groupId, Integer.MAX_VALUE);
-                for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
-                    int ruleOrder = waitToTrigger.order;
-                    long ruleId = waitToTrigger.model.getRule().getRuleId();
-                    if ((minOrder == null || ruleOrder <= minOrder) && !usedRuleIdSet.contains(ruleId)) {
-                        pos = index;
-                        break;
+                        index++;
                     }
+                    if (pos < 0) continue;
 
-                    index++;
-                }
-                if (pos < 0) continue;
+                    //将目标位置后的所有规则都标记为“已使用”
+                    Set<Long> excludedRuleIdSet = waitToTriggerList.subList(pos + 1, waitToTriggerList.size()).stream()
+                            .map(rule -> rule.model.getRule().getRuleId())
+                            .collect(Collectors.toSet());
+                    usedRuleIdSet.addAll(excludedRuleIdSet);
 
-                //将目标位置后的所有规则都标记为“已使用”
-                Set<Long> excludedRuleIdSet = waitToTriggerList.subList(pos + 1, waitToTriggerList.size()).stream()
-                        .map(rule -> rule.model.getRule().getRuleId())
-                        .collect(Collectors.toSet());
-                usedRuleIdSet.addAll(excludedRuleIdSet);
-
-                //触发排序序号最低的规则
-                RuleWaitToTrigger minOrderRule = waitToTriggerList.get(pos);
-                usedRuleIdSet.add(minOrderRule.model.getRule().getRuleId());
-                if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
-                    sendConfirmNotification(minOrderRule.amount, minOrderRule.model);
-                } else {
-                    saveInDbDirectly(minOrderRule.amount, minOrderRule.model);
-                }
-
-//                //将优先级比触发规则低的规则编号添加至“已使用”
-//                Set<Long> excludedRuleIdSet = waitToTriggerList.stream()
-//                        .filter(rule -> rule.order >= minOrderRule.order)
-//                        .map(rule -> rule.model.getRule().getRuleId())
-//                        .collect(Collectors.toSet());
-//                usedRuleIdSet.addAll(excludedRuleIdSet);
-
-                //更新触发过的最小序号
-                for (NotificationRuleGroupRefEntity triggeredRuleRef : minOrderRule.model.getGroupRefList()) {
-                    long triggeredGroupId = triggeredRuleRef.getGroupId();
-                    int triggeredOrder = triggeredRuleRef.getOrder();
-
-                    Integer savedMinOrder = groupMinOrderMap.get(triggeredGroupId);
-                    if (savedMinOrder == null || savedMinOrder > triggeredOrder) {
-                        groupMinOrderMap.put(triggeredGroupId, triggeredOrder);
-                    }
-                }
-            }
-
-            //触发完处于分组的规则后触发不属于任何一个分组的规则
-            List<RuleWaitToTrigger> noGroupRuleList = ruleGroupMap.get(NO_GROUP_KEY);
-            if (noGroupRuleList != null && !noGroupRuleList.isEmpty()) {
-                for (RuleWaitToTrigger waitToTrigger : noGroupRuleList) {
-                    //判断是否被使用过
-                    long ruleId = waitToTrigger.model.getRule().getRuleId();
-                    if (usedRuleIdSet.contains(ruleId)) continue;
-
-                    //触发该规则
-                    usedRuleIdSet.add(ruleId);
+                    //触发排序序号最低的规则
+                    RuleWaitToTrigger minOrderRule = waitToTriggerList.get(pos);
+                    usedRuleIdSet.add(minOrderRule.model.getRule().getRuleId());
                     if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
-                        sendConfirmNotification(waitToTrigger.amount, waitToTrigger.model);
+                        sendConfirmNotification(minOrderRule.amount, minOrderRule.model);
                     } else {
-                        saveInDbDirectly(waitToTrigger.amount, waitToTrigger.model);
+                        saveInDbDirectly(minOrderRule.amount, minOrderRule.model);
+                    }
+
+                    //更新触发过的最小序号
+                    for (NotificationRuleGroupRefEntity triggeredRuleRef : minOrderRule.model.getGroupRefList()) {
+                        long triggeredGroupId = triggeredRuleRef.getGroupId();
+                        int triggeredOrder = triggeredRuleRef.getOrder();
+
+                        Integer savedMinOrder = groupMinOrderMap.get(triggeredGroupId);
+                        if (savedMinOrder == null || savedMinOrder > triggeredOrder) {
+                            groupMinOrderMap.put(triggeredGroupId, triggeredOrder);
+                        }
+                    }
+                } else {
+                    for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
+                        //判断是否被使用过
+                        long ruleId = waitToTrigger.model.getRule().getRuleId();
+                        if (usedRuleIdSet.contains(ruleId)) continue;
+
+                        //触发该规则
+                        usedRuleIdSet.add(ruleId);
+                        if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
+                            sendConfirmNotification(waitToTrigger.amount, waitToTrigger.model);
+                        } else {
+                            saveInDbDirectly(waitToTrigger.amount, waitToTrigger.model);
+                        }
                     }
                 }
             }
