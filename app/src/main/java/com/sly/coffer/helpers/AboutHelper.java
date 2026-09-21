@@ -10,7 +10,13 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.12.0\n" +
+    private static final String UPDATE_LOG_MD = "# v1.12.1\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复更新安装包下载完成无法弹出安装对话框的BUG\n" +
+            "\n" +
+            "# v1.12.0\n" +
             "\n" +
             "### 新增内容\n" +
             "\n" +
