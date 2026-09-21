@@ -122,6 +122,7 @@ public class NotificationRuleListActivity extends AppCompatActivity {
             return true;
         });
         AppearanceHelper.attachMorphAnimation(binding.addFab);
+        AppearanceHelper.setMarginToNavigation(binding.addFab, this);
 
         //分组列表界面按钮
         binding.groupListFab.setOnClickListener(view -> {
@@ -129,7 +130,7 @@ public class NotificationRuleListActivity extends AppCompatActivity {
             startActivity(intent);
         });
         AppearanceHelper.attachMorphAnimation(binding.groupListFab);
-        AppearanceHelper.setMarginToNavigation(binding.fabLayout, this);
+        AppearanceHelper.setMarginToNavigation(binding.groupListFab, this);
 
         //列表
         NotificationRuleListAdapter adapter = new NotificationRuleListAdapter(
