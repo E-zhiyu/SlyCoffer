@@ -346,7 +346,7 @@ public class UpdateHelper {
         //注册下载完毕监听器
         IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(downloadFinishReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            context.registerReceiver(downloadFinishReceiver, filter, Context.RECEIVER_EXPORTED);
         } else {
             ContextCompat.registerReceiver(context, downloadFinishReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
         }
