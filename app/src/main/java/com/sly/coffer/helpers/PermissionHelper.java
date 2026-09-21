@@ -30,7 +30,7 @@ import androidx.lifecycle.LifecycleOwner;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.hjq.device.compat.DeviceOs;
 import com.sly.coffer.SlyCoffer;
-import com.sly.coffer.automation.services.AbAccessibilityService;
+import com.sly.coffer.automation.services.AccessibilityAbService;
 import com.sly.coffer.automation.services.PickAccessibilityService;
 import com.sly.coffer.data.save.preference.AppSettingsPreference;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
@@ -80,7 +80,7 @@ public class PermissionHelper {
                 PermissionHelper::buildAutoStartPermissionIntent
         ),
         ACCESSIBILITY_BOOKKEEPING(
-                context -> isAccessibilityServiceEnabled(context, AbAccessibilityService.class),
+                context -> isAccessibilityServiceEnabled(context, AccessibilityAbService.class),
                 PermissionHelper::buildAccessibilityIntent
         ),
         ACCESSIBILITY_PICK(
@@ -538,7 +538,7 @@ public class PermissionHelper {
     @NonNull
     private static Intent buildAccessibilityIntent(@NonNull Context context) {
         // 替换为你的无障碍服务类名（完整路径，例如: com.example.app/com.example.app.MyAccessibilityService）
-        String serviceName = context.getPackageName() + "/" + AbAccessibilityService.class.getCanonicalName();
+        String serviceName = context.getPackageName() + "/" + AccessibilityAbService.class.getCanonicalName();
 
         Intent intent = new Intent();
         intent.setAction(Settings.ACTION_ACCESSIBILITY_SETTINGS);

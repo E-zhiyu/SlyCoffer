@@ -67,7 +67,7 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 @SuppressLint("AccessibilityPolicy")
-public class AbAccessibilityService extends AccessibilityService {
+public class AccessibilityAbService extends AccessibilityService {
     private final CompositeDisposable disposable = new CompositeDisposable();
     private final Map<CacheKey, List<AccessibilityRuleUnionModel>> ruleCacheMap = new HashMap<>();
     private final Map<Long, Long> antiShakeMap = new HashMap<>();   //用于防抖的哈希表，防止规则重复触发多次
