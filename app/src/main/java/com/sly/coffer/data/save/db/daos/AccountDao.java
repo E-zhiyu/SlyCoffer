@@ -2,7 +2,6 @@ package com.sly.coffer.data.save.db.daos;
 
 import android.net.Uri;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.Dao;
 import androidx.room.Delete;
@@ -19,7 +18,7 @@ import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
-import com.sly.coffer.data.save.db.entities.composite.AccountWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -79,7 +78,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE accountId = :accountId")
-    Single<Optional<AccountWithDetailModel>> getAccountWithDetailSingleById(long accountId);
+    Single<Optional<AccountUnionModel>> getAccountWithDetailSingleById(long accountId);
 
     /**
      * 通过日期区间获取流水记录的 ID
@@ -100,7 +99,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE dateTime >= :start AND dateTime < :end")
-    Flowable<List<AccountWithDetailModel>> getAccountWithDetailFlowableByDateRange(LocalDate start, LocalDate end);
+    Flowable<List<AccountUnionModel>> getAccountWithDetailFlowableByDateRange(LocalDate start, LocalDate end);
 
     /**
      * 通过流水记录的 ID 获取流水记录数据
@@ -110,7 +109,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE accountId IN (:ids)")
-    Flowable<List<AccountWithDetailModel>> getAccountWithDetailFlowableById(Set<Long> ids);
+    Flowable<List<AccountUnionModel>> getAccountWithDetailFlowableById(Set<Long> ids);
 
     /**
      * 获取数据库中储存的转出和转入账户
@@ -168,15 +167,6 @@ public interface AccountDao {
      */
     @Query("SELECT tagId FROM accountTagRef WHERE accountId = :accountId")
     List<Long> getTagIdListByAccountId(long accountId);
-
-    /**
-     * 通过流水编号获取流水日期和时间
-     *
-     * @param accountId 需要获取日期和时间的流水编号
-     * @return 流水日期和时间
-     */
-    @Query("SELECT dateTime FROM accounts WHERE accountId = :accountId")
-    LocalDateTime getAccountDateTimeById(long accountId);
 
     /**
      * 通过标签编号修改预算余额
@@ -288,6 +278,14 @@ public interface AccountDao {
     void updateAccount(AccountEntity account);
 
     /**
+     * 通过流水记录编号获取流水记录
+     * @param accountId 流水编号
+     * @return 该编号对应的流水记录
+     */
+    @Query("SELECT * FROM accounts WHERE accountId = :accountId")
+    Optional<AccountEntity> getAccountById(long accountId);
+
+    /**
      * 修改流水记录的事务
      *
      * @param account         修改后的流水数据
@@ -297,12 +295,24 @@ public interface AccountDao {
      */
     @Transaction
     default Set<Uri> modifyAccount(
-            @NonNull AccountEntity account,
+            AccountEntity account,
             AccountTransferEntity transfer,
-            @NonNull List<MediaEntity> mediaEntityList,
-            @NonNull List<Long> tagIdList
+            List<MediaEntity> mediaEntityList,
+            List<Long> tagIdList
     ) {
+        if (account == null) return null;
         long accountId = account.getAccountId();
+
+        //获取旧数据
+        LocalDateTime oldDateTime;  //原来的日期和时间
+        Optional<AccountEntity> oldOptional = getAccountById(accountId);
+        if (oldOptional.isPresent()) {
+            AccountEntity oldAccount = oldOptional.get();
+            oldDateTime = oldAccount.getDateTime();
+            account.setAutoTag(oldAccount.getAutoTag());    //恢复自动记账标记
+        } else {
+            oldDateTime = account.getDateTime();
+        }
 
         //获取在数据库中的媒体文件 Uri，并计算需要删除的媒体文件的 Uri
         Set<Uri> oldMediaUriSet = new HashSet<>(getMediaUriByAccountId(accountId));
@@ -312,7 +322,6 @@ public interface AccountDao {
         oldMediaUriSet.removeAll(newMediaUriSet);
 
         //更新流水记录
-        LocalDateTime oldDateTime = getAccountDateTimeById(accountId);  //获取原来的日期和时间
         updateAccount(account);
 
         //更新转账账户数据
@@ -359,15 +368,18 @@ public interface AccountDao {
      * @param account 需要删除的流水记录
      * @return 需要删除的媒体文件的 Uri
      */
-    default Set<Uri> removeAccount(@NonNull AccountEntity account) {
+    @Transaction
+    default Set<Uri> removeAccount(AccountEntity account) {
+        if (account == null) return null;
+
         //获取媒体数据
         Set<Uri> uriSet = new HashSet<>(getMediaUriByAccountId(account.getAccountId()));
 
         //更新预算
-        LocalDateTime oldDateTime = getAccountDateTimeById(account.getAccountId());
+        LocalDateTime dateTime = account.getDateTime();
         List<Long> oldTagIdList = getTagIdListByAccountId(account.getAccountId());
-        updateBudgetBalanceByTagId(account.getAmount(), oldTagIdList, oldDateTime);
-        limitBudgetBalanceByTagId(oldTagIdList, oldDateTime);
+        updateBudgetBalanceByTagId(account.getAmount(), oldTagIdList, dateTime);
+        limitBudgetBalanceByTagId(oldTagIdList, dateTime);
 
         //删除流水记录
         deleteAccount(account);

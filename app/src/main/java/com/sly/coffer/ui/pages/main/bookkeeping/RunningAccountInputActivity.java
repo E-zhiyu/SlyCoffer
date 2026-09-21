@@ -49,7 +49,7 @@ import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.AccountWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
 import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityRunningAccountInputBinding;
@@ -265,7 +265,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 if (modelOptional.isEmpty()) return;
 
                                 //获取数据
-                                AccountWithDetailModel model = modelOptional.get();
+                                AccountUnionModel model = modelOptional.get();
                                 AccountEntity account = model.getAccount();
                                 AccountTransferEntity transfer = model.getTransfer();
                                 List<TagEntity> tagList = model.getTagList();

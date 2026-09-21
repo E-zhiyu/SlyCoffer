@@ -1,6 +1,5 @@
 package com.sly.coffer.data.save.db.daos;
 
-import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -15,7 +14,7 @@ import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
-import com.sly.coffer.data.save.db.entities.composite.AccessibilityRuleWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccessibilityRuleUnionModel;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +36,7 @@ public interface AccessibilityRuleDao {
 
     @Transaction
     @Query("SELECT * FROM accessibilityRules WHERE enabled = 1")
-    Flowable<List<AccessibilityRuleWithDetailModel>> getOpenedAccessibilityRuleWithDetailFlowable();
+    Flowable<List<AccessibilityRuleUnionModel>> getOpenedAccessibilityRuleWithDetailFlowable();
 
     /**
      * 删除无障碍规则
@@ -74,7 +73,7 @@ public interface AccessibilityRuleDao {
      */
     @Transaction
     @Query("SELECT * FROM accessibilityRules WHERE ruleId = :id")
-    Single<Optional<AccessibilityRuleWithDetailModel>> getRuleWithDetailById(long id);
+    Single<Optional<AccessibilityRuleUnionModel>> getRuleWithDetailById(long id);
 
     /**
      * 插入一条新的无障碍规则
@@ -196,11 +195,12 @@ public interface AccessibilityRuleDao {
      */
     @Transaction
     default void modifyAccessibilityRule(
-            @NonNull AccessibilityRuleEntity rule,
+            AccessibilityRuleEntity rule,
             AccessibilityRuleTransferEntity transfer,
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
             List<Long> tagIdList
     ) {
+        if (rule == null) return;
         long ruleId = rule.getRuleId();
 
         //获取旧数据
@@ -283,7 +283,8 @@ public interface AccessibilityRuleDao {
      * @return 为新视图记录分配的编号
      */
     @Transaction
-    default long addPickedPage(@NonNull PickedPageEntity view) {
+    default long addPickedPage(PickedPageEntity view) {
+        if (view == null) return -1;
         String packageName = view.getPackageName();
         String activityName = view.getActivityName();
 

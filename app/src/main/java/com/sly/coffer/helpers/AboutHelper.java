@@ -10,7 +10,18 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.11.1\n" +
+    private static final String UPDATE_LOG_MD = "# v1.12.0\n" +
+            "\n" +
+            "### 新增内容\n" +
+            "\n" +
+            "- 添加通知规则分组，同一分组中的规则只能一次触发一个\n" +
+            "- 通知捕获列表界面和捕获通知规则输入界面新增复制通知内容的功能\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复修改流水记录后会丢失自动记账标记的BUG\n" +
+            "\n" +
+            "# v1.11.1\n" +
             "\n" +
             "### 新增内容\n" +
             "\n" +

@@ -1,46 +1,27 @@
 package com.sly.coffer.helpers;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.sly.coffer.R;
 
 public class ExceptionHelper {
     public static void showExceptionDialog(Context context, @NonNull Throwable e) {
-        String err_message = e.getMessage();
+        String errMessage = e.getMessage();
         new MaterialAlertDialogBuilder(context)
                 .setTitle("运行出错")
-                .setMessage(err_message)
+                .setMessage(errMessage)
                 .setPositiveButton("复制错误信息", (dialog, which) -> {
-                    copyToClipboard(context, err_message);
+                    String label = context.getString(R.string.app_name) + "错误信息";
+                    ImmHelper.copyToClipboard(label, errMessage, context);
                     Toast.makeText(context, "已将错误信息复制到剪贴板", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
                 })
                 .setCancelable(false)   //无法点击空白区域取消
                 .setNegativeButton("关闭", (dialog, which) -> dialog.dismiss())
                 .show();
-    }
-
-    /**
-     * 将文本复制到剪贴板
-     *
-     * @param context 上下文（Activity 或 Application Context）
-     * @param text    要复制的文本
-     */
-    private static void copyToClipboard(@NonNull Context context, String text) {
-        //获取系统剪贴板服务
-        ClipboardManager clipboard = context.getSystemService(ClipboardManager.class);
-
-        //创建 ClipData 对象
-        ClipData clip = ClipData.newPlainText("经理助手错误信息", text);
-
-        //设置剪贴板内容
-        if (clipboard != null) {
-            clipboard.setPrimaryClip(clip);
-        }
     }
 }

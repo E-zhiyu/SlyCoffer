@@ -1,5 +1,7 @@
 package com.sly.coffer.helpers;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -26,6 +28,26 @@ public class ImmHelper {
                 view.requestFocus();
                 imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
             }, 300); // 稍微长一点的延迟，确保布局彻底稳定
+        }
+    }
+
+    /**
+     * 复制到剪贴板
+     *
+     * @param label   复制内容的标题
+     * @param content 复制的内容
+     * @param context 上下文
+     */
+    public static void copyToClipboard(String label, String content, @NonNull Context context) {
+        //获取系统剪贴板服务
+        ClipboardManager clipboard = context.getSystemService(ClipboardManager.class);
+
+        //创建 ClipData 对象
+        ClipData clip = ClipData.newPlainText(label, content);
+
+        //设置剪贴板内容
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(clip);
         }
     }
 }

@@ -1,7 +1,5 @@
 package com.sly.coffer.data.save.db.daos;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -12,7 +10,7 @@ import androidx.room.Update;
 
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
-import com.sly.coffer.data.save.db.entities.composite.TagWithGroupModel;
+import com.sly.coffer.data.save.db.entities.composite.union.TagUnionModel;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +37,7 @@ public interface TagDao {
      * @return 所有标签组成的列表，支持响应式更新
      */
     @Query("SELECT * FROM tags WHERE scope & :scopePow = 0 AND (:exceptedTagIds IS NULL OR tagId NOT IN (:exceptedTagIds)) ORDER BY groupId")
-    Flowable<List<TagEntity>> getAllTagFlowable(int scopePow, @Nullable long[] exceptedTagIds);
+    Flowable<List<TagEntity>> getAllTagFlowable(int scopePow, long[] exceptedTagIds);
 
     /**
      * 获取所有标签分组
@@ -66,7 +64,7 @@ public interface TagDao {
      */
     @Transaction
     @Query("SELECT * FROM tags WHERE tagId = :tagId")
-    Single<Optional<TagWithGroupModel>> getTagWithGroupSingleById(long tagId);
+    Single<Optional<TagUnionModel>> getTagWithGroupSingleById(long tagId);
 
     /**
      * 根据标签 ID 获取标签数据
@@ -111,7 +109,8 @@ public interface TagDao {
      * @return 与传入的名称匹配的分组编号
      */
     @Transaction
-    default long getGroupIdByNameOrCreate(@NonNull String groupName) {
+    default long getGroupIdByNameOrCreate(String groupName) {
+        if (groupName == null) return -1;
         if (groupName.isEmpty()) return -1;
 
         Optional<Long> groupIdOptional = getGroupIdByName(groupName);
@@ -138,7 +137,8 @@ public interface TagDao {
      * @param groupName 用户输入的分组名称
      */
     @Transaction
-    default void addTag(@NonNull TagEntity tag, String groupName) {
+    default void addTag(TagEntity tag, String groupName) {
+        if (tag == null) return;
         long groupId = getGroupIdByNameOrCreate(groupName);
         tag.setGroupId(groupId);
         insertTag(tag);
@@ -167,7 +167,8 @@ public interface TagDao {
      * @param tag       修改后的标签数据
      * @param groupName 分组名称
      */
-    default void modifyTag(@NonNull TagEntity tag, String groupName) {
+    default void modifyTag(TagEntity tag, String groupName) {
+        if (tag == null) return;
         long groupId = getGroupIdByNameOrCreate(groupName);
         tag.setGroupId(groupId);
         updateTag(tag);
@@ -215,7 +216,8 @@ public interface TagDao {
      * @param targetGroup 合并到的目标分组
      */
     @Transaction
-    default void mergeGroup(@NonNull TagGroupEntity mergedGroup, @NonNull TagGroupEntity targetGroup) {
+    default void mergeGroup(TagGroupEntity mergedGroup, TagGroupEntity targetGroup) {
+        if (mergedGroup == null || targetGroup == null) return;
         long mergedGroupId = mergedGroup.getGroupId();
         changeTagGroup(mergedGroupId, targetGroup.getGroupId());
 
@@ -238,7 +240,8 @@ public interface TagDao {
      * @param targetTag 合并到的目标标签
      */
     @Transaction
-    default void mergeTag(@NonNull TagEntity mergedTag, @NonNull TagEntity targetTag) {
+    default void mergeTag(TagEntity mergedTag, TagEntity targetTag) {
+        if (mergedTag == null || targetTag == null) return;
         changeAccountTag(mergedTag.getTagId(), targetTag.getTagId());
         deleteMergedTag(mergedTag);
     }

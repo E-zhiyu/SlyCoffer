@@ -22,10 +22,11 @@ import androidx.lifecycle.ViewModelProvider;
 import com.sly.coffer.R;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetailModel;
-import com.sly.coffer.data.save.db.services.RuleService;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleUnionModel;
+import com.sly.coffer.data.save.db.services.NotificationRuleService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityNotificationRuleInputBinding;
 import com.sly.coffer.auxiliary.enums.unique.TagStrings;
@@ -40,9 +41,13 @@ import com.sly.coffer.ui.others.bottom.TagSelectBottomSheet;
 import com.sly.coffer.ui.others.viewmodel.TagMultiSelectViewModel;
 import com.sly.coffer.ui.pages.main.bookkeeping.AccountTagAdapter;
 import com.sly.coffer.ui.pages.app_list.AppSelectActivity;
+import com.sly.coffer.ui.pages.notification.GroupSelectBottomSheet;
+import com.sly.coffer.ui.pages.notification.GroupSelectViewModel;
+import com.sly.coffer.ui.pages.notification.RuleGroupChipListAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -59,6 +64,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> packageNameSelectLauncher;   //包名选择启动器
     private ActivityNotificationRuleInputBinding binding;           //绑定的XML视图引用
     private final CompositeDisposable disposable = new CompositeDisposable();
+    private RuleGroupChipListAdapter groupAdapter;          //规则分组适配器
     private AccountTagAdapter tagAdapter;                           //标签适配器
 
     @Override
@@ -101,14 +107,13 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
      * 初始化视图
      */
     private void initViews() {
-        //标签 Recycler
-        tagAdapter = new AccountTagAdapter(
+        //分组 Recycler
+        groupAdapter = new RuleGroupChipListAdapter(
                 (entity, anchor, adapter) -> {
-                    //切换视图可见性
-                    List<TagEntity> removedList = new ArrayList<>(adapter.getCurrentList());
+                    List<NotificationRuleGroupEntity> removedList = new ArrayList<>(adapter.getCurrentList());
                     removedList.remove(entity);
                     if (!removedList.isEmpty()) {
-                        tagAdapter.submitList(
+                        adapter.submitList(
                                 removedList,
                                 () -> VisibilityHelper.toggleViewExpansion(
                                         binding.scrollLayout,
@@ -121,7 +126,41 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                         VisibilityHelper.toggleViewExpansion(
                                 binding.scrollLayout,
                                 false,
-                                () -> tagAdapter.submitList(removedList),
+                                () -> adapter.submitList(removedList),
+                                binding.tagRecycler
+                        );
+                    }
+
+                    //更新 ViewModel 中的数据
+                    GroupSelectViewModel viewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
+                    if (viewModel.getGroupIdSetLiveData().getValue() != null) {
+                        viewModel.getGroupIdSetLiveData().getValue().remove(entity.getGroupId());
+                    }
+                }
+        );
+        binding.groupRecycler.setAdapter(groupAdapter);
+
+        //标签 Recycler
+        tagAdapter = new AccountTagAdapter(
+                (entity, anchor, adapter) -> {
+                    //切换视图可见性
+                    List<TagEntity> removedList = new ArrayList<>(adapter.getCurrentList());
+                    removedList.remove(entity);
+                    if (!removedList.isEmpty()) {
+                        adapter.submitList(
+                                removedList,
+                                () -> VisibilityHelper.toggleViewExpansion(
+                                        binding.scrollLayout,
+                                        true,
+                                        null,
+                                        binding.tagRecycler
+                                )
+                        );
+                    } else {
+                        VisibilityHelper.toggleViewExpansion(
+                                binding.scrollLayout,
+                                false,
+                                () -> adapter.submitList(removedList),
                                 binding.tagRecycler
                         );
                     }
@@ -148,10 +187,11 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                 if (optional.isEmpty()) return;
 
                                 //解析数据
-                                NotificationRuleWithDetailModel model = optional.get();
+                                NotificationRuleUnionModel model = optional.get();
                                 NotificationRuleEntity rule = model.getRule();
                                 NotificationRuleTransferEntity transfer = model.getTransfer();
                                 List<TagEntity> tagList = model.getTagList();
+                                List<NotificationRuleGroupEntity> groupList = model.getGroupList();
 
                                 //填充文本框
                                 binding.nameInput.setText(rule.getName());                      //名称
@@ -170,7 +210,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                 }
 
                                 //显示标签
-                                if (!tagList.isEmpty()) {
+                                if (!tagList.isEmpty() && tagAdapter != null) {
                                     tagAdapter.submitList(tagList);
                                     binding.tagRecycler.setVisibility(View.VISIBLE);
                                 } else {
@@ -182,6 +222,13 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                 TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
                                 tagMultiSelectViewModel.getCheckedTagIdSet().clear();
                                 tagMultiSelectViewModel.getCheckedTagIdSet().addAll(tagIdList);
+
+                                //显示分组
+                                List<Long> groupIdList = groupList.stream()
+                                        .map(NotificationRuleGroupEntity::getGroupId)
+                                        .collect(Collectors.toList());
+                                GroupSelectViewModel groupSelectViewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
+                                groupSelectViewModel.updateCheckedGroupId(new HashSet<>(groupIdList));
                             },
                             e -> ExceptionHelper.showExceptionDialog(this, e)
                     )
@@ -321,6 +368,18 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
             editable.insert(cursorPosition, INSERT_REGEX);
         });
 
+        //分组选择按钮
+        binding.groupSelectBtn.setOnClickListener(view -> {
+            GroupSelectBottomSheet bottomSheet = new GroupSelectBottomSheet();
+            bottomSheet.show(getSupportFragmentManager(), TagStrings.NOTIFICATION_RULE_GROUP_SELECT_BOTTOM.t());
+        });
+
+        //分组解释按钮
+        binding.groupExplainBtn.setOnClickListener(view -> {
+            final String EXPLANATION = "处于同一分组下的规则仅会触发一个";
+            TipPreference.showTipWithoutKey(view, Gravity.START, EXPLANATION);
+        });
+
         //标签选择按钮
         binding.tagSelectBtn.setOnClickListener(view -> {
             TagSelectBottomSheet bottomSheet = new TagSelectBottomSheet();
@@ -385,6 +444,39 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                         )
                 );
             }
+        });
+
+        //分组选择
+        GroupSelectViewModel groupSelectViewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
+        groupSelectViewModel.getGroupIdSetLiveData().observe(this, checkedIdSet -> {
+            BookkeepingDb db = BookkeepingDb.getInstance(this);
+            disposable.add(db.notificationRuleDao().getRuleGroupSingleById(checkedIdSet)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(
+                            groupList -> {
+                                if (!groupList.isEmpty()) {
+                                    groupAdapter.submitList(
+                                            groupList,
+                                            () -> VisibilityHelper.toggleViewExpansion(
+                                                    binding.scrollLayout,
+                                                    true,
+                                                    null,
+                                                    binding.groupRecycler
+                                            )
+                                    );
+                                } else {
+                                    VisibilityHelper.toggleViewExpansion(
+                                            binding.scrollLayout,
+                                            false,
+                                            () -> groupAdapter.submitList(groupList),
+                                            binding.groupRecycler
+                                    );
+                                }
+                            },
+                            e -> ExceptionHelper.showExceptionDialog(this, e)
+                    )
+            );
         });
     }
 
@@ -499,9 +591,24 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
         String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
 
         //生成标签 ID 列表
-        List<Long> tagIdList = tagAdapter.getCurrentList().stream()
-                .map(TagEntity::getTagId)
-                .collect(Collectors.toList());
+        List<Long> tagIdList;
+        if (tagAdapter == null) {
+            tagIdList = new ArrayList<>();
+        } else {
+            tagIdList = tagAdapter.getCurrentList().stream()
+                    .map(TagEntity::getTagId)
+                    .collect(Collectors.toList());
+        }
+
+        //生成规则分组 ID 列表
+        List<Long> groupIdList;
+        if (groupAdapter == null) {
+            groupIdList = new ArrayList<>();
+        } else {
+            groupIdList = groupAdapter.getCurrentList().stream()
+                    .map(NotificationRuleGroupEntity::getGroupId)
+                    .collect(Collectors.toList());
+        }
 
         //保存数据
         NotificationRuleEntity rule = new NotificationRuleEntity(
@@ -515,7 +622,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
         NotificationRuleTransferEntity transfer = new NotificationRuleTransferEntity(exportAccount, importAccount);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         if (initBundle == null) {
-            disposable.add(RuleService.addNewNotificationRule(rule, transfer, tagIdList, db)
+            disposable.add(NotificationRuleService.addNewNotificationRule(rule, transfer, tagIdList, groupIdList, db)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -529,7 +636,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
         } else {
             long ruleId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_ID.v());
             rule.setRuleId(ruleId);
-            disposable.add(RuleService.modifyNotificationRule(rule, transfer, tagIdList, db)
+            disposable.add(NotificationRuleService.modifyNotificationRule(rule, transfer, tagIdList, groupIdList, db)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(

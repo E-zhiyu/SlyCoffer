@@ -1,6 +1,8 @@
 package com.sly.coffer.data.backup.maps;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.sly.coffer.data.backup.pojo.NotificationRuleGroupPojo;
+import com.sly.coffer.data.backup.pojo.NotificationRuleGroupRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRulePojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTagRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTransferPojo;
@@ -12,6 +14,8 @@ public class NotificationRuleDataMap {
     private List<NotificationRulePojo> notificationRuleList;
     private List<NotificationRuleTagRefPojo> notificationRuleTagRefList;
     private List<NotificationRuleTransferPojo> notificationRuleTransferList;
+    private List<NotificationRuleGroupPojo> notificationRuleGroupList;
+    private List<NotificationRuleGroupRefPojo> notificationRuleGroupRefList;
 
     public NotificationRuleDataMap() {
     }
@@ -38,5 +42,21 @@ public class NotificationRuleDataMap {
 
     public void setNotificationRuleTransferList(List<NotificationRuleTransferPojo> notificationRuleTransferList) {
         this.notificationRuleTransferList = notificationRuleTransferList;
+    }
+
+    public List<NotificationRuleGroupPojo> getNotificationRuleGroupList() {
+        return notificationRuleGroupList;
+    }
+
+    public void setNotificationRuleGroupList(List<NotificationRuleGroupPojo> notificationRuleGroupList) {
+        this.notificationRuleGroupList = notificationRuleGroupList;
+    }
+
+    public List<NotificationRuleGroupRefPojo> getNotificationRuleGroupRefList() {
+        return notificationRuleGroupRefList;
+    }
+
+    public void setNotificationRuleGroupRefList(List<NotificationRuleGroupRefPojo> notificationRuleGroupRefList) {
+        this.notificationRuleGroupRefList = notificationRuleGroupRefList;
     }
 }

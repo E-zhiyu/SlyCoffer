@@ -22,6 +22,8 @@ import com.sly.coffer.data.backup.pojo.AccountTransferPojo;
 import com.sly.coffer.data.backup.pojo.BudgetPojo;
 import com.sly.coffer.data.backup.pojo.BudgetTagRefPojo;
 import com.sly.coffer.data.backup.pojo.MediaPojo;
+import com.sly.coffer.data.backup.pojo.NotificationRuleGroupPojo;
+import com.sly.coffer.data.backup.pojo.NotificationRuleGroupRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRulePojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTagRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTransferPojo;
@@ -38,6 +40,8 @@ import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
@@ -188,11 +192,21 @@ public interface DataBackupDao {
         List<NotificationRuleTransferEntity> notificationRuleTransferEntityList = readNotificationRuleTransfer();
         List<NotificationRuleTransferPojo> notificationRuleTransferPojoList = mapper.toNotificationRuleTransferPojoList(notificationRuleTransferEntityList);
 
+        //分组数据
+        List<NotificationRuleGroupEntity> notificationRuleGroupEntityList = readNotificationRuleGroup();
+        List<NotificationRuleGroupPojo> notificationRuleGroupPojoList = mapper.toNotificationRuleGroupPojoList(notificationRuleGroupEntityList);
+
+        //规则与分组的映射
+        List<NotificationRuleGroupRefEntity> notificationRuleGroupRefEntityList = readNotificationRuleGroupRef();
+        List<NotificationRuleGroupRefPojo> notificationRuleGroupRefPojoList = mapper.toNotificationRuleGroupRefPojoList(notificationRuleGroupRefEntityList);
+
         //实例化 Map
         NotificationRuleDataMap map = new NotificationRuleDataMap();
         map.setNotificationRuleList(notificationRulePojoList);
         map.setNotificationRuleTagRefList(notificationRuleTagRefPojoList);
         map.setNotificationRuleTransferList(notificationRuleTransferPojoList);
+        map.setNotificationRuleGroupList(notificationRuleGroupPojoList);
+        map.setNotificationRuleGroupRefList(notificationRuleGroupRefPojoList);
 
         return map;
     }
@@ -212,6 +226,8 @@ public interface DataBackupDao {
         clearNotificationRule();
         clearNotificationRuleTagRef();
         clearNotificationRuleTransfer();
+        clearNotificationRuleGroup();
+        clearNotificationRuleGroupRef();
 
         //通知规则数据
         List<NotificationRulePojo> notificationRulePojoList = data.getNotificationRuleList();
@@ -233,6 +249,18 @@ public interface DataBackupDao {
         List<NotificationRuleTransferPojo> notificationRuleTransferPojoList = data.getNotificationRuleTransferList();
         if (notificationRuleTransferPojoList != null && !notificationRuleTransferPojoList.isEmpty()) {
             writeNotificationRuleTransfer(mapper.toNotificationRuleTransferEntityList(notificationRuleTransferPojoList));
+        }
+
+        //分组数据
+        List<NotificationRuleGroupPojo> notificationRuleGroupPojoList = data.getNotificationRuleGroupList();
+        if (notificationRuleGroupPojoList != null && !notificationRuleGroupPojoList.isEmpty()) {
+            writeNotificationRuleGroup(mapper.toNotificationRuleGroupEntityList(notificationRuleGroupPojoList));
+        }
+
+        //规则与分组的映射
+        List<NotificationRuleGroupRefPojo> notificationRuleGroupRefPojoList = data.getNotificationRuleGroupRefList();
+        if (notificationRuleGroupRefPojoList != null && !notificationRuleGroupRefPojoList.isEmpty()) {
+            writeNotificationRuleGroupRef(mapper.toNotificationRuleGroupRefEntityList(notificationRuleGroupRefPojoList));
         }
     }
 
@@ -572,6 +600,50 @@ public interface DataBackupDao {
      */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     void writeNotificationRuleTransfer(List<NotificationRuleTransferEntity> entityList);
+
+    /**
+     * 读取通知规则分组
+     *
+     * @return 通知规则分组数据
+     */
+    @Query("SELECT * FROM notificationRuleGroups")
+    List<NotificationRuleGroupEntity> readNotificationRuleGroup();
+
+    /**
+     * 清空通知规则分组
+     */
+    @Query("DELETE FROM notificationRuleGroups")
+    void clearNotificationRuleGroup();
+
+    /**
+     * 写入通知规则分组
+     *
+     * @param entityList 待写入的数据
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    void writeNotificationRuleGroup(List<NotificationRuleGroupEntity> entityList);
+
+    /**
+     * 读取通知规则分组何规则映射的数据
+     *
+     * @return 通知规则分组
+     */
+    @Query("SELECT * FROM notificationRuleGroupRef")
+    List<NotificationRuleGroupRefEntity> readNotificationRuleGroupRef();
+
+    /**
+     * 清空通知规则与其分组的映射关系
+     */
+    @Query("DELETE FROM notificationRuleGroupRef")
+    void clearNotificationRuleGroupRef();
+
+    /**
+     * 写入通知规则与其分组的映射关系
+     *
+     * @param entityList 待写入的映射关系
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    void writeNotificationRuleGroupRef(List<NotificationRuleGroupRefEntity> entityList);
 
     /**
      * 读取预算数据

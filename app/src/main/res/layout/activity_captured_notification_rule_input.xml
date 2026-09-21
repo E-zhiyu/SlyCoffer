@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.pages.notification.rule.NotificationRuleInputActivity">
+    tools:context=".ui.pages.notification.capture.CapturedNotificationRuleInputActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar_layout"
@@ -115,6 +115,54 @@
                     android:hint="@string/import_account" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- 规则分组 -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="@string/notification_rule_group"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!-- 选择按钮 -->
+                <ImageButton
+                    android:id="@+id/group_select_btn"
+                    style="@style/ImageButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/btn_add"
+                    android:src="@drawable/outline_edit_note_24"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/group_explain_btn"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!-- 说明按钮 -->
+                <ImageButton
+                    android:id="@+id/group_explain_btn"
+                    style="@style/ImageButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/btn_of_explanation"
+                    android:src="@drawable/outline_help_24"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/group_recycler"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                app:layoutManager="com.google.android.flexbox.FlexboxLayoutManager" />
+
             <!-- 标签标题 -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
@@ -130,7 +178,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <!-- 标签选择按钮 -->
+                <!-- 选择按钮 -->
                 <ImageButton
                     android:id="@+id/tag_select_btn"
                     style="@style/ImageButtonStyle"
@@ -177,6 +225,18 @@
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!-- 复制按钮 -->
+                <ImageButton
+                    android:id="@+id/content_copy_btn"
+                    style="@style/ImageButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/btn_of_media_add"
+                    android:src="@drawable/baseline_content_copy_24"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/amount_select_help_btn"
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <!-- 说明按钮 -->

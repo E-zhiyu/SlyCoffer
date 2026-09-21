@@ -1,6 +1,5 @@
 package com.sly.coffer.data.save.db.daos;
 
-import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -12,12 +11,19 @@ import androidx.room.Update;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.BookkeepingNotiRuleUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleAndGroupUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleGroupListUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleUnionModel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Completable;
@@ -40,7 +46,7 @@ public interface NotificationRuleDao {
      * @return 由通知规则组成的列表，支持响应式更新
      */
     @Query("SELECT * FROM notificationRules ORDER BY type")
-    Flowable<List<NotificationRuleEntity>> getAllNotificationRuleFlowable();
+    Flowable<List<NotificationRuleEntity>> getNotificationRuleFlowable();
 
     /**
      * 通过规则 ID 查询通知规则的详细数据
@@ -50,7 +56,7 @@ public interface NotificationRuleDao {
      */
     @Transaction
     @Query("SELECT * FROM notificationRules WHERE ruleId = :ruleId")
-    Single<Optional<NotificationRuleWithDetailModel>> getNotificationRuleWithDetailSingleById(long ruleId);
+    Single<Optional<NotificationRuleUnionModel>> getNotificationRuleWithDetailSingleById(long ruleId);
 
     /**
      * 通过编号获取规则数据
@@ -62,13 +68,34 @@ public interface NotificationRuleDao {
     Optional<NotificationRuleEntity> getNotificationRuleOptionalById(long id);
 
     /**
+     * 通过编号有序获取通知规则
+     *
+     * @param idList 通知规则列表
+     * @return 依照规则列表中的排序获取到的通知规则
+     */
+    @Transaction
+    default List<NotificationRuleEntity> getNotificationRuleByIdInOrder(List<Long> idList) {
+        if (idList == null || idList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<NotificationRuleEntity> result = new ArrayList<>();
+        for (Long id : idList) {
+            Optional<NotificationRuleEntity> optional = getNotificationRuleOptionalById(id);
+            optional.ifPresent(result::add);
+        }
+
+        return result;
+    }
+
+    /**
      * 获取已启用的通知规则
      *
      * @return 已启用的通知规则，带有标签和转账账户等信息
      */
     @Transaction
     @Query("SELECT * FROM notificationRules WHERE enabled = 1")
-    Flowable<List<NotificationRuleWithDetailModel>> getEnabledNotificationRuleFlowable();
+    Flowable<List<BookkeepingNotiRuleUnionModel>> getEnabledNotificationRuleFlowable();
 
     /**
      * 插入通知规则
@@ -96,14 +123,38 @@ public interface NotificationRuleDao {
     void insertNotificationTagRef(List<NotificationRuleTagRefEntity> refList);
 
     /**
+     * 插入通知规则与分组的映射关系
+     *
+     * @param refList 需要插入的映射关系数据
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    void insertNotificationRuleGroupRef(List<NotificationRuleGroupRefEntity> refList);
+
+    /**
+     * 获取某个分组中最大的排序序号
+     *
+     * @param groupId 规则分组编号
+     * @return 该编号对应的分组中规则的最大排序编号
+     */
+    @Query("SELECT MAX(`order`) FROM notificationRuleGroupRef WHERE groupId = :groupId")
+    Integer getNotificationRuleMaxOrderInGroupByGroupId(long groupId);
+
+    /**
      * 新增通知规则事务
      *
-     * @param rule      新增的通知规则
-     * @param transfer  通知规则的转账账户数据
-     * @param tagIdList 标签编号列表
+     * @param rule        新增的通知规则
+     * @param transfer    通知规则的转账账户数据
+     * @param tagIdList   标签编号列表
+     * @param groupIdList 规则分组编号列表
      */
     @Transaction
-    default void addNotificationRule(NotificationRuleEntity rule, NotificationRuleTransferEntity transfer, List<Long> tagIdList) {
+    default void addNotificationRule(
+            NotificationRuleEntity rule,
+            NotificationRuleTransferEntity transfer,
+            List<Long> tagIdList,
+            List<Long> groupIdList
+    ) {
+        if (rule == null) return;
         long ruleId = insertNotificationRule(rule);
 
         //转入转出账户
@@ -117,6 +168,15 @@ public interface NotificationRuleDao {
                 .map(id -> new NotificationRuleTagRefEntity(ruleId, id))
                 .collect(Collectors.toList());
         insertNotificationTagRef(tagRefList);
+
+        //分组
+        List<NotificationRuleGroupRefEntity> groupRefList = groupIdList.stream()
+                .map(id -> {
+                    Integer maxOrder = getNotificationRuleMaxOrderInGroupByGroupId(id);
+                    return new NotificationRuleGroupRefEntity(ruleId, id, maxOrder == null ? 0 : maxOrder + 1);
+                })
+                .collect(Collectors.toList());
+        insertNotificationRuleGroupRef(groupRefList);
     }
 
     /**
@@ -135,18 +195,48 @@ public interface NotificationRuleDao {
     @Query("DELETE FROM notificationruletransfers WHERE ruleId = :ruleId")
     void deleteNotificationRuleTransferByRuleId(long ruleId);
 
+    /**
+     * 通过规则 ID 删除规则与标签的映射关系
+     *
+     * @param ruleId 规则 ID
+     */
     @Query("DELETE FROM notificationRuleTagRef WHERE ruleId = :ruleId")
     void deleteNotificationRuleTagRefByRuleId(long ruleId);
 
     /**
+     * 通过规则 ID 删除规则与分组的映射关系
+     *
+     * @param ruleId 规则 ID
+     */
+    @Query("DELETE FROM notificationRuleGroupRef WHERE ruleId = :ruleId")
+    void deleteNotificationRuleGroupRefByRuleId(long ruleId);
+
+    /**
+     * 通过规则编号和分组编号获取某个规则在某个分组中的排序序号
+     *
+     * @param ruleId  规则编号
+     * @param groupId 分组编号
+     * @return 该规则在指定分组中的排序序号
+     */
+    @Query("SELECT `order` FROM notificationRuleGroupRef WHERE ruleId = :ruleId AND groupId = :groupId")
+    Integer getNotificationRuleGroupOrderByRuleIdAndGroupId(long ruleId, long groupId);
+
+    /**
      * 修改通知规则事务
      *
-     * @param rule      修改后的通知规则
-     * @param transfer  修改后的转账账户数据
-     * @param tagIdList 修改后的标签 ID 列表
+     * @param rule        修改后的通知规则
+     * @param transfer    修改后的转账账户数据
+     * @param tagIdList   修改后的标签 ID 列表
+     * @param groupIdList 规则分组编号列表
      */
     @Transaction
-    default void modifyNotificationRule(@NonNull NotificationRuleEntity rule, NotificationRuleTransferEntity transfer, List<Long> tagIdList) {
+    default void modifyNotificationRule(
+            NotificationRuleEntity rule,
+            NotificationRuleTransferEntity transfer,
+            List<Long> tagIdList,
+            List<Long> groupIdList
+    ) {
+        if (rule == null) return;
         long ruleId = rule.getRuleId();
 
         //获取旧数据
@@ -163,12 +253,27 @@ public interface NotificationRuleDao {
             insertNotificationTransfer(transfer);
         }
 
-        //标签数据
+        //标签
         deleteNotificationRuleTagRefByRuleId(ruleId);
         List<NotificationRuleTagRefEntity> tagRefList = tagIdList.stream()
                 .map(id -> new NotificationRuleTagRefEntity(ruleId, id))
                 .collect(Collectors.toList());
         insertNotificationTagRef(tagRefList);
+
+        //分组
+        List<NotificationRuleGroupRefEntity> groupRefList = groupIdList.stream()
+                .map(id -> {
+                    Integer oldOrder = getNotificationRuleGroupOrderByRuleIdAndGroupId(ruleId, id);
+                    if (oldOrder == null) {
+                        Integer maxOrder = getNotificationRuleMaxOrderInGroupByGroupId(id);
+                        return new NotificationRuleGroupRefEntity(ruleId, id, maxOrder == null ? 0 : maxOrder + 1);
+                    } else {
+                        return new NotificationRuleGroupRefEntity(ruleId, id, oldOrder);
+                    }
+                })
+                .collect(Collectors.toList());
+        deleteNotificationRuleGroupRefByRuleId(ruleId);
+        insertNotificationRuleGroupRef(groupRefList);
     }
 
     /**
@@ -192,7 +297,8 @@ public interface NotificationRuleDao {
 
     /**
      * 获取所有符合搜索条件的被捕获的通知
-     * @param keyword 搜索关键词
+     *
+     * @param keyword         搜索关键词
      * @param useSearchFilter 是否需要过滤搜索条件
      * @return 捕获的通知列表，支持响应式更新
      */
@@ -238,4 +344,160 @@ public interface NotificationRuleDao {
      */
     @Query("SELECT * FROM capturedNotifications WHERE notificationId = :id")
     Single<Optional<CapturedNotificationEntity>> getCapturedNotificationById(long id);
+
+    /**
+     * 通过分组编号获取通知规则分组
+     *
+     * @param idSet 分组编号集合
+     * @return 编号处于集合中的通知规则分组
+     */
+    @Query("SELECT * FROM notificationRuleGroups WHERE groupId IN (:idSet)")
+    Single<List<NotificationRuleGroupEntity>> getRuleGroupSingleById(Set<Long> idSet);
+
+    /**
+     * 通过分组编号获取通知规则
+     *
+     * @param groupId 规则分组编号
+     * @return 该分组包含的通知规则列表
+     */
+    @Query("SELECT r.* FROM notificationRules r " +
+            "INNER JOIN (" +
+            "    SELECT ruleId, `order` FROM notificationRuleGroupRef " +
+            "    WHERE groupId = :groupId" +
+            ") ref ON r.ruleId = ref.ruleId " +
+            "ORDER BY ref.`order` ASC")
+    List<NotificationRuleEntity> getNotificationRuleByGroupId(long groupId);
+
+    /**
+     * 通过分组编号获取通知规则分组，并按照规则的排序序号升序排序
+     *
+     * @param groupId 通知规则分组编号
+     * @return 该编号对应的通知分组
+     */
+    @Query("SELECT * FROM notificationRuleGroups WHERE groupId = :groupId")
+    Optional<NotificationRuleGroupEntity> getRuleGroupOptionalById(long groupId);
+
+    /**
+     * 通过分组编号获取通知规则分组及其包含的规则
+     *
+     * @param groupId 通知规则分组编号
+     * @return 该编号对应的规则分组及其包含的规则
+     */
+    @Transaction
+    default NotificationRuleAndGroupUnionModel getRuleGroupAndRuleByGroupId(long groupId) {
+        Optional<NotificationRuleGroupEntity> groupOptional = getRuleGroupOptionalById(groupId);
+        if (groupOptional.isEmpty()) return null;
+
+        List<NotificationRuleEntity> ruleList = getNotificationRuleByGroupId(groupId);
+        return new NotificationRuleAndGroupUnionModel(groupOptional.get(), ruleList);
+    }
+
+    /**
+     * 获取所有通知规则分组数据
+     *
+     * @return 所有通知规则分组，支持响应式更新
+     */
+    @Transaction
+    @Query("SELECT g.*, " +
+            "(SELECT COUNT(*) FROM notificationRuleGroupRef ref WHERE ref.groupId = g.groupId) AS count " +
+            "FROM notificationRuleGroups g")
+    Flowable<List<NotificationRuleGroupListUnionModel>> getRuleGroupFlowable();
+
+    /**
+     * 添加通知规则分组
+     *
+     * @param group 待添加的通知规则分组
+     * @return 是否完成
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Completable insertRuleGroupCompletable(NotificationRuleGroupEntity group);
+
+    /**
+     * 删除通知规则分组
+     *
+     * @param group 待删除的分组
+     * @return 是否完成
+     */
+    @Delete
+    Completable deleteRuleGroupCompletable(NotificationRuleGroupEntity group);
+
+    /**
+     * 添加通知规则分组
+     *
+     * @param group 待添加的通知规则分组
+     * @return 自动分配的编号
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    long insertRuleGroup(NotificationRuleGroupEntity group);
+
+    /**
+     * 添加规则分组事务
+     *
+     * @param group      待添加的规则分组
+     * @param ruleIdList 该分组包含的规则编号列表
+     */
+    @Transaction
+    default void addRuleGroup(
+            NotificationRuleGroupEntity group,
+            List<Long> ruleIdList
+    ) {
+        if (group == null) return;
+        long groupId = insertRuleGroup(group);
+
+        //规则与分组的映射
+        if (!ruleIdList.isEmpty()) {
+            List<NotificationRuleGroupRefEntity> ruleRefefList = new ArrayList<>();
+            int order = 1;
+            for (Long ruleId : ruleIdList) {
+                ruleRefefList.add(new NotificationRuleGroupRefEntity(ruleId, groupId, order));
+                order++;
+            }
+            insertNotificationRuleGroupRef(ruleRefefList);
+        }
+    }
+
+    /**
+     * 通过分组编号删除通知规则与分组的映射关系
+     *
+     * @param groupId 分组编号
+     */
+    @Query("DELETE FROM notificationRuleGroupRef WHERE groupId = :groupId")
+    void deleteNotificationRuleGroupRefByGroupId(long groupId);
+
+    /**
+     * 更新通知规则分组
+     *
+     * @param group 更新后的通知规则分组
+     */
+    @Update
+    void updateRuleGroup(NotificationRuleGroupEntity group);
+
+    /**
+     * 修改通知规则分组事务
+     *
+     * @param group      修改后的通知规则分组
+     * @param ruleIdList 规则编号列表
+     */
+    @Transaction
+    default void modifyRuleGroup(
+            NotificationRuleGroupEntity group,
+            List<Long> ruleIdList
+    ) {
+        if (group == null || group.getGroupId() == 0) return;
+        long groupId = group.getGroupId();
+
+        updateRuleGroup(group);
+
+        //规则与分组的映射
+        deleteNotificationRuleGroupRefByGroupId(groupId);
+        if (!ruleIdList.isEmpty()) {
+            List<NotificationRuleGroupRefEntity> ruleRefefList = new ArrayList<>();
+            int order = 1;
+            for (Long ruleId : ruleIdList) {
+                ruleRefefList.add(new NotificationRuleGroupRefEntity(ruleId, groupId, order));
+                order++;
+            }
+            insertNotificationRuleGroupRef(ruleRefefList);
+        }
+    }
 }

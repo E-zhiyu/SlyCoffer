@@ -25,7 +25,7 @@ import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.AccessibilityRuleWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccessibilityRuleUnionModel;
 import com.sly.coffer.data.save.db.services.AccessibilityRuleService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityAccessibilityRuleInputBinding;
@@ -187,7 +187,7 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                                 if (optional.isEmpty()) return;
 
                                 //读取数据
-                                AccessibilityRuleWithDetailModel model = optional.get();
+                                AccessibilityRuleUnionModel model = optional.get();
                                 AccessibilityRuleEntity rule = model.getRule();
                                 AccessibilityRuleTransferEntity transfer = model.getTransfer();
                                 List<TagEntity> tagList = model.getTagList();

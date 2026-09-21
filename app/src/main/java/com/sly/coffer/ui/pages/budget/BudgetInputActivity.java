@@ -19,7 +19,7 @@ import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.BudgetWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.BudgetUnionModel;
 import com.sly.coffer.data.save.db.services.BudgetService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityBudgetInputBinding;
@@ -145,7 +145,7 @@ public class BudgetInputActivity extends AppCompatActivity {
                             optional -> {
                                 if (optional.isEmpty()) return;
 
-                                BudgetWithDetailModel model = optional.get();
+                                BudgetUnionModel model = optional.get();
                                 BudgetEntity budget = model.getBudget();
                                 List<TagEntity> tagList = model.getTagList();
 

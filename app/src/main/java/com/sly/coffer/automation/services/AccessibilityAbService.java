@@ -40,7 +40,7 @@ import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.AccessibilityRuleWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccessibilityRuleUnionModel;
 import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
 import com.sly.coffer.helpers.TextHelper;
@@ -67,9 +67,9 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 @SuppressLint("AccessibilityPolicy")
-public class AbAccessibilityService extends AccessibilityService {
+public class AccessibilityAbService extends AccessibilityService {
     private final CompositeDisposable disposable = new CompositeDisposable();
-    private final Map<CacheKey, List<AccessibilityRuleWithDetailModel>> ruleCacheMap = new HashMap<>();
+    private final Map<CacheKey, List<AccessibilityRuleUnionModel>> ruleCacheMap = new HashMap<>();
     private final Map<Long, Long> antiShakeMap = new HashMap<>();   //用于防抖的哈希表，防止规则重复触发多次
     private final BroadcastReceiver SHUT_DOWN_RECEIVER = new BroadcastReceiver() {
         @Override
@@ -114,7 +114,7 @@ public class AbAccessibilityService extends AccessibilityService {
                 .subscribe(
                         modelList -> {
                             ruleCacheMap.clear();
-                            Map<CacheKey, List<AccessibilityRuleWithDetailModel>> map = modelList.stream()
+                            Map<CacheKey, List<AccessibilityRuleUnionModel>> map = modelList.stream()
                                     .collect(Collectors.groupingBy(
                                             model -> {
                                                 AccessibilityRuleEntity rule = model.getRule();
@@ -175,7 +175,7 @@ public class AbAccessibilityService extends AccessibilityService {
 
         //获取对应活动名和包名的规则列表
         CacheKey key = new CacheKey(packageName, activityName);
-        List<AccessibilityRuleWithDetailModel> modelList = ruleCacheMap.get(key);
+        List<AccessibilityRuleUnionModel> modelList = ruleCacheMap.get(key);
         if (modelList == null || modelList.isEmpty()) {
             Log.d(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "当前界面没有匹配的规则");
             return;
@@ -224,7 +224,7 @@ public class AbAccessibilityService extends AccessibilityService {
                             }
 
                             //尝试触发符合要求的规则
-                            for (AccessibilityRuleWithDetailModel model : modelList) {
+                            for (AccessibilityRuleUnionModel model : modelList) {
                                 AccessibilityRuleEntity rule = model.getRule();
 
                                 //获取上一次触发时间，以实现防抖
@@ -356,7 +356,7 @@ public class AbAccessibilityService extends AccessibilityService {
     @NonNull
     private Bundle getNewAccountData(
             double amount,
-            @NonNull AccessibilityRuleWithDetailModel model
+            @NonNull AccessibilityRuleUnionModel model
     ) {
         //获取规则数据
         AccessibilityRuleEntity rule = model.getRule();
@@ -395,7 +395,7 @@ public class AbAccessibilityService extends AccessibilityService {
      * @param amount 提取的金额
      * @param model  触发自动记账的规则（包含抓张账户等其他数据）
      */
-    private void sendConfirmNotification(double amount, @NonNull AccessibilityRuleWithDetailModel model) {
+    private void sendConfirmNotification(double amount, @NonNull AccessibilityRuleUnionModel model) {
         //生成数据包
         AccessibilityRuleEntity rule = model.getRule();
         Bundle bundle = getNewAccountData(amount, model);
@@ -556,7 +556,7 @@ public class AbAccessibilityService extends AccessibilityService {
      * @param amount 提取的金额数据
      * @param model  触发的通知规则（包含转账账户等其他数据）
      */
-    private void saveInDbDirectly(double amount, @NonNull AccessibilityRuleWithDetailModel model) {
+    private void saveInDbDirectly(double amount, @NonNull AccessibilityRuleUnionModel model) {
         //解析规则数据
         AccessibilityRuleEntity rule = model.getRule();
         String remark = rule.getName();

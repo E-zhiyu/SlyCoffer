@@ -1,4 +1,4 @@
-package com.sly.coffer.data.save.db.entities.composite;
+package com.sly.coffer.data.save.db.entities.composite.union;
 
 import androidx.room.Embedded;
 import androidx.room.Relation;
@@ -6,7 +6,7 @@ import androidx.room.Relation;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 
-public class TagWithGroupModel {
+public class TagUnionModel {
     @Embedded
     private final TagEntity tag;
 
@@ -17,7 +17,7 @@ public class TagWithGroupModel {
     )
     private final TagGroupEntity group;
 
-    public TagWithGroupModel(TagEntity tag, TagGroupEntity group) {
+    public TagUnionModel(TagEntity tag, TagGroupEntity group) {
         this.tag = tag;
         this.group = group;
     }

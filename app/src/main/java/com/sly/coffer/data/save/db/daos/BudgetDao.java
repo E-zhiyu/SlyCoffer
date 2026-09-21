@@ -1,6 +1,5 @@
 package com.sly.coffer.data.save.db.daos;
 
-import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -11,7 +10,7 @@ import androidx.room.Update;
 
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
-import com.sly.coffer.data.save.db.entities.composite.BudgetWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.BudgetUnionModel;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -84,7 +83,7 @@ public interface BudgetDao {
      */
     @Transaction
     @Query("SELECT * FROM budgets WHERE budgetId = :budgetId")
-    Single<Optional<BudgetWithDetailModel>> getBudgetWithDetailById(long budgetId);
+    Single<Optional<BudgetUnionModel>> getBudgetWithDetailById(long budgetId);
 
     /**
      * 插入预算和标签的映射关系数据
@@ -109,7 +108,8 @@ public interface BudgetDao {
      * @param tagIdList 与该预算绑定的标签的 ID 列表
      */
     @Transaction
-    default void addBudget(@NonNull BudgetEntity budget, @NonNull List<Long> tagIdList) {
+    default void addBudget(BudgetEntity budget, List<Long> tagIdList) {
+        if (budget == null) return;
         budget.setBalance(budget.getInitAmount());   //将余额重置为初始值
         long budgetId = insertBudget(budget);
 
@@ -142,7 +142,8 @@ public interface BudgetDao {
      * @param tagIdList 与该预算绑定的标签 ID
      */
     @Transaction
-    default void modifyBudget(@NonNull BudgetEntity budget, @NonNull List<Long> tagIdList) {
+    default void modifyBudget(BudgetEntity budget, List<Long> tagIdList) {
+        if (budget == null) return;
         long budgetId = budget.getBudgetId();
         updateBudget(budget);
 

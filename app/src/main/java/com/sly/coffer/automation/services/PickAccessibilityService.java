@@ -75,7 +75,13 @@ public class PickAccessibilityService extends AccessibilityService {
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribeOn(Schedulers.io())
                             .subscribe(
-                                    id -> Log.d(LogTags.PICK_ACCESSIBILITY_SERVICE.n(), "已保存界面, id : " + id),
+                                    id -> {
+                                        if (id >= 0) {
+                                            Log.d(LogTags.PICK_ACCESSIBILITY_SERVICE.n(), "已保存界面, id : " + id);
+                                        } else {
+                                            Log.e(LogTags.PICK_ACCESSIBILITY_SERVICE.n(), "界面保存失败");
+                                        }
+                                    },
                                     e -> Log.e(LogTags.PICK_ACCESSIBILITY_SERVICE.n(), "界面保存失败")
                             )
                     );

@@ -11,7 +11,7 @@ import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.types.DateRangeType;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.data.save.db.BookkeepingDb;
-import com.sly.coffer.data.save.db.entities.composite.AccountWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -118,7 +118,7 @@ public class ReportViewModel extends ViewModel {
      * @param db 数据库实例
      * @return 用于展示报表信息的流水记录数据
      */
-    public Flowable<List<AccountWithDetailModel>> getRunningAccountDataFlowable(BookkeepingDb db) {
+    public Flowable<List<AccountUnionModel>> getRunningAccountDataFlowable(BookkeepingDb db) {
         return includedAccountIdProcessor.debounce(50, TimeUnit.MILLISECONDS)
                 .flatMap(idSet -> {
                     if (!idSet.isEmpty()) {
@@ -191,7 +191,7 @@ public class ReportViewModel extends ViewModel {
      * @param db 数据库实例
      * @return 用于显示每月流水的流水数据详情
      */
-    public Flowable<List<AccountWithDetailModel>> getMonthAccountDataFlowable(BookkeepingDb db) {
+    public Flowable<List<AccountUnionModel>> getMonthAccountDataFlowable(BookkeepingDb db) {
         return Flowable.combineLatest(
                         rangeTypeProcessor,
                         selectedDateProcessor,

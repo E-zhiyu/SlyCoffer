@@ -18,6 +18,7 @@ public enum KeyStrings {
     TAG_SCOPE("tag_scope"),                                 //标签作用域
     NOTIFICATION_RULE_NAME("notification_rule_name"),       //通知解析规则名称
     NOTIFICATION_RULE_ID("notification_rule_id"),           //通知解析规则编号
+    NOTIFICATION_RULE_GROUP_ID("notification_rule_group_id"),   //通知规则分组编号
     ACCESSIBILITY_RULE_ID("accessibility_rule_id"),         //无障碍规则编号
     CAPTURED_NOTIFICATION_ID("captured_notification_id"),   //捕获通知的编号
     PACKAGE_NAME("package_name"),                           //包名

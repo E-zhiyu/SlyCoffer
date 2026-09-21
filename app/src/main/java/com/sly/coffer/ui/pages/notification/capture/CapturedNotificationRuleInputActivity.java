@@ -22,9 +22,10 @@ import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.services.RuleService;
+import com.sly.coffer.data.save.db.services.NotificationRuleService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityCapturedNotificationRuleInputBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
@@ -36,6 +37,9 @@ import com.sly.coffer.ui.others.adapters.NoFilteringArrayAdapter;
 import com.sly.coffer.ui.others.bottom.TagSelectBottomSheet;
 import com.sly.coffer.ui.others.viewmodel.TagMultiSelectViewModel;
 import com.sly.coffer.ui.pages.main.bookkeeping.AccountTagAdapter;
+import com.sly.coffer.ui.pages.notification.GroupSelectBottomSheet;
+import com.sly.coffer.ui.pages.notification.GroupSelectViewModel;
+import com.sly.coffer.ui.pages.notification.RuleGroupChipListAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,6 +59,7 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
     private Bundle initBundle = null;                       //带有初始数据的数据包
     @Nullable
     private CapturedNotificationEntity notification = null; //捕获的通知实例
+    private RuleGroupChipListAdapter groupAdapter;          //规则分组适配器
     private AccountTagAdapter tagAdapter;                   //标签适配器
 
     @Override
@@ -96,6 +101,39 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
      * 初始化视图
      */
     private void initViews() {
+        //分组 Recycler
+        groupAdapter = new RuleGroupChipListAdapter(
+                (entity, anchor, adapter) -> {
+                    List<NotificationRuleGroupEntity> removedList = new ArrayList<>(adapter.getCurrentList());
+                    removedList.remove(entity);
+                    if (!removedList.isEmpty()) {
+                        adapter.submitList(
+                                removedList,
+                                () -> VisibilityHelper.toggleViewExpansion(
+                                        binding.scrollLayout,
+                                        true,
+                                        null,
+                                        binding.tagRecycler
+                                )
+                        );
+                    } else {
+                        VisibilityHelper.toggleViewExpansion(
+                                binding.scrollLayout,
+                                false,
+                                () -> adapter.submitList(removedList),
+                                binding.tagRecycler
+                        );
+                    }
+
+                    //更新 ViewModel 中的数据
+                    GroupSelectViewModel viewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
+                    if (viewModel.getGroupIdSetLiveData().getValue() != null) {
+                        viewModel.getGroupIdSetLiveData().getValue().remove(entity.getGroupId());
+                    }
+                }
+        );
+        binding.groupRecycler.setAdapter(groupAdapter);
+
         //标签 Recycler
         tagAdapter = new AccountTagAdapter(
                 (entity, anchor, adapter) -> {
@@ -266,6 +304,18 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
             }
         });
 
+        //分组选择按钮
+        binding.groupSelectBtn.setOnClickListener(view -> {
+            GroupSelectBottomSheet bottomSheet = new GroupSelectBottomSheet();
+            bottomSheet.show(getSupportFragmentManager(), TagStrings.NOTIFICATION_RULE_GROUP_SELECT_BOTTOM.t());
+        });
+
+        //分组解释按钮
+        binding.groupExplainBtn.setOnClickListener(view -> {
+            final String EXPLANATION = "处于同一分组下的规则仅会触发一个";
+            TipPreference.showTipWithoutKey(view, Gravity.START, EXPLANATION);
+        });
+
         //标签选择按钮
         binding.tagSelectBtn.setOnClickListener(view -> {
             TagSelectBottomSheet bottomSheet = new TagSelectBottomSheet();
@@ -279,6 +329,16 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         binding.tagExplainBtn.setOnClickListener(view -> {
             final String EXPLANATION = "自动为生成的流水记录添加下列标签";
             TipPreference.showTipWithoutKey(view, Gravity.START, EXPLANATION);
+        });
+
+        //通知内容复制按钮
+        binding.contentCopyBtn.setOnClickListener(view -> {
+            if (notification == null) {
+                Toast.makeText(this, "复制失败", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            ImmHelper.copyToClipboard("捕获的通知内容", notification.getContent(), this);
+            Toast.makeText(this, "复制成功", Toast.LENGTH_SHORT).show();
         });
 
         //金额文本选择说明按钮
@@ -337,6 +397,39 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
                 );
             }
         });
+
+        //分组选择
+        GroupSelectViewModel groupSelectViewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
+        groupSelectViewModel.getGroupIdSetLiveData().observe(this, checkedIdSet -> {
+            BookkeepingDb db = BookkeepingDb.getInstance(this);
+            disposable.add(db.notificationRuleDao().getRuleGroupSingleById(checkedIdSet)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(
+                            groupList -> {
+                                if (!groupList.isEmpty()) {
+                                    groupAdapter.submitList(
+                                            groupList,
+                                            () -> VisibilityHelper.toggleViewExpansion(
+                                                    binding.scrollLayout,
+                                                    true,
+                                                    null,
+                                                    binding.groupRecycler
+                                            )
+                                    );
+                                } else {
+                                    VisibilityHelper.toggleViewExpansion(
+                                            binding.scrollLayout,
+                                            false,
+                                            () -> groupAdapter.submitList(groupList),
+                                            binding.groupRecycler
+                                    );
+                                }
+                            },
+                            e -> ExceptionHelper.showExceptionDialog(this, e)
+                    )
+            );
+        });
     }
 
     /**
@@ -388,9 +481,24 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
 
         //生成标签 ID 列表
-        List<Long> tagIdList = tagAdapter.getCurrentList().stream()
-                .map(TagEntity::getTagId)
-                .collect(Collectors.toList());
+        List<Long> tagIdList;
+        if (tagAdapter == null) {
+            tagIdList = new ArrayList<>();
+        } else {
+            tagIdList = tagAdapter.getCurrentList().stream()
+                    .map(TagEntity::getTagId)
+                    .collect(Collectors.toList());
+        }
+
+        //生成规则分组 ID 列表
+        List<Long> groupIdList;
+        if (groupAdapter == null) {
+            groupIdList = new ArrayList<>();
+        } else {
+            groupIdList = groupAdapter.getCurrentList().stream()
+                    .map(NotificationRuleGroupEntity::getGroupId)
+                    .collect(Collectors.toList());
+        }
 
         //生成通知内容正则表达式
         final String REGEX = "\\d+(?:,\\d{3})*(?:\\.\\d{1,2})?";
@@ -409,7 +517,7 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         );
         NotificationRuleTransferEntity transfer = new NotificationRuleTransferEntity(importAccount, exportAccount);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        disposable.add(RuleService.addNewNotificationRule(rule, transfer, tagIdList, db)
+        disposable.add(NotificationRuleService.addNewNotificationRule(rule, transfer, tagIdList, groupIdList, db)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(

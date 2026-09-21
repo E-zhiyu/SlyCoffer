@@ -8,6 +8,8 @@ public enum TagStrings {
     DATE_PICKER("date_picker"),                 //日期选择弹窗
     ACCOUNT_FILTER_BOTTOM("account_filter_fragment"),   //流水记录过滤对话框
     TAG_SELECT_BOTTOM("tag_select_bottom"),     //标签选择弹窗
+    NOTIFICATION_RULE_GROUP_SELECT_BOTTOM("notification_rule_group_select_bottom"), //通知规则分组选择对话框
+    NOTIFICATION_RULE_SELECT_BOTTOM("notification_rule_select_bottom"), //通知规则选择对话框
     PICKED_VIEW_BOTTOM("picked_view_bottom"),   //拾取的视图选择对话框
     MEDIA_ADD_BOTTOM("media_add_bottom");       //图片添加选项弹窗
 

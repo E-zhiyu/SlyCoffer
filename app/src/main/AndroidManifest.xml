@@ -162,6 +162,16 @@
             android:parentActivityName=".ui.pages.main.settings.sub.AboutActivity"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".ui.pages.notification.group.NotificationRuleGroupListActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.pages.notification.rule.NotificationRuleListActivity"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.pages.notification.group.NotificationRuleGroupInputActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.pages.notification.group.NotificationRuleGroupListActivity"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".ui.pages.main.MainActivity"
             android:exported="true">
             <intent-filter>
@@ -210,7 +220,7 @@
             android:label="通过自动记账确认通知进行各种操作的接收器" />
         <!-- 通知监听服务，用于实现自动记账 -->
         <service
-            android:name=".automation.services.AbNotificationListenerService"
+            android:name=".automation.services.NotificationAbService"
             android:exported="false"
             android:label="自动记账通知监听服务"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
@@ -220,7 +230,7 @@
         </service>
         <!-- 无障碍记账服务 -->
         <service
-            android:name=".automation.services.AbAccessibilityService"
+            android:name=".automation.services.AccessibilityAbService"
             android:exported="false"
             android:label="@string/accessibility_title_auto_bookkeeping"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"

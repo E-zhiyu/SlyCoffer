@@ -56,10 +56,10 @@ public class GroupTagMultiSelectAdapter extends ListAdapter<TagGroupUiModel, Rec
     private final AdapterOnChipCheckedChangeListener<TagEntity> checkedChangeListener;
     private final HashSet<Long> checkedTagSet = new HashSet<>();
 
-    public static class GroupRoleItemViewHolder extends RecyclerView.ViewHolder {
+    public static class ItemViewHolder extends RecyclerView.ViewHolder {
         ViewHolderGroupTagItemBinding binding;
 
-        public GroupRoleItemViewHolder(@NonNull ViewHolderGroupTagItemBinding binding) {
+        public ItemViewHolder(@NonNull ViewHolderGroupTagItemBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
         }
@@ -71,7 +71,7 @@ public class GroupTagMultiSelectAdapter extends ListAdapter<TagGroupUiModel, Rec
          * @param checkedTagIdSet 默认选中的标签 ID 的集合
          * @param listener        标签点击后触发的监听器
          */
-        public void refreshRoleChip(@NonNull List<TagEntity> tagList, Set<Long> checkedTagIdSet, AdapterOnChipCheckedChangeListener<TagEntity> listener) {
+        public void refreshChipGroup(@NonNull List<TagEntity> tagList, Set<Long> checkedTagIdSet, AdapterOnChipCheckedChangeListener<TagEntity> listener) {
             //删除之前的视图
             binding.chipGroup.removeAllViews();
 
@@ -128,7 +128,7 @@ public class GroupTagMultiSelectAdapter extends ListAdapter<TagGroupUiModel, Rec
                     parent,
                     false
             );
-            return new GroupRoleItemViewHolder(binding);
+            return new ItemViewHolder(binding);
         } else {
             ViewHolderSeparatorTextviewBinding binding = ViewHolderSeparatorTextviewBinding.inflate(
                     LayoutInflater.from(parent.getContext()),
@@ -142,11 +142,11 @@ public class GroupTagMultiSelectAdapter extends ListAdapter<TagGroupUiModel, Rec
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         TagGroupUiModel dataItem = getItem(position);
-        if (dataItem instanceof TagGroupUiModel.Item && holder instanceof GroupRoleItemViewHolder) {
+        if (dataItem instanceof TagGroupUiModel.Item && holder instanceof ItemViewHolder) {
             TagGroupUiModel.Item item = (TagGroupUiModel.Item) dataItem;
-            GroupRoleItemViewHolder itemHolder = (GroupRoleItemViewHolder) holder;
+            ItemViewHolder itemHolder = (ItemViewHolder) holder;
 
-            itemHolder.refreshRoleChip(item.tagList, checkedTagSet, checkedChangeListener);
+            itemHolder.refreshChipGroup(item.tagList, checkedTagSet, checkedChangeListener);
         } else if (dataItem instanceof TagGroupUiModel.Separator && holder instanceof GroupRoleSeparatorViewHolder) {
             TagGroupUiModel.Separator separator = (TagGroupUiModel.Separator) dataItem;
             GroupRoleSeparatorViewHolder separatorHolder = (GroupRoleSeparatorViewHolder) holder;

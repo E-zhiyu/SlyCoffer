@@ -25,9 +25,10 @@ import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
+import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.NotificationRuleWithDetailModel;
+import com.sly.coffer.data.save.db.entities.composite.union.BookkeepingNotiRuleUnionModel;
 import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
@@ -41,11 +42,15 @@ import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;
 import com.sly.coffer.ui.pages.notification.rule.NotificationRuleListActivity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -55,18 +60,22 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
-public class AbNotificationListenerService extends NotificationListenerService {
+public class NotificationAbService extends NotificationListenerService {
     private final CompositeDisposable disposable = new CompositeDisposable();
-    private final Map<RuleKey, List<NotificationRuleWithDetailModel>> ruleMap = new HashMap<>(); //解析规则哈希表
+    private final Map<NotificationKey, List<BookkeepingNotiRuleUnionModel>> ruleMap = new HashMap<>(); //解析规则哈希表
     private String lastPackageName = "";                                //上一次接收通知的包名
     private String lastTitle = "";                                      //上一次通知的标题
     private long lastReceiveEpochMilli = 0;                             //上一次接收消息的时间（毫秒）
+    private final Map<Long, List<RuleWaitToTrigger>> ruleGroupMap = new HashMap<>();    //用于实现互斥功能的哈希表，k:分组编号,v:该分组等待触发的规则及其识别到的金额
+    private final Map<Long, Integer> groupMinOrderMap = new HashMap<>();    //各个分组中触发过的规则的最小序号
+    private final static long NO_GROUP_KEY = Long.MIN_VALUE;            //待触发的规则没有处于任何一个分组的键
+    private final HashSet<Long> usedRuleIdSet = new HashSet<>();        //单次通知发送时已经使用过的规则编号集合，防止重复触发同一规则
 
-    private static class RuleKey {
+    private static class NotificationKey {
         private final String title;                                     //通知标题
         private final String packageName;                               //通知发送者包名
 
-        public RuleKey(String packageName, String title) {
+        public NotificationKey(String packageName, String title) {
             this.packageName = packageName;
             this.title = title;
         }
@@ -77,7 +86,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
 
             if (o == null || getClass() != o.getClass()) return false;
 
-            RuleKey key = (RuleKey) o;
+            NotificationKey key = (NotificationKey) o;
             return Objects.equals(title, key.title) &&
                     Objects.equals(packageName, key.packageName);       //只要包名和通知标题匹配则判定为相同对象
         }
@@ -85,6 +94,21 @@ public class AbNotificationListenerService extends NotificationListenerService {
         @Override
         public int hashCode() {
             return Objects.hash(title, packageName);
+        }
+    }
+
+    /**
+     * 等待被触发的通知规则与金额的集合类
+     */
+    private static class RuleWaitToTrigger {
+        final BookkeepingNotiRuleUnionModel model;    //规则模型
+        final double amount;                          //该规则识别到的金额数据
+        final int order;                              //该规则在分组中的排序序号
+
+        public RuleWaitToTrigger(BookkeepingNotiRuleUnionModel model, double amount, int order) {
+            this.model = model;
+            this.amount = amount;
+            this.order = order;
         }
     }
 
@@ -106,11 +130,11 @@ public class AbNotificationListenerService extends NotificationListenerService {
                 .subscribe(
                         modelList -> {
                             ruleMap.clear();
-                            Map<RuleKey, List<NotificationRuleWithDetailModel>> map = modelList.stream()
+                            Map<NotificationKey, List<BookkeepingNotiRuleUnionModel>> map = modelList.stream()
                                     .collect(Collectors.groupingBy(
                                             model -> {
                                                 NotificationRuleEntity rule = model.getRule();
-                                                return new RuleKey(rule.getPackageName(), rule.getTargetTitle());
+                                                return new NotificationKey(rule.getPackageName(), rule.getTargetTitle());
                                             },
                                             HashMap::new,
                                             Collectors.toList()
@@ -131,14 +155,14 @@ public class AbNotificationListenerService extends NotificationListenerService {
         super.onDestroy();
 
         Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "服务已关闭");
-        disposable.clear();
+        disposable.dispose();
     }
 
     @Override
     public void onNotificationPosted(@NonNull StatusBarNotification sbn) {
         //保存通知内容
         if (AutoBookKeepingPreference.getNotificationCapture(this)) {
-            saveNotification(sbn);
+            captureNotification(sbn);
         }
 
         //判断是否开启通知解析功能
@@ -169,20 +193,28 @@ public class AbNotificationListenerService extends NotificationListenerService {
         Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), String.format("通知内容：%s", text));
 
         //处理通知内容
-        RuleKey key = new RuleKey(packageName, title);
-        List<NotificationRuleWithDetailModel> ruleList = ruleMap.get(key);
-        if (ruleList != null) {
-            for (NotificationRuleWithDetailModel model : ruleList) {
+        NotificationKey key = new NotificationKey(packageName, title);
+        List<BookkeepingNotiRuleUnionModel> ruleModelList = ruleMap.get(key);
+        if (ruleModelList != null && !ruleModelList.isEmpty()) {
+            //清空用于排斥的工具属性
+            ruleGroupMap.clear();
+            usedRuleIdSet.clear();
+            groupMinOrderMap.clear();
+
+            //获取待触发的规则
+            for (BookkeepingNotiRuleUnionModel model : ruleModelList) {
+                //解析数据
                 NotificationRuleEntity rule = model.getRule();
                 String contentRegex = rule.getContentRegex();
                 String name = rule.getName();
                 long ruleId = rule.getRuleId();
 
-                Matcher matcher;                                        //通知内容匹配器
+                //编译正则表达式
+                Matcher matcher;
                 try {
                     Pattern pattern = Pattern.compile(contentRegex);
                     matcher = pattern.matcher(text);
-                } catch (PatternSyntaxException e) {                    //处理无法编译为Matcher的情况
+                } catch (PatternSyntaxException e) {
                     Log.e(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "正则表达式编译出错");
                     String err = String.format(
                             Locale.getDefault(),
@@ -193,6 +225,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
                     continue;
                 }
 
+                //若通知内容匹配规则，则将规则模型加入待触发列表
                 if (matcher.find()) {
                     Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "成功匹配正则表达式");
 
@@ -208,14 +241,101 @@ public class AbNotificationListenerService extends NotificationListenerService {
                     }
                     Log.i(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "流水数据生成成功");
 
-                    //根据偏好设置决定直接入帐还是发送通知
-                    if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
-                        sendConfirmNotification(amount, model);
+                    //将待触发的规则分组
+                    List<NotificationRuleGroupRefEntity> refList = model.getGroupRefList();
+                    if (!refList.isEmpty()) {
+                        for (NotificationRuleGroupRefEntity ref : model.getGroupRefList()) {
+                            long groupId = ref.getGroupId();
+                            RuleWaitToTrigger waitToTrigger = new RuleWaitToTrigger(model, amount, ref.getOrder());
+
+                            List<RuleWaitToTrigger> waitToTriggerList = ruleGroupMap.get(groupId);
+                            if (waitToTriggerList == null) {
+                                List<RuleWaitToTrigger> newList = new ArrayList<>();
+                                newList.add(waitToTrigger);
+                                ruleGroupMap.put(groupId, newList);
+                            } else {
+                                waitToTriggerList.add(waitToTrigger);
+                            }
+                        }
                     } else {
-                        saveInDbDirectly(amount, model);
+                        RuleWaitToTrigger waitToTrigger = new RuleWaitToTrigger(model, amount, -1);
+                        List<RuleWaitToTrigger> waitToTriggerList = ruleGroupMap.get(NO_GROUP_KEY);
+                        if (waitToTriggerList == null) {
+                            List<RuleWaitToTrigger> newList = new ArrayList<>();
+                            newList.add(waitToTrigger);
+                            ruleGroupMap.put(NO_GROUP_KEY, newList);
+                        } else {
+                            waitToTriggerList.add(waitToTrigger);
+                        }
+                    }
+                }
+            }
+
+            //逐个分组触发真正能够触发的规则
+            for (Map.Entry<Long, List<RuleWaitToTrigger>> entry : ruleGroupMap.entrySet()) {
+                long groupId = entry.getKey();
+                List<RuleWaitToTrigger> waitToTriggerList = entry.getValue();
+                if (waitToTriggerList == null || waitToTriggerList.isEmpty()) continue;
+
+                //根据是否有分组进行不同的处理
+                if (groupId != NO_GROUP_KEY) {
+                    //按照序号升序排序
+                    waitToTriggerList.sort(Comparator.comparing(ruleWaitToTrigger -> ruleWaitToTrigger.order));
+
+                    //获取未使用的排序序号最低的规则位置
+                    int pos = -1, index = 0;
+                    Integer minOrder = groupMinOrderMap.getOrDefault(groupId, Integer.MAX_VALUE);
+                    for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
+                        int ruleOrder = waitToTrigger.order;
+                        long ruleId = waitToTrigger.model.getRule().getRuleId();
+                        if ((minOrder == null || ruleOrder <= minOrder) && !usedRuleIdSet.contains(ruleId)) {
+                            pos = index;
+                            break;
+                        }
+
+                        index++;
+                    }
+                    if (pos < 0) continue;
+
+                    //将目标位置后的所有规则都标记为“已使用”
+                    Set<Long> excludedRuleIdSet = waitToTriggerList.subList(pos + 1, waitToTriggerList.size()).stream()
+                            .map(rule -> rule.model.getRule().getRuleId())
+                            .collect(Collectors.toSet());
+                    usedRuleIdSet.addAll(excludedRuleIdSet);
+
+                    //触发排序序号最低的规则
+                    RuleWaitToTrigger minOrderRule = waitToTriggerList.get(pos);
+                    usedRuleIdSet.add(minOrderRule.model.getRule().getRuleId());
+                    if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
+                        sendConfirmNotification(minOrderRule.amount, minOrderRule.model);
+                    } else {
+                        saveInDbDirectly(minOrderRule.amount, minOrderRule.model);
+                    }
+
+                    //更新触发过的最小序号
+                    for (NotificationRuleGroupRefEntity triggeredRuleRef : minOrderRule.model.getGroupRefList()) {
+                        long triggeredGroupId = triggeredRuleRef.getGroupId();
+                        int triggeredOrder = triggeredRuleRef.getOrder();
+
+                        Integer savedMinOrder = groupMinOrderMap.get(triggeredGroupId);
+                        if (savedMinOrder == null || savedMinOrder > triggeredOrder) {
+                            groupMinOrderMap.put(triggeredGroupId, triggeredOrder);
+                        }
                     }
                 } else {
-                    Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "正则表达式不匹配");
+                    for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
+                        //判断是否被使用过
+                        long ruleId = waitToTrigger.model.getRule().getRuleId();
+                        if (usedRuleIdSet.contains(ruleId)) continue;
+
+                        //触发该规则
+                        usedRuleIdSet.add(ruleId);
+                        if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
+                            sendConfirmNotification(waitToTrigger.amount, waitToTrigger.model);
+                        } else {
+                            saveInDbDirectly(waitToTrigger.amount, waitToTrigger.model);
+                        }
+                    }
                 }
             }
         }
@@ -226,7 +346,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
      *
      * @param sbn 需要保存的通知
      */
-    private void saveNotification(@NonNull StatusBarNotification sbn) {
+    private void captureNotification(@NonNull StatusBarNotification sbn) {
         //获取通知数据
         String packageName = sbn.getPackageName();
         String appName = AppListHelper.getAppNameByPackageName(packageName, this);
@@ -261,7 +381,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
     @NonNull
     private Bundle getNewAccountData(
             double amount,
-            @NonNull NotificationRuleWithDetailModel model
+            @NonNull BookkeepingNotiRuleUnionModel model
     ) {
         //获取规则数据
         NotificationRuleEntity rule = model.getRule();
@@ -339,7 +459,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
      * @param amount 提取的金额
      * @param model  触发自动记账的规则（包含抓张账户等其他数据）
      */
-    private void sendConfirmNotification(double amount, @NonNull NotificationRuleWithDetailModel model) {
+    private void sendConfirmNotification(double amount, @NonNull BookkeepingNotiRuleUnionModel model) {
         //生成数据包
         NotificationRuleEntity rule = model.getRule();
         Bundle bundle = getNewAccountData(amount, model);
@@ -500,7 +620,7 @@ public class AbNotificationListenerService extends NotificationListenerService {
      * @param amount 提取的金额数据
      * @param model  触发的通知规则（包含转账账户等其他数据）
      */
-    private void saveInDbDirectly(double amount, @NonNull NotificationRuleWithDetailModel model) {
+    private void saveInDbDirectly(double amount, @NonNull BookkeepingNotiRuleUnionModel model) {
         //解析规则数据
         NotificationRuleEntity rule = model.getRule();
         String remark = rule.getName();
