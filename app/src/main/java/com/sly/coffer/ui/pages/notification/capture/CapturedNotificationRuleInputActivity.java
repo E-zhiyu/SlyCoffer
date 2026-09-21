@@ -331,6 +331,16 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
             TipPreference.showTipWithoutKey(view, Gravity.START, EXPLANATION);
         });
 
+        //通知内容复制按钮
+        binding.contentCopyBtn.setOnClickListener(view -> {
+            if (notification == null) {
+                Toast.makeText(this, "复制失败", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            ImmHelper.copyToClipboard("捕获的通知内容", notification.getContent(), this);
+            Toast.makeText(this, "复制成功", Toast.LENGTH_SHORT).show();
+        });
+
         //金额文本选择说明按钮
         binding.amountSelectHelpBtn.setOnClickListener(view -> {
             final String EXPLANATION = "选择通知中表示金额的文本，此后触发自动记账都将使用该位置的数字作为金额";

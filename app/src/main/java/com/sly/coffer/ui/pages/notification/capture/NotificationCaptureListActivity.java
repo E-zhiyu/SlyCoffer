@@ -25,6 +25,7 @@ import com.sly.coffer.data.save.preference.SearchHistoryPreference;
 import com.sly.coffer.databinding.ActivityCapturedNotificationListBinding;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
+import com.sly.coffer.helpers.ImmHelper;
 import com.sly.coffer.helpers.PermissionHelper;
 import com.sly.coffer.helpers.SearchHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
@@ -233,7 +234,8 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
 
         //设置监听
         popupMenu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == R.id.action_delete) {
+            int id = item.getItemId();
+            if (id == R.id.action_delete) {
                 new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.delete_captured_notification)
                         .setMessage("即将删除该通知，确认继续吗？")
@@ -252,7 +254,12 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
                         .show();
 
                 return true;
+            } else if (id == R.id.action_copy) {
+                ImmHelper.copyToClipboard("捕获的通知内容", notification.getContent(), this);
+                Toast.makeText(this, "复制成功", Toast.LENGTH_SHORT).show();
+                return true;
             }
+
             return false;
         });
 

@@ -218,6 +218,18 @@
     <string name="file_info">文件信息：</string>
     <string name="media_param_info">媒体参数：</string>
     <string name="check_report">查看报表</string>
+    <string name="clear_selection">清除选择</string>
+    <string name="notification_rule_group">通知规则分组</string>
+    <string name="select_notification_rule_group">选择通知规则分组</string>
+    <string name="no_notification_rule_group">无通知规则分组</string>
+    <string name="add_notification_rule_group">添加通知规则分组</string>
+    <string name="delete_notification_rule_group">删除通知规则分组</string>
+    <string name="notification_rule_group_name_help">通知规则分组的显示名称</string>
+    <string name="move_to_top">移至顶部</string>
+    <string name="move_up">向上移动</string>
+    <string name="move_down">向下移动</string>
+    <string name="move_to_bottom">移至底部</string>
+    <string name="copy_notification">复制通知</string>
     <string name="troubleshooting">问题解答</string>
     <string name="help_solve_some_common_problems">帮助解决一些常见的问题</string>
     <string name="floating_notification_question">Q : 为什么授予通知权限后不会弹出悬浮通知？</string>
@@ -236,17 +248,7 @@
     <string name="data_save_answer">A : 您在使用过程中产生的所有数据都保存在本地，不会上传至互联网。如果您需要迁移应用数据，请前往数据管理界面导出您需要的数据。</string>
     <string name="update_question">Q : 我要如何更新软件版本？</string>
     <string name="update_answer">A : 您可以直接访问项目仓库，从发行版(Release)中下载安装包。更推荐的方式是通过APP内的更新检测功能，APP会自动从仓库中下载最新版安装包，下载完成后点击立刻更新即可安装新版本。部分用户可能在安装时出现问题，此时您可以尝试进入手机上的文件管理应用，进入Downloads文件夹并手动安装新版本。</string>
-    <string name="clear_selection">清除选择</string>
-    <string name="notification_rule_group">通知规则分组</string>
-    <string name="select_notification_rule_group">选择通知规则分组</string>
-    <string name="no_notification_rule_group">无通知规则分组</string>
-    <string name="add_notification_rule_group">添加通知规则分组</string>
-    <string name="delete_notification_rule_group">删除通知规则分组</string>
-    <string name="notification_rule_group_name_help">通知规则分组的显示名称</string>
-    <string name="move_to_top">移至顶部</string>
-    <string name="move_up">向上移动</string>
-    <string name="move_down">向下移动</string>
-    <string name="move_to_bottom">移至底部</string>
+
 
     <string-array name="tips_array">
         <item>如果设置了自动备份目录，进行软件更新时会自动备份一次。</item>
