@@ -25,12 +25,13 @@ public class RuleGroupCardListAdapter extends ListAdapter<NotificationRuleGroupL
     private static final DiffUtil.ItemCallback<NotificationRuleGroupListUnionModel> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
         @Override
         public boolean areItemsTheSame(@NonNull NotificationRuleGroupListUnionModel oldItem, @NonNull NotificationRuleGroupListUnionModel newItem) {
-            return false;
+            return oldItem.getGroup().getGroupId() == newItem.getGroup().getGroupId();
         }
 
         @Override
         public boolean areContentsTheSame(@NonNull NotificationRuleGroupListUnionModel oldItem, @NonNull NotificationRuleGroupListUnionModel newItem) {
-            return false;
+            return oldItem.getGroup().getName().equals(newItem.getGroup().getName()) &&
+                    oldItem.getCount() == newItem.getCount();
         }
     };
     private final AdapterOnClickListener<NotificationRuleGroupListUnionModel> clickListener;
