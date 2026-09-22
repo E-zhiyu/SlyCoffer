@@ -52,6 +52,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -60,9 +61,12 @@ import java.util.stream.Collectors;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 
 public class NotificationAbService extends NotificationListenerService {
     private final CompositeDisposable disposable = new CompositeDisposable();
+    private final PublishSubject<StatusBarNotification> notificationSubject = PublishSubject.create();
+    private static final long BATCH_DELAY_MS = 1000; // 防抖等待时间：1秒
     private final Map<NotificationKey, List<BookkeepingNotiRuleUnionModel>> ruleMap = new HashMap<>(); //解析规则哈希表
     private final static long NO_GROUP_KEY = Long.MIN_VALUE;            //待触发的规则没有处于任何一个分组的键
 
@@ -109,14 +113,14 @@ public class NotificationAbService extends NotificationListenerService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "服务已启动");
+        Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), "服务已启动");
         return START_STICKY;
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "服务已创建");
+        Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), "服务已创建");
 
         //启动时则加载规则
         BookkeepingDb db = BookkeepingDb.getInstance(this);
@@ -139,8 +143,21 @@ public class NotificationAbService extends NotificationListenerService {
                         },
                         e -> {
                             ExceptionHelper.showExceptionDialog(this, e);
-                            Log.e(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "通知监听服务获取通知规则失败");
+                            Log.e(LogTags.NOTIFICATION_AB_SERVICE.n(), "通知监听服务获取通知规则失败");
                         }
+                )
+        );
+
+        //构建通知缓冲流，将短时间内的通知统一处理
+        disposable.add(notificationSubject
+                .publish(shared ->
+                        shared.buffer(shared.debounce(BATCH_DELAY_MS, TimeUnit.MILLISECONDS)))
+                .filter(list -> !list.isEmpty())
+                .subscribeOn(Schedulers.computation())
+                .observeOn(Schedulers.io())
+                .subscribe(
+                        this::handleBatchLogic,
+                        throwable -> Log.e(LogTags.NOTIFICATION_AB_SERVICE.n(), "RxJava 流错误", throwable)
                 )
         );
     }
@@ -149,12 +166,16 @@ public class NotificationAbService extends NotificationListenerService {
     public void onDestroy() {
         super.onDestroy();
 
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "服务已关闭");
+        Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), "服务已关闭");
         disposable.dispose();
     }
 
     @Override
-    public void onNotificationPosted(@NonNull StatusBarNotification sbn) {
+    public void onNotificationPosted(StatusBarNotification sbn) {
+        if (sbn == null || getPackageName().equals(sbn.getPackageName())) {
+            return;
+        }
+
         //保存通知内容
         if (AutoBookKeepingPreference.getNotificationCapture(this)) {
             captureNotification(sbn);
@@ -162,96 +183,144 @@ public class NotificationAbService extends NotificationListenerService {
 
         //判断是否开启通知解析功能
         if (!AutoBookKeepingPreference.getSwitchStat(this)) {
-            Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "通知记账未启用");
+            Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), "通知记账未启用");
             return;
         }
 
+        //将通知加入缓冲队列
+        notificationSubject.onNext(sbn);
+    }
+
+    /**
+     * 将通知保存到数据库
+     *
+     * @param sbn 需要保存的通知
+     */
+    private void captureNotification(@NonNull StatusBarNotification sbn) {
         //获取通知数据
         String packageName = sbn.getPackageName();
+        String appName = AppListHelper.getAppNameByPackageName(packageName, this);
         Notification sbnNotification = sbn.getNotification();
         String title = sbnNotification.extras.getString(Notification.EXTRA_TITLE);
         String text = sbnNotification.extras.getString(Notification.EXTRA_TEXT);
         if (text == null || text.isEmpty() || title == null || title.isEmpty()) return;
-        String log = String.format(
-                Locale.getDefault(),
-                "通知发送者：%s\n通知标题：%s\n通知内容：%s",
-                packageName, title, text
+
+        //判断是否有数字
+        Pattern numPattern = Pattern.compile("\\d");
+        Matcher matcher = numPattern.matcher(text);
+        if (!matcher.find()) return;
+
+        //保存数据
+        CapturedNotificationEntity notification = new CapturedNotificationEntity(title, text, packageName, appName, LocalDateTime.now());
+        BookkeepingDb db = BookkeepingDb.getInstance(this);
+        disposable.add(db.notificationRuleDao().insertCapturedNotification(notification)
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                        () -> Log.i(LogTags.NOTIFICATION_AB_SERVICE.n(), "通知捕获成功"),
+                        e -> Log.e(LogTags.NOTIFICATION_AB_SERVICE.n(), e.getMessage() == null ? "通知捕获失败" : e.getMessage())
+                )
         );
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), log);
+    }
 
-        //获取与包名和标题匹配的规则
-        NotificationKey key = new NotificationKey(packageName, title);
-        List<BookkeepingNotiRuleUnionModel> ruleModelList = ruleMap.get(key);
-        if (ruleModelList == null || ruleModelList.isEmpty()) return;
+    /**
+     * 处理通知的具体逻辑
+     *
+     * @param sbnList 待处理的通知列表
+     */
+    private void handleBatchLogic(List<StatusBarNotification> sbnList) {
+        if (sbnList == null || sbnList.isEmpty()) return;
 
-        //获取待触发的规则
+        //构建用于互斥的集合变量
         Set<Long> usedRuleIdSet = new HashSet<>();                          //单次通知发送时已经使用过的规则编号集合，防止重复触发同一规则
         Map<Long, List<RuleWaitToTrigger>> ruleGroupMap = new HashMap<>();  //用于实现互斥功能的哈希表，k:分组编号,v:该分组等待触发的规则及其识别到的金额
         Map<Long, Integer> groupMinOrderMap = new HashMap<>();              //各个分组中触发过的规则的最小序号
-        for (BookkeepingNotiRuleUnionModel model : ruleModelList) {
-            //解析数据
-            NotificationRuleEntity rule = model.getRule();
-            String contentRegex = rule.getContentRegex();
-            String name = rule.getName();
-            long ruleId = rule.getRuleId();
 
-            //编译正则表达式
-            Matcher matcher;
-            try {
-                Pattern pattern = Pattern.compile(contentRegex);
-                matcher = pattern.matcher(text);
-            } catch (PatternSyntaxException e) {
-                Log.e(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "正则表达式编译出错");
-                String err = String.format(
-                        Locale.getDefault(),
-                        "规则“%s”的正则表达式编译出错",
-                        name
-                );
-                sendErrorNotification(err, ruleId);
-                continue;
-            }
+        //将通知列表中的通知全部解析，获取待触发的逻辑
+        for (StatusBarNotification sbn : sbnList) {
+            //获取通知数据
+            String packageName = sbn.getPackageName();
+            Notification sbnNotification = sbn.getNotification();
+            String title = sbnNotification.extras.getString(Notification.EXTRA_TITLE);
+            String text = sbnNotification.extras.getString(Notification.EXTRA_TEXT);
+            if (text == null || text.isEmpty() || title == null || title.isEmpty()) return;
+            String log = String.format(
+                    Locale.getDefault(),
+                    "通知发送者：%s\n通知标题：%s\n通知内容：%s",
+                    packageName, title, text
+            );
+            Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), log);
 
-            //若通知内容匹配规则，则将规则模型加入待触发列表
-            if (matcher.find()) {
-                Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "成功匹配正则表达式");
+            //获取与包名和标题匹配的规则
+            NotificationKey key = new NotificationKey(packageName, title);
+            List<BookkeepingNotiRuleUnionModel> ruleModelList = ruleMap.get(key);
+            if (ruleModelList == null || ruleModelList.isEmpty()) return;
 
-                //获取匹配到的金额数据
-                double amount;
+            //获取待触发的规则
+            for (BookkeepingNotiRuleUnionModel model : ruleModelList) {
+                //解析数据
+                NotificationRuleEntity rule = model.getRule();
+                String contentRegex = rule.getContentRegex();
+                String name = rule.getName();
+                long ruleId = rule.getRuleId();
+
+                //编译正则表达式
+                Matcher matcher;
                 try {
-                    String captured = matcher.group(rule.getCaptureGroupPos());
-                    amount = Double.parseDouble(Objects.requireNonNull(captured).replace(",", ""));
-                } catch (IndexOutOfBoundsException | NumberFormatException e) {
-                    String err = String.format(Locale.getDefault(), "“%s”无法提取金额数据", rule.getName());
+                    Pattern pattern = Pattern.compile(contentRegex);
+                    matcher = pattern.matcher(text);
+                } catch (PatternSyntaxException e) {
+                    Log.e(LogTags.NOTIFICATION_AB_SERVICE.n(), "正则表达式编译出错");
+                    String err = String.format(
+                            Locale.getDefault(),
+                            "规则“%s”的正则表达式编译出错",
+                            name
+                    );
                     sendErrorNotification(err, ruleId);
                     continue;
                 }
-                Log.i(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "流水数据生成成功");
 
-                //将待触发的规则分组
-                List<NotificationRuleGroupRefEntity> refList = model.getGroupRefList();
-                if (!refList.isEmpty()) {
-                    for (NotificationRuleGroupRefEntity ref : model.getGroupRefList()) {
-                        long groupId = ref.getGroupId();
-                        RuleWaitToTrigger waitToTrigger = new RuleWaitToTrigger(model, amount, ref.getOrder());
+                //若通知内容匹配规则，则将规则模型加入待触发列表
+                if (matcher.find()) {
+                    Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), "成功匹配正则表达式");
 
-                        List<RuleWaitToTrigger> waitToTriggerList = ruleGroupMap.get(groupId);
+                    //获取匹配到的金额数据
+                    double amount;
+                    try {
+                        String captured = matcher.group(rule.getCaptureGroupPos());
+                        amount = Double.parseDouble(Objects.requireNonNull(captured).replace(",", ""));
+                    } catch (IndexOutOfBoundsException | NumberFormatException e) {
+                        String err = String.format(Locale.getDefault(), "“%s”无法提取金额数据", rule.getName());
+                        sendErrorNotification(err, ruleId);
+                        continue;
+                    }
+                    Log.i(LogTags.NOTIFICATION_AB_SERVICE.n(), "流水数据生成成功");
+
+                    //将待触发的规则分组
+                    List<NotificationRuleGroupRefEntity> refList = model.getGroupRefList();
+                    if (!refList.isEmpty()) {
+                        for (NotificationRuleGroupRefEntity ref : model.getGroupRefList()) {
+                            long groupId = ref.getGroupId();
+                            RuleWaitToTrigger waitToTrigger = new RuleWaitToTrigger(model, amount, ref.getOrder());
+
+                            List<RuleWaitToTrigger> waitToTriggerList = ruleGroupMap.get(groupId);
+                            if (waitToTriggerList == null) {
+                                List<RuleWaitToTrigger> newList = new ArrayList<>();
+                                newList.add(waitToTrigger);
+                                ruleGroupMap.put(groupId, newList);
+                            } else {
+                                waitToTriggerList.add(waitToTrigger);
+                            }
+                        }
+                    } else {
+                        RuleWaitToTrigger waitToTrigger = new RuleWaitToTrigger(model, amount, -1);
+                        List<RuleWaitToTrigger> waitToTriggerList = ruleGroupMap.get(NO_GROUP_KEY);
                         if (waitToTriggerList == null) {
                             List<RuleWaitToTrigger> newList = new ArrayList<>();
                             newList.add(waitToTrigger);
-                            ruleGroupMap.put(groupId, newList);
+                            ruleGroupMap.put(NO_GROUP_KEY, newList);
                         } else {
                             waitToTriggerList.add(waitToTrigger);
                         }
-                    }
-                } else {
-                    RuleWaitToTrigger waitToTrigger = new RuleWaitToTrigger(model, amount, -1);
-                    List<RuleWaitToTrigger> waitToTriggerList = ruleGroupMap.get(NO_GROUP_KEY);
-                    if (waitToTriggerList == null) {
-                        List<RuleWaitToTrigger> newList = new ArrayList<>();
-                        newList.add(waitToTrigger);
-                        ruleGroupMap.put(NO_GROUP_KEY, newList);
-                    } else {
-                        waitToTriggerList.add(waitToTrigger);
                     }
                 }
             }
@@ -324,37 +393,6 @@ public class NotificationAbService extends NotificationListenerService {
                 }
             }
         }
-    }
-
-    /**
-     * 将通知保存到数据库
-     *
-     * @param sbn 需要保存的通知
-     */
-    private void captureNotification(@NonNull StatusBarNotification sbn) {
-        //获取通知数据
-        String packageName = sbn.getPackageName();
-        String appName = AppListHelper.getAppNameByPackageName(packageName, this);
-        Notification sbnNotification = sbn.getNotification();
-        String title = sbnNotification.extras.getString(Notification.EXTRA_TITLE);
-        String text = sbnNotification.extras.getString(Notification.EXTRA_TEXT);
-        if (text == null || text.isEmpty() || title == null || title.isEmpty()) return;
-
-        //判断是否有数字
-        Pattern numPattern = Pattern.compile("\\d");
-        Matcher matcher = numPattern.matcher(text);
-        if (!matcher.find()) return;
-
-        //保存数据
-        CapturedNotificationEntity notification = new CapturedNotificationEntity(title, text, packageName, appName, LocalDateTime.now());
-        BookkeepingDb db = BookkeepingDb.getInstance(this);
-        disposable.add(db.notificationRuleDao().insertCapturedNotification(notification)
-                .subscribeOn(Schedulers.io())
-                .subscribe(
-                        () -> Log.i(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "通知捕获成功"),
-                        e -> Log.e(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), e.getMessage() == null ? "通知捕获失败" : e.getMessage())
-                )
-        );
     }
 
     /**
