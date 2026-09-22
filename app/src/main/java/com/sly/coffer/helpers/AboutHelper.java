@@ -10,7 +10,14 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.12.1\n" +
+    private static final String UPDATE_LOG_MD = "# v1.12.2\n" +
+            "\n" +
+            "### 优化和修改的内容\n" +
+            "\n" +
+            "- 优化部分界面的输入框边距，提升曲面屏用户的使用体验\n" +
+            "- 现在一小段时间内发送多个通知时也能正确按照分组防止同时触发多个规则\n" +
+            "\n" +
+            "# v1.12.1\n" +
             "\n" +
             "### BUG修复\n" +
             "\n" +
