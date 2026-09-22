@@ -44,6 +44,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -167,7 +168,9 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
 
                     //移除ViewModel集合中的数据
                     TagMultiSelectViewModel viewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
-                    viewModel.getCheckedTagIdSet().remove(entity.getTagId());
+                    if (viewModel.getCheckedIdLiveData().getValue() != null) {
+                        viewModel.getCheckedIdLiveData().getValue().remove(entity.getTagId());
+                    }
                 }
         );
         binding.tagRecycler.setAdapter(tagAdapter);
@@ -232,12 +235,11 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                                 } else {
                                     binding.tagRecycler.setVisibility(View.GONE);
                                 }
-                                List<Long> tagIdList = tagList.stream()
+                                Set<Long> tagIdList = tagList.stream()
                                         .map(TagEntity::getTagId)
-                                        .collect(Collectors.toList());
+                                        .collect(Collectors.toSet());
                                 TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
-                                tagMultiSelectViewModel.getCheckedTagIdSet().clear();
-                                tagMultiSelectViewModel.getCheckedTagIdSet().addAll(tagIdList);
+                                tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
                             },
                             e -> ExceptionHelper.showExceptionDialog(this, e)
                     )
@@ -399,37 +401,37 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
     private void observeLiveData() {
         //标签选择
         TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
-        tagMultiSelectViewModel.getNeedExecute().observe(this, b -> {
-            if (b) {
-                BookkeepingDb db = BookkeepingDb.getInstance(this);
-                disposable.add(db.tagDao().getTagSingleById(tagMultiSelectViewModel.getCheckedTagIdSet())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.io())
-                        .subscribe(
-                                tagList -> {
-                                    if (!tagList.isEmpty()) {
-                                        tagAdapter.submitList(
-                                                tagList,
-                                                () -> VisibilityHelper.toggleViewExpansion(
-                                                        binding.scrollLayout,
-                                                        true,
-                                                        null,
-                                                        binding.tagRecycler
-                                                )
-                                        );
-                                    } else {
-                                        VisibilityHelper.toggleViewExpansion(
-                                                binding.scrollLayout,
-                                                false,
-                                                () -> tagAdapter.submitList(tagList),
-                                                binding.tagRecycler
-                                        );
-                                    }
-                                },
-                                e -> ExceptionHelper.showExceptionDialog(this, e)
-                        )
-                );
-            }
+        tagMultiSelectViewModel.getCheckedIdLiveData().observe(this, idSet -> {
+            if (idSet == null) return;
+
+            BookkeepingDb db = BookkeepingDb.getInstance(this);
+            disposable.add(db.tagDao().getTagSingleById(idSet)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(
+                            tagList -> {
+                                if (!tagList.isEmpty()) {
+                                    tagAdapter.submitList(
+                                            tagList,
+                                            () -> VisibilityHelper.toggleViewExpansion(
+                                                    binding.scrollLayout,
+                                                    true,
+                                                    null,
+                                                    binding.tagRecycler
+                                            )
+                                    );
+                                } else {
+                                    VisibilityHelper.toggleViewExpansion(
+                                            binding.scrollLayout,
+                                            false,
+                                            () -> tagAdapter.submitList(tagList),
+                                            binding.tagRecycler
+                                    );
+                                }
+                            },
+                            e -> ExceptionHelper.showExceptionDialog(this, e)
+                    )
+            );
         });
 
         //金额文本选择

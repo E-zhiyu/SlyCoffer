@@ -32,6 +32,9 @@ import com.sly.coffer.ui.others.viewmodel.TagMultiSelectViewModel;
 import com.sly.coffer.ui.others.viewmodel.TagSingleSelectViewModel;
 import com.sly.coffer.ui.pages.tag.TagInputActivity;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -39,6 +42,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class TagSelectBottomSheet extends BaseBottomSheetDialogFragment {
     private BottomSheetTagSelectBinding binding;        //绑定的 XML 布局
     private final CompositeDisposable disposable = new CompositeDisposable();
+    private final Set<Long> checkedIdSet = new HashSet<>(); //多选模式下保存选中的标签 ID 的集合
     private int scopePow = 0;                           //标签作用域标识符
     private boolean isMultiMode = true;                 //是否为多选模式
     private long[] exceptedTagIds = null;               //被排除的标签的 ID
@@ -72,7 +76,7 @@ public class TagSelectBottomSheet extends BaseBottomSheetDialogFragment {
         if (isMultiMode) {
             setOnDismissListener(() -> {
                 TagMultiSelectViewModel viewModel = new ViewModelProvider(requireActivity()).get(TagMultiSelectViewModel.class);
-                viewModel.setNeedExecute(true);
+                viewModel.updateCheckedIdLiveData(checkedIdSet);
             });
         }
 
@@ -135,14 +139,20 @@ public class TagSelectBottomSheet extends BaseBottomSheetDialogFragment {
         //设置适配器
         ListAdapter<TagGroupUiModel, RecyclerView.ViewHolder> adapter;
         if (isMultiMode) {
+            //填充初始数据
             TagMultiSelectViewModel viewModel = new ViewModelProvider(requireActivity()).get(TagMultiSelectViewModel.class);
+            Set<Long> initIdSet = viewModel.getCheckedIdLiveData().getValue();
+            if (initIdSet != null && !initIdSet.isEmpty()) {
+                checkedIdSet.addAll(initIdSet);
+            }
+
             adapter = new GroupTagMultiSelectAdapter(
-                    viewModel.getCheckedTagIdSet(),
+                    checkedIdSet,
                     (tag, isChecked, anchor) -> {
                         if (isChecked) {
-                            viewModel.getCheckedTagIdSet().add(tag.getTagId());
+                            checkedIdSet.add(tag.getTagId());
                         } else {
-                            viewModel.getCheckedTagIdSet().remove(tag.getTagId());
+                            checkedIdSet.remove(tag.getTagId());
                         }
                     }
             );

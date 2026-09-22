@@ -105,6 +105,8 @@
     <!-- 普通文本框布局样式 -->
     <style name="CommonTextInputLayoutStyle" parent="Widget.Material3.TextInputLayout.OutlinedBox.Dense">
         <item name="android:layout_marginTop">4dp</item>
+        <item name="android:layout_marginStart">5dp</item>
+        <item name="android:layout_marginEnd">5dp</item>
         <item name="android:layout_marginBottom">4dp</item>
         <item name="endIconDrawable">@drawable/baseline_clear_24</item>
         <item name="endIconMode">clear_text</item>
@@ -113,6 +115,8 @@
     <style name="DropdownMenuTextInputLayoutStyle" parent="Widget.Material3.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu">
         <item name="errorEnabled">true</item>
         <item name="helperTextEnabled">true</item>
+        <item name="android:layout_marginStart">5dp</item>
+        <item name="android:layout_marginEnd">5dp</item>
         <item name="android:layout_marginTop">4dp</item>
         <item name="android:layout_marginBottom">4dp</item>
     </style>
@@ -156,5 +160,13 @@
         <item name="android:textSize">17sp</item>
         <item name="android:drawablePadding">15dp</item>
         <item name="android:paddingStart">20dp</item>
+    </style>
+
+    <!-- Chip RecyclerView 样式 -->
+    <style name="ChipRecyclerViewStyle">
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:clipToPadding">false</item>
+        <item name="android:orientation">horizontal</item>
     </style>
 </resources>

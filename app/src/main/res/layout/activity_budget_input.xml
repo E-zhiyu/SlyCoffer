@@ -214,9 +214,9 @@
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/tag_recycler"
+                style="@style/ChipRecyclerViewStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:visibility="gone"
                 app:layoutManager="com.google.android.flexbox.FlexboxLayoutManager" />
         </LinearLayout>

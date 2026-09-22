@@ -131,12 +131,11 @@ public class TextHelper {
     /**
      * 自动缩写数字（可配置语言和精度）
      *
-     * @param value         要转换的Double值
-     * @param decimalPlaces 保留小数位数
+     * @param value 要转换的Double值
      * @return 缩写后的字符串
      */
     @NonNull
-    public static String abbreviate(double value, int decimalPlaces) {
+    public static String abbreviate(double value) {
         if (Double.isNaN(value) || Double.isInfinite(value)) {
             return String.valueOf(value);
         }
@@ -159,14 +158,15 @@ public class TextHelper {
         // 格式化数字
         String suffix = ENGLISH_SUFFIXES[index];
         String formatted;
+        int decimalPlaces = absValue < 0.1 ? 2 : 1;
         if (suffix.isEmpty()) {
             // 没有后缀（数值 < 1000 或 < 10000）：强制显示 .0
-            String pattern = "0." + "0".repeat(Math.max(0, decimalPlaces));
+            String pattern = "0." + "0".repeat(decimalPlaces);
             DecimalFormat df = new DecimalFormat(pattern);
             formatted = df.format(scaledValue);
         } else {
             // 有后缀：使用普通格式（# 表示可选，不强制显示小数）
-            String pattern = "#0." + "#".repeat(Math.max(0, decimalPlaces));
+            String pattern = "#0." + "#".repeat(decimalPlaces);
             DecimalFormat df = new DecimalFormat(pattern);
             formatted = df.format(scaledValue);
         }

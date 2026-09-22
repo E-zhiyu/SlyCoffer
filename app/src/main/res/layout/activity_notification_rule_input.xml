@@ -219,11 +219,12 @@
                     app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
+            <!-- 分组列表 -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/group_recycler"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                style="@style/ChipRecyclerViewStyle"
                 android:visibility="gone"
                 app:layoutManager="com.google.android.flexbox.FlexboxLayoutManager" />
 
@@ -266,11 +267,12 @@
                     app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
+            <!-- 标签列表 -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/tag_recycler"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                style="@style/ChipRecyclerViewStyle"
                 android:visibility="gone"
                 app:layoutManager="com.google.android.flexbox.FlexboxLayoutManager" />
         </LinearLayout>

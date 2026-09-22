@@ -1,5 +1,6 @@
 package com.sly.coffer.automation.services;
 
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Bundle;
@@ -51,6 +52,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -59,17 +61,14 @@ import java.util.stream.Collectors;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 
 public class NotificationAbService extends NotificationListenerService {
     private final CompositeDisposable disposable = new CompositeDisposable();
+    private final PublishSubject<StatusBarNotification> notificationSubject = PublishSubject.create();  //通知缓冲队列，用于同时处理多个通知
     private final Map<NotificationKey, List<BookkeepingNotiRuleUnionModel>> ruleMap = new HashMap<>(); //解析规则哈希表
-    private String lastPackageName = "";                                //上一次接收通知的包名
-    private String lastTitle = "";                                      //上一次通知的标题
-    private long lastReceiveEpochMilli = 0;                             //上一次接收消息的时间（毫秒）
-    private final Map<Long, List<RuleWaitToTrigger>> ruleGroupMap = new HashMap<>();    //用于实现互斥功能的哈希表，k:分组编号,v:该分组等待触发的规则及其识别到的金额
-    private final Map<Long, Integer> groupMinOrderMap = new HashMap<>();    //各个分组中触发过的规则的最小序号
     private final static long NO_GROUP_KEY = Long.MIN_VALUE;            //待触发的规则没有处于任何一个分组的键
-    private final HashSet<Long> usedRuleIdSet = new HashSet<>();        //单次通知发送时已经使用过的规则编号集合，防止重复触发同一规则
+    private static final long BATCH_DELAY_MS = 500;                     //缓冲队列冲刷的等待时间
 
     private static class NotificationKey {
         private final String title;                                     //通知标题
@@ -114,14 +113,14 @@ public class NotificationAbService extends NotificationListenerService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "服务已启动");
+        Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), "服务已启动");
         return START_STICKY;
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "服务已创建");
+        Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), "服务已创建");
 
         //启动时则加载规则
         BookkeepingDb db = BookkeepingDb.getInstance(this);
@@ -144,8 +143,21 @@ public class NotificationAbService extends NotificationListenerService {
                         },
                         e -> {
                             ExceptionHelper.showExceptionDialog(this, e);
-                            Log.e(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "通知监听服务获取通知规则失败");
+                            Log.e(LogTags.NOTIFICATION_AB_SERVICE.n(), "通知监听服务获取通知规则失败");
                         }
+                )
+        );
+
+        //构建通知缓冲流，将短时间内的通知统一处理
+        disposable.add(notificationSubject
+                .publish(shared ->
+                        shared.buffer(shared.debounce(BATCH_DELAY_MS, TimeUnit.MILLISECONDS)))
+                .filter(list -> !list.isEmpty())
+                .subscribeOn(Schedulers.computation())
+                .observeOn(Schedulers.io())
+                .subscribe(
+                        this::handleBatchLogic,
+                        throwable -> Log.e(LogTags.NOTIFICATION_AB_SERVICE.n(), "RxJava 流错误", throwable)
                 )
         );
     }
@@ -154,12 +166,16 @@ public class NotificationAbService extends NotificationListenerService {
     public void onDestroy() {
         super.onDestroy();
 
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "服务已关闭");
+        Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), "服务已关闭");
         disposable.dispose();
     }
 
     @Override
-    public void onNotificationPosted(@NonNull StatusBarNotification sbn) {
+    public void onNotificationPosted(StatusBarNotification sbn) {
+        if (sbn == null || getPackageName().equals(sbn.getPackageName())) {
+            return;
+        }
+
         //保存通知内容
         if (AutoBookKeepingPreference.getNotificationCapture(this)) {
             captureNotification(sbn);
@@ -167,39 +183,77 @@ public class NotificationAbService extends NotificationListenerService {
 
         //判断是否开启通知解析功能
         if (!AutoBookKeepingPreference.getSwitchStat(this)) {
-            Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "通知自动记账未启用");
+            Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), "通知记账未启用");
             return;
         }
 
+        //将通知加入缓冲队列
+        notificationSubject.onNext(sbn);
+    }
+
+    /**
+     * 将通知保存到数据库
+     *
+     * @param sbn 需要保存的通知
+     */
+    private void captureNotification(@NonNull StatusBarNotification sbn) {
         //获取通知数据
         String packageName = sbn.getPackageName();
-        String title = sbn.getNotification().extras.getString("android.title");
-        String text = sbn.getNotification().extras.getString("android.text");
+        String appName = AppListHelper.getAppNameByPackageName(packageName, this);
+        Notification sbnNotification = sbn.getNotification();
+        String title = sbnNotification.extras.getString(Notification.EXTRA_TITLE);
+        String text = sbnNotification.extras.getString(Notification.EXTRA_TEXT);
         if (text == null || text.isEmpty() || title == null || title.isEmpty()) return;
 
-        //同一应用发送太频繁直接不运行
-        long currentEpochMilli = System.currentTimeMillis();
-        long difference = currentEpochMilli - lastReceiveEpochMilli;        //求时间差
-        if (difference <= 1000 && title.equals(lastTitle) && packageName.equals(lastPackageName)) {
-            Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "同一应用发送通知过于频繁，不执行任何操作");
-            return;
-        }
-        lastReceiveEpochMilli = currentEpochMilli;
-        lastPackageName = packageName;
-        lastTitle = title;
+        //判断是否有数字
+        Pattern numPattern = Pattern.compile("\\d");
+        Matcher matcher = numPattern.matcher(text);
+        if (!matcher.find()) return;
 
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), String.format("通知发送者包名：%s", packageName));
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), String.format("通知标题：%s", title));
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), String.format("通知内容：%s", text));
+        //保存数据
+        CapturedNotificationEntity notification = new CapturedNotificationEntity(title, text, packageName, appName, LocalDateTime.now());
+        BookkeepingDb db = BookkeepingDb.getInstance(this);
+        disposable.add(db.notificationRuleDao().insertCapturedNotification(notification)
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                        () -> Log.i(LogTags.NOTIFICATION_AB_SERVICE.n(), "通知捕获成功"),
+                        e -> Log.e(LogTags.NOTIFICATION_AB_SERVICE.n(), e.getMessage() == null ? "通知捕获失败" : e.getMessage())
+                )
+        );
+    }
 
-        //处理通知内容
-        NotificationKey key = new NotificationKey(packageName, title);
-        List<BookkeepingNotiRuleUnionModel> ruleModelList = ruleMap.get(key);
-        if (ruleModelList != null && !ruleModelList.isEmpty()) {
-            //清空用于排斥的工具属性
-            ruleGroupMap.clear();
-            usedRuleIdSet.clear();
-            groupMinOrderMap.clear();
+    /**
+     * 处理通知的具体逻辑
+     *
+     * @param sbnList 待处理的通知列表
+     */
+    private void handleBatchLogic(List<StatusBarNotification> sbnList) {
+        if (sbnList == null || sbnList.isEmpty()) return;
+
+        //构建用于互斥的集合变量
+        Set<Long> usedRuleIdSet = new HashSet<>();                          //单次通知发送时已经使用过的规则编号集合，防止重复触发同一规则
+        Map<Long, List<RuleWaitToTrigger>> ruleGroupMap = new HashMap<>();  //用于实现互斥功能的哈希表，k:分组编号,v:该分组等待触发的规则及其识别到的金额
+        Map<Long, Integer> groupMinOrderMap = new HashMap<>();              //各个分组中触发过的规则的最小序号
+
+        //将通知列表中的通知全部解析，获取待触发的逻辑
+        for (StatusBarNotification sbn : sbnList) {
+            //获取通知数据
+            String packageName = sbn.getPackageName();
+            Notification sbnNotification = sbn.getNotification();
+            String title = sbnNotification.extras.getString(Notification.EXTRA_TITLE);
+            String text = sbnNotification.extras.getString(Notification.EXTRA_TEXT);
+            if (text == null || text.isEmpty() || title == null || title.isEmpty()) return;
+            String log = String.format(
+                    Locale.getDefault(),
+                    "通知发送者：%s\n通知标题：%s\n通知内容：%s",
+                    packageName, title, text
+            );
+            Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), log);
+
+            //获取与包名和标题匹配的规则
+            NotificationKey key = new NotificationKey(packageName, title);
+            List<BookkeepingNotiRuleUnionModel> ruleModelList = ruleMap.get(key);
+            if (ruleModelList == null || ruleModelList.isEmpty()) return;
 
             //获取待触发的规则
             for (BookkeepingNotiRuleUnionModel model : ruleModelList) {
@@ -215,7 +269,7 @@ public class NotificationAbService extends NotificationListenerService {
                     Pattern pattern = Pattern.compile(contentRegex);
                     matcher = pattern.matcher(text);
                 } catch (PatternSyntaxException e) {
-                    Log.e(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "正则表达式编译出错");
+                    Log.e(LogTags.NOTIFICATION_AB_SERVICE.n(), "正则表达式编译出错");
                     String err = String.format(
                             Locale.getDefault(),
                             "规则“%s”的正则表达式编译出错",
@@ -227,7 +281,7 @@ public class NotificationAbService extends NotificationListenerService {
 
                 //若通知内容匹配规则，则将规则模型加入待触发列表
                 if (matcher.find()) {
-                    Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "成功匹配正则表达式");
+                    Log.d(LogTags.NOTIFICATION_AB_SERVICE.n(), "成功匹配正则表达式");
 
                     //获取匹配到的金额数据
                     double amount;
@@ -239,7 +293,7 @@ public class NotificationAbService extends NotificationListenerService {
                         sendErrorNotification(err, ruleId);
                         continue;
                     }
-                    Log.i(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "流水数据生成成功");
+                    Log.i(LogTags.NOTIFICATION_AB_SERVICE.n(), "流水数据生成成功");
 
                     //将待触发的规则分组
                     List<NotificationRuleGroupRefEntity> refList = model.getGroupRefList();
@@ -270,105 +324,75 @@ public class NotificationAbService extends NotificationListenerService {
                     }
                 }
             }
+        }
 
-            //逐个分组触发真正能够触发的规则
-            for (Map.Entry<Long, List<RuleWaitToTrigger>> entry : ruleGroupMap.entrySet()) {
-                long groupId = entry.getKey();
-                List<RuleWaitToTrigger> waitToTriggerList = entry.getValue();
-                if (waitToTriggerList == null || waitToTriggerList.isEmpty()) continue;
+        //逐个分组触发真正能够触发的规则
+        for (Map.Entry<Long, List<RuleWaitToTrigger>> entry : ruleGroupMap.entrySet()) {
+            long groupId = entry.getKey();
+            List<RuleWaitToTrigger> waitToTriggerList = entry.getValue();
+            if (waitToTriggerList == null || waitToTriggerList.isEmpty()) continue;
 
-                //根据是否有分组进行不同的处理
-                if (groupId != NO_GROUP_KEY) {
-                    //按照序号升序排序
-                    waitToTriggerList.sort(Comparator.comparing(ruleWaitToTrigger -> ruleWaitToTrigger.order));
+            //根据是否有分组进行不同的处理
+            if (groupId != NO_GROUP_KEY) {
+                //按照序号升序排序
+                waitToTriggerList.sort(Comparator.comparing(ruleWaitToTrigger -> ruleWaitToTrigger.order));
 
-                    //获取未使用的排序序号最低的规则位置
-                    int pos = -1, index = 0;
-                    Integer minOrder = groupMinOrderMap.getOrDefault(groupId, Integer.MAX_VALUE);
-                    for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
-                        int ruleOrder = waitToTrigger.order;
-                        long ruleId = waitToTrigger.model.getRule().getRuleId();
-                        if ((minOrder == null || ruleOrder <= minOrder) && !usedRuleIdSet.contains(ruleId)) {
-                            pos = index;
-                            break;
-                        }
-
-                        index++;
-                    }
-                    if (pos < 0) continue;
-
-                    //将目标位置后的所有规则都标记为“已使用”
-                    Set<Long> excludedRuleIdSet = waitToTriggerList.subList(pos + 1, waitToTriggerList.size()).stream()
-                            .map(rule -> rule.model.getRule().getRuleId())
-                            .collect(Collectors.toSet());
-                    usedRuleIdSet.addAll(excludedRuleIdSet);
-
-                    //触发排序序号最低的规则
-                    RuleWaitToTrigger minOrderRule = waitToTriggerList.get(pos);
-                    usedRuleIdSet.add(minOrderRule.model.getRule().getRuleId());
-                    if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
-                        sendConfirmNotification(minOrderRule.amount, minOrderRule.model);
-                    } else {
-                        saveInDbDirectly(minOrderRule.amount, minOrderRule.model);
+                //获取未使用的排序序号最低的规则位置
+                int pos = -1, index = 0;
+                Integer minOrder = groupMinOrderMap.getOrDefault(groupId, Integer.MAX_VALUE);
+                for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
+                    int ruleOrder = waitToTrigger.order;
+                    long ruleId = waitToTrigger.model.getRule().getRuleId();
+                    if ((minOrder == null || ruleOrder <= minOrder) && !usedRuleIdSet.contains(ruleId)) {
+                        pos = index;
+                        break;
                     }
 
-                    //更新触发过的最小序号
-                    for (NotificationRuleGroupRefEntity triggeredRuleRef : minOrderRule.model.getGroupRefList()) {
-                        long triggeredGroupId = triggeredRuleRef.getGroupId();
-                        int triggeredOrder = triggeredRuleRef.getOrder();
+                    index++;
+                }
+                if (pos < 0) continue;
 
-                        Integer savedMinOrder = groupMinOrderMap.get(triggeredGroupId);
-                        if (savedMinOrder == null || savedMinOrder > triggeredOrder) {
-                            groupMinOrderMap.put(triggeredGroupId, triggeredOrder);
-                        }
-                    }
+                //将目标位置后的所有规则都标记为“已使用”
+                Set<Long> excludedRuleIdSet = waitToTriggerList.subList(pos + 1, waitToTriggerList.size()).stream()
+                        .map(rule -> rule.model.getRule().getRuleId())
+                        .collect(Collectors.toSet());
+                usedRuleIdSet.addAll(excludedRuleIdSet);
+
+                //触发排序序号最低的规则
+                RuleWaitToTrigger minOrderRule = waitToTriggerList.get(pos);
+                usedRuleIdSet.add(minOrderRule.model.getRule().getRuleId());
+                if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
+                    sendConfirmNotification(minOrderRule.amount, minOrderRule.model);
                 } else {
-                    for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
-                        //判断是否被使用过
-                        long ruleId = waitToTrigger.model.getRule().getRuleId();
-                        if (usedRuleIdSet.contains(ruleId)) continue;
+                    saveInDbDirectly(minOrderRule.amount, minOrderRule.model);
+                }
 
-                        //触发该规则
-                        usedRuleIdSet.add(ruleId);
-                        if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
-                            sendConfirmNotification(waitToTrigger.amount, waitToTrigger.model);
-                        } else {
-                            saveInDbDirectly(waitToTrigger.amount, waitToTrigger.model);
-                        }
+                //更新触发过的最小序号
+                for (NotificationRuleGroupRefEntity triggeredRuleRef : minOrderRule.model.getGroupRefList()) {
+                    long triggeredGroupId = triggeredRuleRef.getGroupId();
+                    int triggeredOrder = triggeredRuleRef.getOrder();
+
+                    Integer savedMinOrder = groupMinOrderMap.get(triggeredGroupId);
+                    if (savedMinOrder == null || savedMinOrder > triggeredOrder) {
+                        groupMinOrderMap.put(triggeredGroupId, triggeredOrder);
+                    }
+                }
+            } else {
+                for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
+                    //判断是否被使用过
+                    long ruleId = waitToTrigger.model.getRule().getRuleId();
+                    if (usedRuleIdSet.contains(ruleId)) continue;
+
+                    //触发该规则
+                    usedRuleIdSet.add(ruleId);
+                    if (!AutoBookKeepingPreference.getDirectDeposit(this)) {
+                        sendConfirmNotification(waitToTrigger.amount, waitToTrigger.model);
+                    } else {
+                        saveInDbDirectly(waitToTrigger.amount, waitToTrigger.model);
                     }
                 }
             }
         }
-    }
-
-    /**
-     * 将通知保存到数据库
-     *
-     * @param sbn 需要保存的通知
-     */
-    private void captureNotification(@NonNull StatusBarNotification sbn) {
-        //获取通知数据
-        String packageName = sbn.getPackageName();
-        String appName = AppListHelper.getAppNameByPackageName(packageName, this);
-        String title = sbn.getNotification().extras.getString("android.title");
-        String text = sbn.getNotification().extras.getString("android.text");
-        if (text == null || text.isEmpty() || title == null || title.isEmpty()) return;
-
-        //判断是否有数字
-        Pattern numPattern = Pattern.compile("\\d");
-        Matcher matcher = numPattern.matcher(text);
-        if (!matcher.find()) return;
-
-        //保存数据
-        CapturedNotificationEntity notification = new CapturedNotificationEntity(title, text, packageName, appName, LocalDateTime.now());
-        BookkeepingDb db = BookkeepingDb.getInstance(this);
-        disposable.add(db.notificationRuleDao().insertCapturedNotification(notification)
-                .subscribeOn(Schedulers.io())
-                .subscribe(
-                        () -> Log.i(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "通知捕获成功"),
-                        e -> Log.e(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), e.getMessage() == null ? "通知捕获失败" : e.getMessage())
-                )
-        );
     }
 
     /**

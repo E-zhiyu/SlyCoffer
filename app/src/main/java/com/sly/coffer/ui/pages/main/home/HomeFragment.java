@@ -193,15 +193,15 @@ public class HomeFragment extends Fragment {
                             binding.todayBalanceText.setText(String.format(
                                     Locale.getDefault(),
                                     "%s",
-                                    TextHelper.abbreviate(balance, 1)
+                                    TextHelper.abbreviate(balance)
                             ));
 
                             //收支
                             binding.todayIncomeAndExpenseText.setText(String.format(
                                     Locale.getDefault(),
                                     "+%s/-%s",
-                                    TextHelper.abbreviate(income, 1),
-                                    TextHelper.abbreviate(expense, 1)
+                                    TextHelper.abbreviate(income),
+                                    TextHelper.abbreviate(expense)
                             ));
                         },
                         e -> {

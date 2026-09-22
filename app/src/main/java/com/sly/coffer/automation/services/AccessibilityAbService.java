@@ -76,7 +76,7 @@ public class AccessibilityAbService extends AccessibilityService {
         public void onReceive(Context context, @NonNull Intent intent) {
             String action = intent.getAction();
             if (BroadcastActions.ACTION_SHUT_DOWN_ACCESSIBILITY_BOOKKEEPING.toString().equals(action)) {
-                Log.i(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "接收到关闭广播");
+                Log.i(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "接收到关闭广播");
                 disableSelf();
             }
         }
@@ -126,7 +126,7 @@ public class AccessibilityAbService extends AccessibilityService {
 
                             ruleCacheMap.putAll(map);
                         },
-                        e -> Log.e(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "无障碍规则获取失败")
+                        e -> Log.e(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "无障碍规则获取失败")
                 )
         );
 
@@ -137,7 +137,7 @@ public class AccessibilityAbService extends AccessibilityService {
         } else {
             ContextCompat.registerReceiver(this, SHUT_DOWN_RECEIVER, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
         }
-        Log.d(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "注册监听器");
+        Log.d(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "注册监听器");
     }
 
     @Override
@@ -154,7 +154,7 @@ public class AccessibilityAbService extends AccessibilityService {
                     return;
                 }
             } else {
-                Log.w(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "无法获取窗口信息");
+                Log.w(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "无法获取窗口信息");
                 return;
             }
         }
@@ -162,14 +162,14 @@ public class AccessibilityAbService extends AccessibilityService {
         //获取界面根节点
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root == null) {
-            Log.w(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "无法获取当前界面根节点");
+            Log.w(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "无法获取当前界面根节点");
             return;
         }
 
         //获取包名和活动名
         String packageName = root.getPackageName() != null ? root.getPackageName().toString() : "";
         String activityName = event.getClassName() != null ? event.getClassName().toString() : "";
-        Log.d(LogTags.AB_ACCESSIBILITY_SERVICE.n(),
+        Log.d(LogTags.ACCESSIBILITY_AB_SERVICE.n(),
                 "种类 : " + event.getEventType() + ",\n包名 : " + packageName + ",\n活动名 : " + activityName
         );
 
@@ -177,7 +177,7 @@ public class AccessibilityAbService extends AccessibilityService {
         CacheKey key = new CacheKey(packageName, activityName);
         List<AccessibilityRuleUnionModel> modelList = ruleCacheMap.get(key);
         if (modelList == null || modelList.isEmpty()) {
-            Log.d(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "当前界面没有匹配的规则");
+            Log.d(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "当前界面没有匹配的规则");
             return;
         } else {
             String log = String.format(
@@ -185,7 +185,7 @@ public class AccessibilityAbService extends AccessibilityService {
                     "获取到%d个规则",
                     modelList.size()
             );
-            Log.d(LogTags.AB_ACCESSIBILITY_SERVICE.n(), log);
+            Log.d(LogTags.ACCESSIBILITY_AB_SERVICE.n(), log);
         }
 
         final int DELAY = event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ? 1500 : 500;
@@ -211,16 +211,16 @@ public class AccessibilityAbService extends AccessibilityService {
                                                 .replace(",", "")
                                         );
                                     } catch (NumberFormatException e) {
-                                        Log.e(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "无法将字符串转换为金额");
+                                        Log.e(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "无法将字符串转换为金额");
                                     }
                                     break;
                                 }
                             }
                             if (amount == null) {
-                                Log.w(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "无法从该界面中提取金额");
+                                Log.w(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "无法从该界面中提取金额");
                                 return;
                             } else {
-                                Log.i(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "成功提取金额 : " + amount);
+                                Log.i(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "成功提取金额 : " + amount);
                             }
 
                             //尝试触发符合要求的规则
@@ -233,13 +233,13 @@ public class AccessibilityAbService extends AccessibilityService {
                                 long currentTimeMillis = System.currentTimeMillis();
                                 if (lastTimeMillis != null && currentTimeMillis - lastTimeMillis < 3000L) {
                                     String log = String.format(Locale.getDefault(), "“%s”触发防抖", rule.getName());
-                                    Log.d(LogTags.AB_ACCESSIBILITY_SERVICE.n(), log);
+                                    Log.d(LogTags.ACCESSIBILITY_AB_SERVICE.n(), log);
                                     continue;
                                 }
 
                                 //验证关键词组合
                                 if (!verifyKeywordGroups(model.getKeywordGroupList(), allTextSet)) {
-                                    Log.w(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "关键词校验不通过");
+                                    Log.w(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "关键词校验不通过");
                                     continue;
                                 }
 
@@ -262,7 +262,7 @@ public class AccessibilityAbService extends AccessibilityService {
         disposable.clear();
 
         unregisterReceiver(SHUT_DOWN_RECEIVER);
-        Log.d(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "注销监听器");
+        Log.d(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "注销监听器");
     }
 
     @Override
@@ -281,7 +281,7 @@ public class AccessibilityAbService extends AccessibilityService {
 
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root == null) {
-            Log.w(LogTags.AB_ACCESSIBILITY_SERVICE.n(), "根节点获取失败，无法验证关键词组合");
+            Log.w(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "根节点获取失败，无法验证关键词组合");
             return false;
         }
 
