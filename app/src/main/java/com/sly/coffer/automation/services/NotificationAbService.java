@@ -1,5 +1,6 @@
 package com.sly.coffer.automation.services;
 
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Bundle;
@@ -63,13 +64,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class NotificationAbService extends NotificationListenerService {
     private final CompositeDisposable disposable = new CompositeDisposable();
     private final Map<NotificationKey, List<BookkeepingNotiRuleUnionModel>> ruleMap = new HashMap<>(); //解析规则哈希表
-    private String lastPackageName = "";                                //上一次接收通知的包名
-    private String lastTitle = "";                                      //上一次通知的标题
-    private long lastReceiveEpochMilli = 0;                             //上一次接收消息的时间（毫秒）
-    private final Map<Long, List<RuleWaitToTrigger>> ruleGroupMap = new HashMap<>();    //用于实现互斥功能的哈希表，k:分组编号,v:该分组等待触发的规则及其识别到的金额
-    private final Map<Long, Integer> groupMinOrderMap = new HashMap<>();    //各个分组中触发过的规则的最小序号
     private final static long NO_GROUP_KEY = Long.MIN_VALUE;            //待触发的规则没有处于任何一个分组的键
-    private final HashSet<Long> usedRuleIdSet = new HashSet<>();        //单次通知发送时已经使用过的规则编号集合，防止重复触发同一规则
 
     private static class NotificationKey {
         private final String title;                                     //通知标题
@@ -167,39 +162,31 @@ public class NotificationAbService extends NotificationListenerService {
 
         //判断是否开启通知解析功能
         if (!AutoBookKeepingPreference.getSwitchStat(this)) {
-            Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "通知自动记账未启用");
+            Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "通知记账未启用");
             return;
         }
 
         //获取通知数据
         String packageName = sbn.getPackageName();
-        String title = sbn.getNotification().extras.getString("android.title");
-        String text = sbn.getNotification().extras.getString("android.text");
+        Notification sbnNotification = sbn.getNotification();
+        String title = sbnNotification.extras.getString(Notification.EXTRA_TITLE);
+        String text = sbnNotification.extras.getString(Notification.EXTRA_TEXT);
         if (text == null || text.isEmpty() || title == null || title.isEmpty()) return;
-
-        //同一应用发送太频繁直接不运行
-        long currentEpochMilli = System.currentTimeMillis();
-        long difference = currentEpochMilli - lastReceiveEpochMilli;        //求时间差
-        if (difference <= 1000 && title.equals(lastTitle) && packageName.equals(lastPackageName)) {
-            Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), "同一应用发送通知过于频繁，不执行任何操作");
-            return;
-        }
-        lastReceiveEpochMilli = currentEpochMilli;
-        lastPackageName = packageName;
-        lastTitle = title;
-
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), String.format("通知发送者包名：%s", packageName));
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), String.format("通知标题：%s", title));
-        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), String.format("通知内容：%s", text));
+        String log = String.format(
+                Locale.getDefault(),
+                "通知发送者：%s\n通知标题：%s\n通知内容：%s",
+                packageName, title, text
+        );
+        Log.d(LogTags.AB_NOTIFICATION_LISTENER_SERVICE.n(), log);
 
         //处理通知内容
         NotificationKey key = new NotificationKey(packageName, title);
         List<BookkeepingNotiRuleUnionModel> ruleModelList = ruleMap.get(key);
         if (ruleModelList != null && !ruleModelList.isEmpty()) {
-            //清空用于排斥的工具属性
-            ruleGroupMap.clear();
-            usedRuleIdSet.clear();
-            groupMinOrderMap.clear();
+            //实例化用于互斥的集合类
+            Set<Long> usedRuleIdSet = new HashSet<>();                          //单次通知发送时已经使用过的规则编号集合，防止重复触发同一规则
+            Map<Long, List<RuleWaitToTrigger>> ruleGroupMap = new HashMap<>();  //用于实现互斥功能的哈希表，k:分组编号,v:该分组等待触发的规则及其识别到的金额
+            Map<Long, Integer> groupMinOrderMap = new HashMap<>();              //各个分组中触发过的规则的最小序号
 
             //获取待触发的规则
             for (BookkeepingNotiRuleUnionModel model : ruleModelList) {
@@ -350,8 +337,9 @@ public class NotificationAbService extends NotificationListenerService {
         //获取通知数据
         String packageName = sbn.getPackageName();
         String appName = AppListHelper.getAppNameByPackageName(packageName, this);
-        String title = sbn.getNotification().extras.getString("android.title");
-        String text = sbn.getNotification().extras.getString("android.text");
+        Notification sbnNotification = sbn.getNotification();
+        String title = sbnNotification.extras.getString(Notification.EXTRA_TITLE);
+        String text = sbnNotification.extras.getString(Notification.EXTRA_TEXT);
         if (text == null || text.isEmpty() || title == null || title.isEmpty()) return;
 
         //判断是否有数字
