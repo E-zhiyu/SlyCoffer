@@ -222,7 +222,7 @@ public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView
             }
 
             //初始化文本视图
-            itemHolder.binding.amountText.setText(TextHelper.abbreviate(amount, 1));
+            itemHolder.binding.amountText.setText(TextHelper.abbreviate(amount));
             itemHolder.binding.remarkText.setText(remark.isEmpty() ? "<无备注>" : remark);
             String typeTimeAutoTag = String.format(
                     Locale.getDefault(),
