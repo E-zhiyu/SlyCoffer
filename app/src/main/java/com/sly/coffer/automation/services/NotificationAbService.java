@@ -65,10 +65,10 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 
 public class NotificationAbService extends NotificationListenerService {
     private final CompositeDisposable disposable = new CompositeDisposable();
-    private final PublishSubject<StatusBarNotification> notificationSubject = PublishSubject.create();
-    private static final long BATCH_DELAY_MS = 1000; // 防抖等待时间：1秒
+    private final PublishSubject<StatusBarNotification> notificationSubject = PublishSubject.create();  //通知缓冲队列，用于同时处理多个通知
     private final Map<NotificationKey, List<BookkeepingNotiRuleUnionModel>> ruleMap = new HashMap<>(); //解析规则哈希表
     private final static long NO_GROUP_KEY = Long.MIN_VALUE;            //待触发的规则没有处于任何一个分组的键
+    private static final long BATCH_DELAY_MS = 500;                     //缓冲队列冲刷的等待时间
 
     private static class NotificationKey {
         private final String title;                                     //通知标题
