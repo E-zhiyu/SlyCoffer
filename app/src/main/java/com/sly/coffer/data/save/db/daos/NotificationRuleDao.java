@@ -98,6 +98,14 @@ public interface NotificationRuleDao {
     Flowable<List<BookkeepingNotiRuleUnionModel>> getEnabledNotificationRuleFlowable();
 
     /**
+     * 获取规则与分组映射关系
+     *
+     * @return 规则与分组的映射关系，支持响应式更新
+     */
+    @Query("SELECT * FROM notificationRuleGroupRef ORDER BY groupId, `order`")
+    Flowable<List<NotificationRuleGroupRefEntity>> getRuleGroupRefFlowable();
+
+    /**
      * 插入通知规则
      *
      * @param rule 需要插入的通知规则
