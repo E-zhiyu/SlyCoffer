@@ -3,6 +3,7 @@ package com.sly.coffer.data.backup.pojo;
 public class NotificationRuleGroupPojo {
     private long groupId;
     private String name;
+    private int order;
 
     public NotificationRuleGroupPojo() {
     }
@@ -21,5 +22,13 @@ public class NotificationRuleGroupPojo {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public int getOrder() {
+        return order;
+    }
+
+    public void setOrder(int order) {
+        this.order = order;
     }
 }

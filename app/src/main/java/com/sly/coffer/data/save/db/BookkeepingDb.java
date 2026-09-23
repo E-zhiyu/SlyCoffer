@@ -63,7 +63,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
                 AccessibilityRuleKeywordGroupEntity.class,
                 PickedPageEntity.class
         },
-        version = 6
+        version = 7
 )
 @TypeConverters({
         DateTimeConverter.class,
@@ -103,7 +103,8 @@ public abstract class BookkeepingDb extends RoomDatabase {
                                     DatabaseMigrations.MIGRATION_2_3,
                                     DatabaseMigrations.MIGRATION_3_4,
                                     DatabaseMigrations.MIGRATION_4_5,
-                                    DatabaseMigrations.MIGRATION_5_6
+                                    DatabaseMigrations.MIGRATION_5_6,
+                                    DatabaseMigrations.MIGRATION_6_7
                             )
                             .build();
                 }

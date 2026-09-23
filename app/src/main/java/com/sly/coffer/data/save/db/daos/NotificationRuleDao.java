@@ -102,7 +102,11 @@ public interface NotificationRuleDao {
      *
      * @return 规则与分组的映射关系，支持响应式更新
      */
-    @Query("SELECT * FROM notificationRuleGroupRef ORDER BY groupId, `order`")
+    @Query("SELECT * FROM notificationRuleGroupRef ref " +
+            "JOIN (" +
+            "   SELECT `order`, groupId FROM notificationRuleGroups" +
+            ") g ON g.groupId = ref.groupId " +
+            "ORDER BY g.`order`, ref.`order`")
     Flowable<List<NotificationRuleGroupRefEntity>> getRuleGroupRefFlowable();
 
     /**
@@ -439,6 +443,14 @@ public interface NotificationRuleDao {
     long insertRuleGroup(NotificationRuleGroupEntity group);
 
     /**
+     * 获取规则分组中最大的排序序号
+     *
+     * @return 规则分组表中最大的排序序号
+     */
+    @Query("SELECT MAX(`order`) FROM notificationRuleGroups")
+    Integer getRuleGroupMaxOrder();
+
+    /**
      * 添加规则分组事务
      *
      * @param group      待添加的规则分组
@@ -450,6 +462,8 @@ public interface NotificationRuleDao {
             List<Long> ruleIdList
     ) {
         if (group == null) return;
+        Integer maxOrder = getRuleGroupMaxOrder();
+        group.setOrder(maxOrder == null ? 0 : maxOrder + 1);
         long groupId = insertRuleGroup(group);
 
         //规则与分组的映射
@@ -481,6 +495,15 @@ public interface NotificationRuleDao {
     void updateRuleGroup(NotificationRuleGroupEntity group);
 
     /**
+     * 通过分组编号获取排序序号
+     *
+     * @param groupId 分组编号
+     * @return 该规则分组的排序序号
+     */
+    @Query("SELECT `order` FROM notificationRuleGroups WHERE groupId = :groupId")
+    Integer getRuleGroupOrderById(long groupId);
+
+    /**
      * 修改通知规则分组事务
      *
      * @param group      修改后的通知规则分组
@@ -494,6 +517,14 @@ public interface NotificationRuleDao {
         if (group == null || group.getGroupId() == 0) return;
         long groupId = group.getGroupId();
 
+        //更新分组
+        Integer oldOrder = getRuleGroupOrderById(groupId);
+        if (oldOrder == null) {
+            Integer maxOrder = getRuleGroupMaxOrder();
+            group.setOrder(maxOrder == null ? 0 : maxOrder + 1);
+        } else {
+            group.setOrder(oldOrder);
+        }
         updateRuleGroup(group);
 
         //规则与分组的映射
