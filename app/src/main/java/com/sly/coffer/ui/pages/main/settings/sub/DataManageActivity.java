@@ -395,6 +395,9 @@ public class DataManageActivity extends AppCompatActivity {
                         WorkerScheduler.cancelWorkById(this, uuid)
                 )
                 .show();
+        progressDialog.setOnCancelListener(dialogInterface ->
+                sendBackgroundProgress("导出数据", "正在导出数据……")
+        );
 
         //监听运行状态
         WorkManager.getInstance(this)
@@ -526,6 +529,9 @@ public class DataManageActivity extends AppCompatActivity {
                         WorkerScheduler.cancelWorkById(this, uuid)
                 )
                 .show();
+        progressDialog.setOnCancelListener(dialogInterface ->
+                sendBackgroundProgress("导入数据", "正在导入数据……")
+        );
 
         //监听运行状态
         WorkManager.getInstance(this)
