@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/action_move_to_top"
+        android:title="@string/move_to_top" />
+    <item
+        android:id="@+id/action_move_up"
+        android:title="@string/move_up" />
+    <item
+        android:id="@+id/action_move_down"
+        android:title="@string/move_down" />
+    <item
+        android:id="@+id/action_move_to_bottom"
+        android:title="@string/move_to_bottom" />
+    <item
         android:id="@+id/action_delete_notification_rule_group"
         android:title="@string/delete" />
 </menu>

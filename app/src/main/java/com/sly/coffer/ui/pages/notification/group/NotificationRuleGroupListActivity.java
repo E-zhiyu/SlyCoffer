@@ -16,9 +16,11 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.sly.coffer.R;
+import com.sly.coffer.auxiliary.enums.types.MoveDirectionType;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
+import com.sly.coffer.data.save.db.services.NotificationRuleService;
 import com.sly.coffer.databinding.ActivityNotificationRuleGroupListBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
@@ -93,6 +95,18 @@ public class NotificationRuleGroupListActivity extends AppCompatActivity {
                         if (id == R.id.action_delete_notification_rule_group) {
                             deleteGroup(entity.getGroup());
                             return true;
+                        } else if (id == R.id.action_move_to_top) {
+                            moveGroup(entity.getGroup(), MoveDirectionType.TOP);
+                            return true;
+                        } else if (id == R.id.action_move_up) {
+                            moveGroup(entity.getGroup(), MoveDirectionType.UP);
+                            return true;
+                        } else if (id == R.id.action_move_down) {
+                            moveGroup(entity.getGroup(), MoveDirectionType.DOWN);
+                            return true;
+                        } else if (id == R.id.action_move_to_bottom) {
+                            moveGroup(entity.getGroup(), MoveDirectionType.BOTTOM);
+                            return true;
                         }
 
                         return false;
@@ -148,5 +162,23 @@ public class NotificationRuleGroupListActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("取消", null)
                 .show();
+    }
+
+    /**
+     * 移动规则分组
+     *
+     * @param group     待移动的规则分组
+     * @param direction 移动的方向种类
+     */
+    private void moveGroup(@NonNull NotificationRuleGroupEntity group, MoveDirectionType direction) {
+        BookkeepingDb db = BookkeepingDb.getInstance(this);
+        disposable.add(NotificationRuleService.moveRuleGroup(group.getGroupId(), direction, db)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        () -> Toast.makeText(this, "移动成功", Toast.LENGTH_SHORT).show(),
+                        e -> ExceptionHelper.showExceptionDialog(this, e)
+                )
+        );
     }
 }

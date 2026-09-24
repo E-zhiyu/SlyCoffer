@@ -44,10 +44,13 @@ import com.sly.coffer.ui.pages.notification.rule.NotificationRuleListActivity;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,7 +66,7 @@ public class NotificationAbService extends NotificationListenerService {
     private final CompositeDisposable disposable = new CompositeDisposable();
     private final PublishSubject<RuleWaitToTrigger> waitToTriggerSubject = PublishSubject.create(); //待触发规则的缓冲队列，用于同时处理多个通知
     private final Map<NotificationKey, List<BookkeepingNotiRuleUnionModel>> ruleMap = new HashMap<>();  //已启用规则的哈希表
-    private final Map<Long, List<NotificationRuleGroupRefEntity>> groupMap = new HashMap<>();                                     //分组哈希表（k:分组编号，v:该组中的规则编号)
+    private final Map<Long, List<NotificationRuleGroupRefEntity>> groupMap = new LinkedHashMap<>();                                     //分组哈希表（k:分组编号，v:该组中的规则编号)
 
     private static class NotificationKey {
         private final String title;                                     //通知标题
@@ -149,7 +152,7 @@ public class NotificationAbService extends NotificationListenerService {
                             Map<Long, List<NotificationRuleGroupRefEntity>> map = refList.stream()
                                     .collect(Collectors.groupingBy(
                                             NotificationRuleGroupRefEntity::getGroupId,
-                                            HashMap::new,
+                                            LinkedHashMap::new,
                                             Collectors.toList()
                                     ));
                             groupMap.putAll(map);
@@ -302,11 +305,11 @@ public class NotificationAbService extends NotificationListenerService {
         if (waitToTriggerList == null || waitToTriggerList.isEmpty()) return;
 
         //构建用于互斥的集合变量
-        Map<Long, List<NotificationRuleGroupRefEntity>> subGroupMap = new HashMap<>();  //去掉了无需触发的规则的分组的哈希表
-        Map<Long, RuleWaitToTrigger> waitToTriggerMap = new HashMap<>();                //待触发的规则哈希表（k:规则编号，v:待触发的规则）
-        List<RuleWaitToTrigger> noGroupWaitToTriggerList = new ArrayList<>();           //没有分组但需要触发的规则
+        Map<Long, RuleWaitToTrigger> waitToTriggerMap = new HashMap<>();        //待触发的规则哈希表（k:规则编号，v:待触发的规则）
+        List<RuleWaitToTrigger> noGroupWaitToTriggerList = new ArrayList<>();   //没有分组但需要触发的规则
 
         //将通知列表中的通知全部解析，获取待触发的逻辑
+        Set<Long> usedGroupIdSet = new HashSet<>();
         for (RuleWaitToTrigger waitToTrigger : waitToTriggerList) {
             List<NotificationRuleGroupRefEntity> refList = waitToTrigger.model.getGroupRefList();
             if (!refList.isEmpty()) {
@@ -316,15 +319,23 @@ public class NotificationAbService extends NotificationListenerService {
                 //获取分组哈希表的子集
                 for (NotificationRuleGroupRefEntity ref : refList) {
                     long groupId = ref.getGroupId();
-                    if (subGroupMap.containsKey(groupId)) continue;
-                    subGroupMap.put(groupId, groupMap.get(groupId));
+                    if (usedGroupIdSet.contains(groupId)) continue;
+                    usedGroupIdSet.add(groupId);
                 }
             } else {
                 noGroupWaitToTriggerList.add(waitToTrigger);
             }
         }
 
-        //逐个分组扫描需要在分组中的规则
+        //获取规则映射哈希表的子集，用于减少遍历次数，同时保持原有哈希表的 entry 顺序
+        Map<Long, List<NotificationRuleGroupRefEntity>> subGroupMap = new LinkedHashMap<>();  //去掉了无需触发的规则的分组的哈希表
+        for (Map.Entry<Long, List<NotificationRuleGroupRefEntity>> entry : groupMap.entrySet()) {
+            if (usedGroupIdSet.contains(entry.getKey())) {
+                subGroupMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        //逐个分组扫描在分组中的规则
         for (Map.Entry<Long, List<NotificationRuleGroupRefEntity>> entry : subGroupMap.entrySet()) {
             List<NotificationRuleGroupRefEntity> ruleRefList = entry.getValue();
             if (ruleRefList == null || ruleRefList.isEmpty()) return;
