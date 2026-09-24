@@ -9,6 +9,7 @@ import androidx.room.Transaction;
 import androidx.room.Update;
 
 import com.sly.coffer.auxiliary.enums.types.AccountType;
+import com.sly.coffer.auxiliary.enums.types.MoveDirectionType;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
@@ -96,6 +97,18 @@ public interface NotificationRuleDao {
     @Transaction
     @Query("SELECT * FROM notificationRules WHERE enabled = 1")
     Flowable<List<BookkeepingNotiRuleUnionModel>> getEnabledNotificationRuleFlowable();
+
+    /**
+     * 获取规则与分组映射关系
+     *
+     * @return 规则与分组的映射关系，支持响应式更新
+     */
+    @Query("SELECT * FROM notificationRuleGroupRef ref " +
+            "JOIN (" +
+            "   SELECT `order`, groupId FROM notificationRuleGroups" +
+            ") g ON g.groupId = ref.groupId " +
+            "ORDER BY g.`order`, ref.`order`")
+    Flowable<List<NotificationRuleGroupRefEntity>> getRuleGroupRefFlowable();
 
     /**
      * 插入通知规则
@@ -400,7 +413,8 @@ public interface NotificationRuleDao {
     @Transaction
     @Query("SELECT g.*, " +
             "(SELECT COUNT(*) FROM notificationRuleGroupRef ref WHERE ref.groupId = g.groupId) AS count " +
-            "FROM notificationRuleGroups g")
+            "FROM notificationRuleGroups g " +
+            "ORDER BY g.`order`")
     Flowable<List<NotificationRuleGroupListUnionModel>> getRuleGroupFlowable();
 
     /**
@@ -431,6 +445,14 @@ public interface NotificationRuleDao {
     long insertRuleGroup(NotificationRuleGroupEntity group);
 
     /**
+     * 获取规则分组中最大的排序序号
+     *
+     * @return 规则分组表中最大的排序序号
+     */
+    @Query("SELECT MAX(`order`) FROM notificationRuleGroups")
+    Integer getRuleGroupMaxOrder();
+
+    /**
      * 添加规则分组事务
      *
      * @param group      待添加的规则分组
@@ -442,6 +464,8 @@ public interface NotificationRuleDao {
             List<Long> ruleIdList
     ) {
         if (group == null) return;
+        Integer maxOrder = getRuleGroupMaxOrder();
+        group.setOrder(maxOrder == null ? 0 : maxOrder + 1);
         long groupId = insertRuleGroup(group);
 
         //规则与分组的映射
@@ -473,6 +497,15 @@ public interface NotificationRuleDao {
     void updateRuleGroup(NotificationRuleGroupEntity group);
 
     /**
+     * 通过分组编号获取排序序号
+     *
+     * @param groupId 分组编号
+     * @return 该规则分组的排序序号
+     */
+    @Query("SELECT `order` FROM notificationRuleGroups WHERE groupId = :groupId")
+    Integer getRuleGroupOrderById(long groupId);
+
+    /**
      * 修改通知规则分组事务
      *
      * @param group      修改后的通知规则分组
@@ -486,6 +519,14 @@ public interface NotificationRuleDao {
         if (group == null || group.getGroupId() == 0) return;
         long groupId = group.getGroupId();
 
+        //更新分组
+        Integer oldOrder = getRuleGroupOrderById(groupId);
+        if (oldOrder == null) {
+            Integer maxOrder = getRuleGroupMaxOrder();
+            group.setOrder(maxOrder == null ? 0 : maxOrder + 1);
+        } else {
+            group.setOrder(oldOrder);
+        }
         updateRuleGroup(group);
 
         //规则与分组的映射
@@ -498,6 +539,98 @@ public interface NotificationRuleDao {
                 order++;
             }
             insertNotificationRuleGroupRef(ruleRefefList);
+        }
+    }
+
+    /**
+     * 获取排序序号最小的规则分组对象
+     *
+     * @param groupId 需要排除的分组的编号
+     * @return 排序序号最小的规则分组（即列表中最顶上的）
+     */
+    @Query("SELECT * FROM notificationRuleGroups WHERE groupId != :groupId ORDER BY `order` LIMIT 1")
+    NotificationRuleGroupEntity getTopRuleGroup(long groupId);
+
+    /**
+     * 获取排序序号最大的规则分组对象
+     *
+     * @param groupId 需要排除的分组的编号
+     * @return 排序序号最大的规则分组（即列表中最底部的）
+     */
+    @Query("SELECT * FROM notificationRuleGroups WHERE groupId != :groupId ORDER BY `order` DESC LIMIT 1")
+    NotificationRuleGroupEntity getBottomRuleGroup(long groupId);
+
+    /**
+     * 获取上面一个规则分组
+     *
+     * @param groupId 作为参考系的分组的编号
+     * @return 在指定编号的分组的上面一个分组
+     */
+    @Query("SELECT * FROM notificationRuleGroups " +
+            "WHERE `order` < (" +
+            "   SELECT `order` FROM notificationRuleGroups WHERE groupId = :groupId" +
+            ") " +
+            "ORDER BY `order` DESC " +
+            "LIMIT 1")
+    NotificationRuleGroupEntity getAboveRuleGroup(long groupId);
+
+    /**
+     * 获取下面一个规则分组
+     *
+     * @param groupId 作为参考系的分组的编号
+     * @return 在指定编号的分组的下面一个分组
+     */
+    @Query("SELECT * FROM notificationRuleGroups " +
+            "WHERE `order` > (" +
+            "   SELECT `order` FROM notificationRuleGroups WHERE groupId = :groupId" +
+            ") " +
+            "ORDER BY `order` " +
+            "LIMIT 1")
+    NotificationRuleGroupEntity getNetherRuleGroup(long groupId);
+
+    /**
+     * 将根据规则分组编号更新排序序号
+     *
+     * @param groupId 规则分组编号
+     * @param order   更新后的排序序号
+     */
+    @Query("UPDATE notificationRuleGroups SET `order` = :order WHERE groupId = :groupId")
+    void updateRuleGroupOrderById(long groupId, int order);
+
+    /**
+     * 移动规则分组并改变排序
+     *
+     * @param groupId   需要移动的分组的编号
+     * @param direction 移动的方向
+     */
+    @Transaction
+    default void moveRuleGroup(
+            long groupId,
+            MoveDirectionType direction
+    ) {
+        if (direction == null) return;
+
+        NotificationRuleGroupEntity target;
+        switch (direction) {
+            case TOP:
+                target = getTopRuleGroup(groupId);
+                if (target == null) return;
+                updateRuleGroupOrderById(groupId, target.getOrder() - 1);
+                break;
+            case UP:
+                target = getAboveRuleGroup(groupId);
+                if (target == null) return;
+                updateRuleGroupOrderById(groupId, target.getOrder() - 1);
+                break;
+            case DOWN:
+                target = getNetherRuleGroup(groupId);
+                if (target == null) return;
+                updateRuleGroupOrderById(groupId, target.getOrder() + 1);
+                break;
+            case BOTTOM:
+                target = getBottomRuleGroup(groupId);
+                if (target == null) return;
+                updateRuleGroupOrderById(groupId, target.getOrder() + 1);
         }
     }
 }

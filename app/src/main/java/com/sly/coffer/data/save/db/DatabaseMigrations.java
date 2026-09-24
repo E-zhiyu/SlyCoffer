@@ -68,4 +68,14 @@ public class DatabaseMigrations {
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_notificationRuleGroupRef_order` ON `notificationRuleGroupRef` (`order`)");
         }
     };
+
+    //添加规则分组排序序号
+    static final Migration MIGRATION_6_7 = new Migration(6, 7) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE notificationRuleGroups ADD COLUMN `order` INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("UPDATE notificationRuleGroups SET `order` = groupId");
+            db.execSQL( "CREATE INDEX IF NOT EXISTS `index_notificationRuleGroups_order` ON `notificationRuleGroups` (`order`)");
+        }
+    };
 }

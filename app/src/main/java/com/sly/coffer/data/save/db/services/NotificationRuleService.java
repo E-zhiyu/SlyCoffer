@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.services;
 
+import com.sly.coffer.auxiliary.enums.types.MoveDirectionType;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
@@ -129,6 +130,21 @@ public class NotificationRuleService {
             } else {
                 return Single.just(Optional.of(model));
             }
+        });
+    }
+
+    /**
+     * 移动规则分组
+     *
+     * @param groupId   需要移动的分组的编号
+     * @param direction 移动的方向种类
+     * @param db        数据库实例
+     * @return 是否完成
+     */
+    public static Completable moveRuleGroup(long groupId, MoveDirectionType direction, BookkeepingDb db) {
+        return Completable.defer(() -> {
+            db.notificationRuleDao().moveRuleGroup(groupId, direction);
+            return Completable.complete();
         });
     }
 }

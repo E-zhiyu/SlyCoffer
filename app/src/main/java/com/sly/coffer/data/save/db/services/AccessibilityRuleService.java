@@ -15,7 +15,6 @@ import com.sly.coffer.data.save.db.entities.composite.ui.PickedPageListUiModel;
 import com.sly.coffer.helpers.AppListHelper;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +149,7 @@ public class AccessibilityRuleService {
                     Map<String, List<PickedPageEntity>> groupedMap = pickedPageList.stream()
                             .collect(Collectors.groupingBy(
                                     PickedPageEntity::getPackageName,
-                                    HashMap::new,
+                                    LinkedHashMap::new,
                                     Collectors.toList()
                             ));
 

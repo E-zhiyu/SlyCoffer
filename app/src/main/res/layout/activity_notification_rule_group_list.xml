@@ -23,7 +23,18 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:layout_collapseMode="pin"
-                app:title="@string/notification_rule_group" />
+                app:title="@string/notification_rule_group">
+
+                <ImageButton
+                    android:id="@+id/help_btn"
+                    style="@style/ImageButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="15dp"
+                    android:contentDescription="@string/btn_of_explanation"
+                    android:src="@drawable/outline_help_24" />
+            </com.google.android.material.appbar.MaterialToolbar>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
