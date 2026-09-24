@@ -16,6 +16,10 @@ public class EditTextDialogBuilder
         EditTextDialogBuilder.OnClickedListener,
         DialogInterface.OnClickListener
         > {
+    public interface OnClickedListener {
+        void onClicked(String inputStr);
+    }
+
     /**
      * 文本框对话框构造方法
      *
@@ -69,7 +73,16 @@ public class EditTextDialogBuilder
         return dialog;
     }
 
-    public interface OnClickedListener {
-        void onClicked(String inputStr);
+    /**
+     * 设置输入框底部的帮助文本
+     *
+     * @param helpText 帮助文本内容
+     * @return 对话框构建器
+     */
+    public CustomDialogBuilderBase<DialogEdittextBinding,
+            EditTextDialogBuilder.OnClickedListener,
+            DialogInterface.OnClickListener> setHelpText(String helpText) {
+        binding.textLayout.setHelperText(helpText);
+        return this;
     }
 }
