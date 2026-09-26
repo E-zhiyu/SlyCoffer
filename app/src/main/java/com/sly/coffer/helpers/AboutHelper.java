@@ -10,7 +10,13 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.12.3\n" +
+    private static final String UPDATE_LOG_MD = "# v1.12.4\n" +
+            "\n" +
+            "### 优化的内容\n" +
+            "\n" +
+            "- 无障碍记账能够使用OCR识别屏幕文本，以解决之前版本部分APP无法使用无障碍记账的缺陷\n" +
+            "\n" +
+            "# v1.12.3\n" +
             "\n" +
             "### 新增内容\n" +
             "\n" +
