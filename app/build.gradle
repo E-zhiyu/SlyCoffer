@@ -81,4 +81,5 @@ dependencies {
     annotationProcessor libs.mapstruct.processor    // Mapstruct 注解处理器
     implementation libs.lifecycle.process           // 生命周期监听
     implementation libs.zibin.luban                 //图片压缩
+    implementation libs.text.recognition.chinese    //中文 OCR 识别
 }
