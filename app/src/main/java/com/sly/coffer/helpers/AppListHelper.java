@@ -11,7 +11,7 @@ import android.graphics.drawable.Drawable;
 import androidx.annotation.NonNull;
 
 import com.sly.coffer.auxiliary.classes.AppInfo;
-import com.sly.coffer.helpers.appearence.IconHelper;
+import com.sly.coffer.helpers.appearence.ImageHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +41,7 @@ public class AppListHelper {
             Drawable originDrawable = app.loadIcon(pm);                 //获取应用图标
 
             //转换为Bitmap并缩放
-            Bitmap scaledBitmap = IconHelper.getRoundedCornerIcon(context, originDrawable);
+            Bitmap scaledBitmap = ImageHelper.getRoundedCornerIcon(context, originDrawable);
             AppInfo appInfo = new AppInfo(appName, packageName, scaledBitmap);
             appInfoList.add(appInfo);
         }

@@ -7,9 +7,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.hardware.HardwareBuffer;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
@@ -51,6 +54,7 @@ import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -190,6 +194,12 @@ public class AccessibilityAbService extends AccessibilityService {
 
         final int DELAY = event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ? 1500 : 500;
         disposable.add(Single.fromCallable(() -> TextHelper.extractAllTextsFromNode(root))
+                .flatMap(textSet -> {
+                    if (!textSet.isEmpty()) return Single.just(textSet);
+
+                    //使用 OCR 作为备选方案
+                    return performTakeScreenshotOcrSingle();
+                })
                 .delaySubscription(DELAY, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.computation())
@@ -251,7 +261,8 @@ public class AccessibilityAbService extends AccessibilityService {
                                     saveInDbDirectly(amount, model);
                                 }
                             }
-                        }
+                        },
+                        e -> Log.e(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "无障碍记账异常：\n" + e.getMessage())
                 )
         );
     }
@@ -267,6 +278,71 @@ public class AccessibilityAbService extends AccessibilityService {
 
     @Override
     public void onInterrupt() {
+    }
+
+    /**
+     * 利用 Android 11+ 原生 takeScreenshot 进行截屏并识别 OCR 文本
+     */
+    public Single<Set<String>> performTakeScreenshotOcrSingle() {
+        return Single.create(emitter -> {
+            //版本兼容判定：低于 Android 11 直接返回空 Set 或切换备用逻辑
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                Log.w(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "Android 版本低于 11，不支持原生 takeScreenshot");
+                if (!emitter.isDisposed()) {
+                    emitter.onSuccess(new HashSet<>());
+                }
+                return;
+            }
+
+            //利用无障碍服务截屏
+            takeScreenshot(
+                    Display.DEFAULT_DISPLAY,
+                    getMainExecutor(),
+                    new TakeScreenshotCallback() {
+                        @Override
+                        public void onSuccess(@NonNull ScreenshotResult result) {
+                            try (HardwareBuffer hardwareBuffer = result.getHardwareBuffer()) {
+                                //将 HardwareBuffer 转换为 Bitmap
+                                Bitmap hardwareBitmap = Bitmap.wrapHardwareBuffer(hardwareBuffer, result.getColorSpace());
+                                if (hardwareBitmap == null) {
+                                    if (!emitter.isDisposed()) emitter.onSuccess(new HashSet<>());
+                                    return;
+                                }
+
+                                // 复制出适合 ML Kit 渲染的 Bitmap (ARGB_8888)
+                                Bitmap softwareBitmap = hardwareBitmap.copy(Bitmap.Config.ARGB_8888, false);
+                                TextHelper.extractTextSetFromBitmap(softwareBitmap, new TextHelper.OcrCallback() {
+                                    @Override
+                                    public void onSuccess(Set<String> textSet) {
+                                        if (!emitter.isDisposed()) {
+                                            emitter.onSuccess(textSet);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onFailure(Exception e) {
+                                        Log.e(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "OCR 识别失败: " + e.getMessage());
+                                        if (!emitter.isDisposed()) {
+                                            emitter.onSuccess(new HashSet<>()); // 发射空集保证下游不中断
+                                        }
+                                    }
+                                });
+                            } catch (Exception e) {
+                                Log.e(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "处理截屏 Buffer 异常", e);
+                                if (!emitter.isDisposed()) emitter.onSuccess(new HashSet<>());
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(int errorCode) {
+                            Log.e(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "takeScreenshot 失败，错误码: " + errorCode);
+                            if (!emitter.isDisposed()) {
+                                emitter.onSuccess(new HashSet<>());
+                            }
+                        }
+                    }
+            );
+        });
     }
 
     /**
