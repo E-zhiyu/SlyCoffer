@@ -1,9 +1,16 @@
 package com.sly.coffer.helpers;
 
+import android.graphics.Bitmap;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
+
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.Text;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions;
 
 import org.jetbrains.annotations.Contract;
 
@@ -25,6 +32,22 @@ public class TextHelper {
     private static final String[] FILE_SIZE_CHAR = {
             "", "K", "M", "G", "T"
     };
+
+    public interface OcrCallback {
+        /**
+         * OCR 识别成功回调
+         *
+         * @param textSet 从图片中提取的文本集合
+         */
+        void onSuccess(Set<String> textSet);
+
+        /**
+         * OCR 识别失败回调
+         *
+         * @param e 引发的异常
+         */
+        void onFailure(Exception e);
+    }
 
     /**
      * 将单位为 B 的文件大小简写为字符串
@@ -53,6 +76,40 @@ public class TextHelper {
 
         // 组装结果
         return formatted + FILE_SIZE_CHAR[index];
+    }
+
+    /**
+     * 传入 Bitmap，利用 ML Kit 获取屏幕中所有文本并返回 Set<String>
+     */
+    public static void extractTextSetFromBitmap(Bitmap bitmap, OcrCallback callback) {
+        if (bitmap == null) {
+            return;
+        }
+
+        InputImage inputImage = InputImage.fromBitmap(bitmap, 0);
+
+        // 初始化中文识别器（可识别中文、英文及数字）
+        TextRecognizer recognizer = TextRecognition.getClient(
+                new ChineseTextRecognizerOptions.Builder().build()
+        );
+
+        recognizer.process(inputImage)
+                .addOnSuccessListener(visionText -> {
+                    Set<String> resultSet = new HashSet<>();
+
+                    // 1. 遍历块 (TextBlock) -> 2. 遍历行 (Line) -> 3. 提取文本
+                    for (Text.TextBlock block : visionText.getTextBlocks()) {
+                        for (Text.Line line : block.getLines()) {
+                            String textLine = line.getText().trim();
+                            if (!textLine.isEmpty()) {
+                                resultSet.add(textLine);
+                            }
+                        }
+                    }
+
+                    callback.onSuccess(resultSet);
+                })
+                .addOnFailureListener(callback::onFailure);
     }
 
     /**

@@ -12,7 +12,7 @@ import android.graphics.drawable.Drawable;
 
 import androidx.annotation.NonNull;
 
-public class IconHelper {
+public class ImageHelper {
     private static final int TARGET_ICON_SIZE = 48;    //图标的目标大小（dp）
     private static final int CORNER_RADIUS = 24;       //圆角大小（dp）
 
