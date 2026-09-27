@@ -12,6 +12,10 @@ import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 public class AboutHelper {
     private static final String UPDATE_LOG_MD = "# v1.12.5\n" +
             "\n" +
+            "### 优化的内容\n" +
+            "\n" +
+            "- 若自动记账识别到的金额小于等于0，则忽略这次记账\n" +
+            "\n" +
             "### BUG修复\n" +
             "\n" +
             "- 修复部分情况下同一分组的规则可能同时触发多个的BUG\n" +

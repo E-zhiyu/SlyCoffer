@@ -229,8 +229,11 @@ public class AccessibilityAbService extends AccessibilityService {
                             if (amount == null) {
                                 Log.w(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "无法从该界面中提取金额");
                                 return;
+                            } else if (amount > 0) {
+                                Log.i(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "流水数据生成成功");
                             } else {
-                                Log.i(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "成功提取金额 : " + amount);
+                                Log.e(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "解析的金额为非正数");
+                                return;
                             }
 
                             //尝试触发符合要求的规则
@@ -241,7 +244,7 @@ public class AccessibilityAbService extends AccessibilityService {
                                 long ruleId = rule.getRuleId();
                                 Long lastTimeMillis = antiShakeMap.get(ruleId);
                                 long currentTimeMillis = System.currentTimeMillis();
-                                if (lastTimeMillis != null && currentTimeMillis - lastTimeMillis < 3000L) {
+                                if (lastTimeMillis != null && currentTimeMillis - lastTimeMillis < 3000) {
                                     String log = String.format(Locale.getDefault(), "“%s”触发防抖", rule.getName());
                                     Log.d(LogTags.ACCESSIBILITY_AB_SERVICE.n(), log);
                                     continue;

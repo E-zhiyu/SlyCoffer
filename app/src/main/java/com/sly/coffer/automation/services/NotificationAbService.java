@@ -257,7 +257,12 @@ public class NotificationAbService extends NotificationListenerService {
                 sendErrorNotification(err, ruleId);
                 continue;
             }
-            Log.i(LogTags.NOTIFICATION_AB_SERVICE.n(), "流水数据生成成功");
+            if (amount > 0) {
+                Log.i(LogTags.NOTIFICATION_AB_SERVICE.n(), "流水数据生成成功");
+            } else {
+                Log.e(LogTags.NOTIFICATION_AB_SERVICE.n(), "解析的金额为非正数");
+                continue;
+            }
 
             //将规则添加到待触发的哈希表中
             RuleWaitToTrigger waitToTrigger = new RuleWaitToTrigger(model, amount);
