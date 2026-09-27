@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.entities.composite.union;
 
+import androidx.annotation.Nullable;
 import androidx.room.Embedded;
 import androidx.room.Junction;
 import androidx.room.Relation;
@@ -15,6 +16,7 @@ import java.util.List;
 public class AccountUnionModel {
     @Embedded
     private final AccountEntity account;
+    @Nullable
     @Relation(
             entity = AccountTransferEntity.class,
             parentColumn = "accountId",
@@ -34,7 +36,7 @@ public class AccountUnionModel {
     )
     private final List<MediaEntity> mediaList;
 
-    public AccountUnionModel(AccountEntity account, AccountTransferEntity transfer, List<TagEntity> tagList, List<MediaEntity> mediaList) {
+    public AccountUnionModel(AccountEntity account, @Nullable AccountTransferEntity transfer, List<TagEntity> tagList, List<MediaEntity> mediaList) {
         this.account = account;
         this.transfer = transfer;
         this.tagList = tagList;
@@ -53,6 +55,7 @@ public class AccountUnionModel {
         return mediaList;
     }
 
+    @Nullable
     public AccountTransferEntity getTransfer() {
         return transfer;
     }

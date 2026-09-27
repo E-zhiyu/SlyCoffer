@@ -642,8 +642,12 @@ public class NotificationAbService extends NotificationListenerService {
         String remark = rule.getName();
         int type = rule.getType();
         NotificationRuleTransferEntity ruleTransfer = model.getTransfer();
-        String exportAccount = ruleTransfer.getExportAccount();
-        String importAccount = ruleTransfer.getImportAccount();
+        String exportAccount = "";
+        String importAccount = "";
+        if (ruleTransfer != null) {
+            exportAccount = ruleTransfer.getExportAccount();
+            importAccount = ruleTransfer.getImportAccount();
+        }
         List<Long> tagIdList = model.getTagList().stream()
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
