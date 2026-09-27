@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.sly.coffer.R;
+import com.sly.coffer.automation.broadcast.BroadcastActions;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
@@ -160,8 +161,15 @@ public class PickedPageListActivity extends AppCompatActivity {
         //右下角 FAB
         binding.startStopFab.setOnClickListener(view -> {
             if (AutoBookKeepingPreference.getPagePickStat(this)) {
+                //修改 Preference 和按钮图标
                 AutoBookKeepingPreference.setPagePickStat(this, false);
                 binding.startStopFab.setImageResource(R.drawable.outline_play_arrow_24);
+
+                //发送关闭服务的广播
+                Intent shutDown = new Intent(BroadcastActions.ACTION_SHUT_DOWN_PAGE_PICK.toString());
+                shutDown.setPackage(getPackageName());
+                sendBroadcast(shutDown);
+
                 Toast.makeText(this, "已关闭界面拾取", Toast.LENGTH_SHORT).show();
             } else {
                 if (!PermissionHelper.SpecialPermissionType.ACCESSIBILITY_PICK.isGranted(this)) {
