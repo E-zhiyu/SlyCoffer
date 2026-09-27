@@ -62,8 +62,12 @@ public class PickAccessibilityService extends AccessibilityService {
                 if (AppListHelper.isActivity(componentName, this)) {
                     String activityName = className.toString();
                     LocalDateTime time = LocalDateTime.now();
+                    String[] parts = activityName.split("\\.");
+                    String remark = parts.length > 1 ?
+                            parts[parts.length - 1] :
+                            "界面 · " + time.format(CustomDateTimeFormatter.DATE_TIME);
                     PickedPageEntity pickedPage = new PickedPageEntity(
-                            "界面 · " + time.format(CustomDateTimeFormatter.DATE_TIME),
+                            remark,
                             packageName,
                             activityName,
                             time
