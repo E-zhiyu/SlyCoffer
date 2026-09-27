@@ -14,8 +14,8 @@ android {
         applicationId 'com.sly.coffer'
         minSdk 28
         targetSdk 37
-        versionCode 76
-        versionName '1.12.4'
+        versionCode 77
+        versionName '1.12.5'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
