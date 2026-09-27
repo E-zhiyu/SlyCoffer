@@ -6,16 +6,22 @@ android {
     namespace 'com.sly.coffer'
     compileSdkVersion 37
 
-    defaultConfig {
-        ndk {
-            //noinspection ChromeOsAbiSupport
-            abiFilters "arm64-v8a"
+    // 配置构建分包 (ABI Split)
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+            universalApk false
         }
+    }
+
+    defaultConfig {
         applicationId 'com.sly.coffer'
         minSdk 28
         targetSdk 37
-        versionCode 76
-        versionName '1.12.4'
+        versionCode 77
+        versionName '1.12.5'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 

@@ -17,20 +17,19 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.sly.coffer.R;
+import com.sly.coffer.automation.broadcast.BroadcastActions;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
 import com.sly.coffer.data.save.preference.SearchHistoryPreference;
 import com.sly.coffer.databinding.ActivityPickedPageListBinding;
-import com.sly.coffer.databinding.ViewHolderSeparatorTextChipBinding;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.PermissionHelper;
 import com.sly.coffer.helpers.SearchHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
-import com.sly.coffer.ui.others.decoration.sticky.StickyHeaderItemDecoration;
 import com.sly.coffer.ui.others.dialogs.EditTextDialogBuilder;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
@@ -146,12 +145,6 @@ public class PickedPageListActivity extends AppCompatActivity {
                 this::showPopupMenu
         );
         binding.recycler.setAdapter(adapter);
-        StickyHeaderItemDecoration<ViewHolderSeparatorTextChipBinding> decoration = new StickyHeaderItemDecoration<>(
-                adapter,
-                ViewHolderSeparatorTextChipBinding::inflate,
-                (binding1, data) -> binding1.separatorText.setText(data)
-        );
-        binding.recycler.addItemDecoration(decoration);
         PickedPageViewModel viewModel = new ViewModelProvider(this).get(PickedPageViewModel.class);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         disposable.add(viewModel.getPickedPageFlowable(db)
@@ -168,8 +161,15 @@ public class PickedPageListActivity extends AppCompatActivity {
         //右下角 FAB
         binding.startStopFab.setOnClickListener(view -> {
             if (AutoBookKeepingPreference.getPagePickStat(this)) {
+                //修改 Preference 和按钮图标
                 AutoBookKeepingPreference.setPagePickStat(this, false);
                 binding.startStopFab.setImageResource(R.drawable.outline_play_arrow_24);
+
+                //发送关闭服务的广播
+                Intent shutDown = new Intent(BroadcastActions.ACTION_SHUT_DOWN_PAGE_PICK.toString());
+                shutDown.setPackage(getPackageName());
+                sendBroadcast(shutDown);
+
                 Toast.makeText(this, "已关闭界面拾取", Toast.LENGTH_SHORT).show();
             } else {
                 if (!PermissionHelper.SpecialPermissionType.ACCESSIBILITY_PICK.isGranted(this)) {

@@ -51,27 +51,27 @@ public class UpdateHelper {
 
     @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
     static class VersionInfo {
-        private long versionCode;   //版本代码
-        private String versionName; //版本名称
-        private String changeLog;   //更新日志
+        private long splitVersionCode;      //版本代码
+        private String splitVersionName;    //版本名称
+        private String changeLog;           //更新日志
 
         public VersionInfo() {
         }
 
-        public long getVersionCode() {
-            return versionCode;
+        public long getSplitVersionCode() {
+            return splitVersionCode;
         }
 
-        public void setVersionCode(long versionCode) {
-            this.versionCode = versionCode;
+        public void setSplitVersionCode(long splitVersionCode) {
+            this.splitVersionCode = splitVersionCode;
         }
 
-        public String getVersionName() {
-            return versionName;
+        public String getSplitVersionName() {
+            return splitVersionName;
         }
 
-        public void setVersionName(String versionName) {
-            this.versionName = versionName;
+        public void setSplitVersionName(String splitVersionName) {
+            this.splitVersionName = splitVersionName;
         }
 
         public String getChangeLog() {
@@ -98,11 +98,11 @@ public class UpdateHelper {
         Scheduler scheduler = Schedulers.newThread();
         disposable.add(readVersionInfoFromRemote()
                 .flatMapMaybe(info -> {
-                    String versionName = info.getVersionName();
-                    if (!versionName.startsWith("v")) {
-                        info.setVersionName("v" + versionName);
+                    String versionName = info.getSplitVersionName();
+                    if (versionName != null && !versionName.isEmpty() && !versionName.startsWith("v")) {
+                        info.setSplitVersionName("v" + versionName);
                     }
-                    long versionCode = info.getVersionCode();
+                    long versionCode = info.getSplitVersionCode();
 
                     //与跳过的版本比较
                     long skippedVersionCode = VersionPreference.getSkipVersionCode(context);
@@ -125,8 +125,8 @@ public class UpdateHelper {
                 .subscribeOn(scheduler)
                 .subscribe(
                         info -> {
-                            String versionName = info.getVersionName();
-                            long versionCode = info.getVersionCode();
+                            String versionName = info.getSplitVersionName();
+                            long versionCode = info.getSplitVersionCode();
                             String changeLog = info.getChangeLog();
 
                             long currentVersionCode = AboutHelper.getVersionCode(context);
@@ -209,7 +209,9 @@ public class UpdateHelper {
      * @throws SocketTimeoutException 连接超时异常
      */
     @NonNull
-    private static String readChangeLogFromRemote(@NonNull String targetVersion) throws IOException {
+    private static String readChangeLogFromRemote(String targetVersion) throws IOException {
+        if (targetVersion == null) return "";
+
         //获取连接
         URL url = new URL(REPOSITORY_ADDRESS + CHANGE_LOG_PART);
         HttpsURLConnection versionConnection = (HttpsURLConnection) url.openConnection();
@@ -261,7 +263,8 @@ public class UpdateHelper {
             String versionName
     ) throws IllegalArgumentException {
         //生成文件名
-        String fileName = String.format("%s_%s.apk", RELEASE_FILE_NAME, versionName);
+        String bestAbi = getPrimaryCpuAbi();
+        String fileName = String.format("%s_%s_%s.apk", RELEASE_FILE_NAME, bestAbi, versionName);
 
         //生成下载链接
         String downloadUrl = String.format(
@@ -365,5 +368,16 @@ public class UpdateHelper {
         intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setDataAndType(fileUri, "application/vnd.android.package-archive");
         context.startActivity(intent);
+    }
+
+    /**
+     * 获取设备当前首选的 CPU ABI 架构（如 "arm64-v8a", "armeabi-v7a", "x86_64"）
+     */
+    public static String getPrimaryCpuAbi() {
+        if (Build.SUPPORTED_ABIS != null && Build.SUPPORTED_ABIS.length > 0) {
+            // SUPPORTED_ABIS[0] 是系统按性能/兼容性排序后的最优架构
+            return Build.SUPPORTED_ABIS[0];
+        }
+        return "arm64-v8a";
     }
 }

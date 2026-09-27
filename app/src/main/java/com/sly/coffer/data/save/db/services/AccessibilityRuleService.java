@@ -11,7 +11,6 @@ import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.PickedPageGroupUiModel;
-import com.sly.coffer.data.save.db.entities.composite.ui.PickedPageListUiModel;
 import com.sly.coffer.helpers.AppListHelper;
 
 import java.util.ArrayList;
@@ -92,7 +91,7 @@ public class AccessibilityRuleService {
      * @param keyword 搜索关键词
      * @return 拾取的视图列表，包含应用分隔符
      */
-    public static Flowable<List<PickedPageListUiModel>> getAllPickedPage(@NonNull BookkeepingDb db, String keyword) {
+    public static Flowable<List<PickedPageEntity>> getAllPickedPage(@NonNull BookkeepingDb db, String keyword) {
         AccessibilityRuleDao dao = db.accessibilityRuleDao();
         String safeKeyword = "";
 
@@ -103,36 +102,7 @@ public class AccessibilityRuleService {
         }
 
         int isSearchFilter = !safeKeyword.isEmpty() ? 1 : 0;
-        return dao.getAllPickedPageFlowable(safeKeyword, isSearchFilter)
-                .map(rawList -> {
-                    List<PickedPageListUiModel> resultList = new ArrayList<>();
-
-                    //判空
-                    if (rawList.isEmpty()) {
-                        return resultList;
-                    }
-
-                    //通过关系远近进行分组
-                    Map<String, List<PickedPageEntity>> groupedMap = rawList.stream()
-                            .collect(Collectors.groupingBy(
-                                    PickedPageEntity::getPackageName,
-                                    LinkedHashMap::new,
-                                    Collectors.toList()
-                            ));
-
-                    //循环插入分隔符和 Item
-                    for (Map.Entry<String, List<PickedPageEntity>> entry : groupedMap.entrySet()) {
-                        String separatorText = entry.getKey();
-                        resultList.add(new PickedPageListUiModel.Separator(separatorText));
-
-                        List<PickedPageListUiModel.Item> itemList = entry.getValue().stream()
-                                .map(PickedPageListUiModel.Item::new)
-                                .collect(Collectors.toList());
-                        resultList.addAll(itemList);
-                    }
-
-                    return resultList;
-                });
+        return dao.getAllPickedPageFlowable(safeKeyword, isSearchFilter);
     }
 
     /**

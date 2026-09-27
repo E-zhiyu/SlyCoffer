@@ -28,8 +28,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 构建已签名的 APK
-      # 我们通过 -P 参数将 Secrets 中的值直接注入 Gradle 属性
+      # 构建已签名的分包 APK
       - name: Build Signed APK
         run: |
           ./gradlew assembleRelease \
@@ -38,43 +37,42 @@ jobs:
             -Pandroid.injected.signing.key.alias=${{ secrets.ALIAS }} \
             -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
 
-      # 重命名 APK
-      - name: Rename APK
+      # 批量重命名分包后的所有 APK (例如：Sly.s-Coffer_arm64-v8a_v1.0.0.apk)
+      - name: Rename Split APKs
         run: |
-          # 1. 定义你的自定义前缀
           APP_NAME="Sly.s-Coffer"
-          # 2. 获取当前的 Tag 标签名 (例如 v1.0)
           TAG_NAME="${{ github.ref_name }}"
-          # 3. 执行重命名 (请确保路径与你实际生成的 APK 路径一致)
-          # 通常默认路径是 app/build/outputs/apk/release/app-release.apk
-          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/${APP_NAME}_${TAG_NAME}.apk
 
-      # 解析更新日志文件，然后填充到Release描述中
+          # 进入产物目录遍历重命名所有分包 APK
+          cd app/build/outputs/apk/release/
+          for file in *.apk; do
+            if [ -f "$file" ]; then
+              # 将 app-<架构>-release.apk 替换为 <APP_NAME>_<架构>_<TAG_NAME>.apk
+              NEW_NAME=$(echo "$file" | sed "s/app-/${APP_NAME}_/" \vert{} sed "s/-release.apk/_${TAG_NAME}.apk/")
+              mv "$file" "$NEW_NAME"
+            fi
+          done
+
+      # 解析更新日志文件
       - name: Extract Changelog
         id: extract_changelog
         run: |
-          # 1. 获取当前推送的 Tag 名称 (例如 v1.0.0)
           VERSION="${{ github.ref_name }}"
-          
-          # 2. 找到文件中匹配 "# v1.0.0" 的行号
-          # 注意：这里的 "^# $VERSION" 匹配以 # 开头且后面跟着版本号的行
           START_LINE=$(grep -nE "^# $VERSION" CHANGELOG.md | cut -d: -f1)
-          
+
           if [ -z "$START_LINE" ]; then
             echo "未在 CHANGELOG.md 中找到版本 $VERSION 的记录"
             echo "No changelog found for $VERSION" > current_release_notes.md
           else
-            # 3. 从起始行开始，提取内容，直到遇到下一个以 "# " 开头的版本行（不含该行）
-            # tail 从起始行开始读取，sed 在遇到下一个 # 时停止输出
             tail -n +$((START_LINE + 1)) CHANGELOG.md | sed -n '/^# /q;p' > current_release_notes.md
           fi
 
-      # 发布到 GitHub Release
-      - name: Create Release and Upload APK
+      # 发布到 GitHub Release (使用通配符匹配上传所有重命名后的分包文件)
+      - name: Create Release and Upload APKs
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }}  # 标题
+          name: Release ${{ github.ref_name }}
           files: app/build/outputs/apk/release/*.apk
-          body_path: current_release_notes.md   # 使用刚才提取出的临时文件作为 Release 正文
+          body_path: current_release_notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

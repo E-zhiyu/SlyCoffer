@@ -208,8 +208,10 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                     binding.exportAccountLayout.setVisibility(View.VISIBLE);
                                     binding.importAccountLayout.setVisibility(View.VISIBLE);
 
-                                    binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
-                                    binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
+                                    if (transfer != null) {
+                                        binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
+                                        binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
+                                    }
                                 }
 
                                 //显示标签

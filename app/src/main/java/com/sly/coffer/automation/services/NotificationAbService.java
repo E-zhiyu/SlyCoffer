@@ -257,7 +257,12 @@ public class NotificationAbService extends NotificationListenerService {
                 sendErrorNotification(err, ruleId);
                 continue;
             }
-            Log.i(LogTags.NOTIFICATION_AB_SERVICE.n(), "流水数据生成成功");
+            if (amount > 0) {
+                Log.i(LogTags.NOTIFICATION_AB_SERVICE.n(), "流水数据生成成功");
+            } else {
+                Log.e(LogTags.NOTIFICATION_AB_SERVICE.n(), "解析的金额为非正数");
+                continue;
+            }
 
             //将规则添加到待触发的哈希表中
             RuleWaitToTrigger waitToTrigger = new RuleWaitToTrigger(model, amount);
@@ -360,13 +365,11 @@ public class NotificationAbService extends NotificationListenerService {
                     for (NotificationRuleGroupRefEntity triggeredRef : waitToTrigger.model.getGroupRefList()) {
                         //获取相关联的分组中的映射数据
                         long relatedGroupId = triggeredRef.getGroupId();
-                        long triggeredOrder = triggeredRef.getOrder();
                         List<NotificationRuleGroupRefEntity> relatedRefList = subGroupMap.get(relatedGroupId);
                         if (relatedRefList == null || relatedRefList.isEmpty()) continue;
 
                         //删除优先级比触发规则低的待触发规则
                         for (NotificationRuleGroupRefEntity relatedRef : relatedRefList) {
-                            if (relatedRef.getOrder() < triggeredOrder) continue;
                             waitToTriggerMap.remove(relatedRef.getRuleId());
                         }
                     }
@@ -639,8 +642,12 @@ public class NotificationAbService extends NotificationListenerService {
         String remark = rule.getName();
         int type = rule.getType();
         NotificationRuleTransferEntity ruleTransfer = model.getTransfer();
-        String exportAccount = ruleTransfer.getExportAccount();
-        String importAccount = ruleTransfer.getImportAccount();
+        String exportAccount = "";
+        String importAccount = "";
+        if (ruleTransfer != null) {
+            exportAccount = ruleTransfer.getExportAccount();
+            importAccount = ruleTransfer.getImportAccount();
+        }
         List<Long> tagIdList = model.getTagList().stream()
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());

@@ -10,7 +10,21 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.12.4\n" +
+    private static final String UPDATE_LOG_MD = "# v1.12.5\n" +
+            "\n" +
+            "### 修改和优化的内容\n" +
+            "\n" +
+            "- 界面拾取列表界面不再按照应用分组\n" +
+            "- 优化界面拾取的默认备注生成逻辑\n" +
+            "- 界面拾取服务在不使用时会自动禁用\n" +
+            "- 若自动记账识别到的金额小于等于0，则忽略这次记账\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复修改转账类型的流水记录、通知规则和无障碍规则时，若没有转账账户记录会崩溃的BUG\n" +
+            "- 修复部分情况下同一分组的规则可能同时触发多个的BUG\n" +
+            "\n" +
+            "# v1.12.4\n" +
             "\n" +
             "### 优化的内容\n" +
             "\n" +

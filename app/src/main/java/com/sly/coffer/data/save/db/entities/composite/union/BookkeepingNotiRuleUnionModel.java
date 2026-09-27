@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.entities.composite.union;
 
+import androidx.annotation.Nullable;
 import androidx.room.Embedded;
 import androidx.room.Junction;
 import androidx.room.Relation;
@@ -15,6 +16,7 @@ import java.util.List;
 public class BookkeepingNotiRuleUnionModel {
     @Embedded
     private final NotificationRuleEntity rule;                          //规则实体
+    @Nullable
     @Relation(
             entity = NotificationRuleTransferEntity.class,
             parentColumn = "ruleId",
@@ -34,7 +36,7 @@ public class BookkeepingNotiRuleUnionModel {
     )
     private final List<NotificationRuleGroupRefEntity> groupRefList;    //与自身相关的分组映射列表
 
-    public BookkeepingNotiRuleUnionModel(NotificationRuleEntity rule, NotificationRuleTransferEntity transfer, List<TagEntity> tagList, List<NotificationRuleGroupRefEntity> groupRefList) {
+    public BookkeepingNotiRuleUnionModel(NotificationRuleEntity rule, @Nullable NotificationRuleTransferEntity transfer, List<TagEntity> tagList, List<NotificationRuleGroupRefEntity> groupRefList) {
         this.rule = rule;
         this.transfer = transfer;
         this.tagList = tagList;
@@ -45,6 +47,7 @@ public class BookkeepingNotiRuleUnionModel {
         return rule;
     }
 
+    @Nullable
     public NotificationRuleTransferEntity getTransfer() {
         return transfer;
     }

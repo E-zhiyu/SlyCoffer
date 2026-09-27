@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.entities.composite.union;
 
+import androidx.annotation.Nullable;
 import androidx.room.Embedded;
 import androidx.room.Junction;
 import androidx.room.Relation;
@@ -15,6 +16,7 @@ import java.util.List;
 public class AccessibilityRuleUnionModel {
     @Embedded
     private final AccessibilityRuleEntity rule;
+    @Nullable
     @Relation(
             entity = AccessibilityRuleTransferEntity.class,
             parentColumn = "ruleId",
@@ -34,7 +36,7 @@ public class AccessibilityRuleUnionModel {
     )
     private final List<AccessibilityRuleKeywordGroupEntity> keywordGroupList;
 
-    public AccessibilityRuleUnionModel(AccessibilityRuleEntity rule, AccessibilityRuleTransferEntity transfer, List<TagEntity> tagList, List<AccessibilityRuleKeywordGroupEntity> keywordGroupList) {
+    public AccessibilityRuleUnionModel(AccessibilityRuleEntity rule, @Nullable AccessibilityRuleTransferEntity transfer, List<TagEntity> tagList, List<AccessibilityRuleKeywordGroupEntity> keywordGroupList) {
         this.rule = rule;
         this.transfer = transfer;
         this.tagList = tagList;
@@ -45,6 +47,7 @@ public class AccessibilityRuleUnionModel {
         return rule;
     }
 
+    @Nullable
     public AccessibilityRuleTransferEntity getTransfer() {
         return transfer;
     }
