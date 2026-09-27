@@ -38,6 +38,8 @@ import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
 
+import java.util.List;
+
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -138,27 +140,140 @@ public abstract class BookkeepingDb extends RoomDatabase {
             defaultGroup.setGroupId(-1);
             tagDao().insertTagGroup(defaultGroup);
 
-            //默认通知规则
-            NotificationRuleEntity weChatPay = new NotificationRuleEntity(  //微信支付
-                    "微信支付",
-                    AccountType.EXPENSE.ordinal(),
-                    "com.tencent.mm",
-                    "微信支付",
-                    "已支付.(\\d+(?:,\\d{3})*(?:\\.\\d{1,2})?)",
-                    1
-            );
-            notificationRuleDao().insertNotificationRule(weChatPay);
-            NotificationRuleEntity aliPay = new NotificationRuleEntity(     //支付宝支付
-                    "支付宝支付",
-                    AccountType.EXPENSE.ordinal(),
-                    "com.eg.android.AlipayGphone",
-                    "交易提醒",
-                    "你有一笔(\\d+(?:,\\d{3})*(?:\\.\\d{1,2})?)元的支出",
-                    1
-            );
-            notificationRuleDao().insertNotificationRule(aliPay);
+            //插入默认规则
+            insertDefaultNotificationRule();    //默认通知规则
+            insertDefaultAccessibilityRule();   //默认无障碍规则
 
             return Completable.complete();
         });
+    }
+
+    /**
+     * 插入默认的通知规则
+     */
+    private void insertDefaultNotificationRule() {
+        //微信支付
+        NotificationRuleEntity weChatPay = new NotificationRuleEntity(
+                "微信支付",
+                AccountType.EXPENSE.ordinal(),
+                "com.tencent.mm",
+                "微信支付",
+                "已支付.(\\d+(?:,\\d{3})*(?:\\.\\d{1,2})?)",
+                1
+        );
+        notificationRuleDao().insertNotificationRule(weChatPay);
+
+        //支付宝支付
+        NotificationRuleEntity aliPayExpense = new NotificationRuleEntity(
+                "支付宝支付",
+                AccountType.EXPENSE.ordinal(),
+                "com.eg.android.AlipayGphone",
+                "交易提醒",
+                "你有一笔(\\d+(?:,\\d{3})*(?:\\.\\d{1,2})?)元的支出",
+                1
+        );
+        notificationRuleDao().insertNotificationRule(aliPayExpense);
+
+        //支付宝退款
+        NotificationRuleEntity aliPayRefund = new NotificationRuleEntity(
+                "支付宝退款",
+                AccountType.INCOME.ordinal(),
+                "com.eg.android.AlipayGphone",
+                "退款提醒",
+                "你收到一笔(\\d{1,3}(?:,\\d{3})*(?:\\.\\d{1,2})?)元退款",
+                1
+        );
+        notificationRuleDao().insertNotificationRule(aliPayRefund);
+
+        //微信收款
+        NotificationRuleEntity weChatProceeds = new NotificationRuleEntity(
+                "微信收款",
+                AccountType.INCOME.ordinal(),
+                "com.tencent.mm",
+                "微信支付",
+                "个人收款码到账.(\\d{1,3}(?:,\\d{3})*(?:\\.\\d{1,2})?)",
+                1
+        );
+        notificationRuleDao().insertNotificationRule(weChatProceeds);
+    }
+
+    /**
+     * 插入默认无障碍规则
+     */
+    private void insertDefaultAccessibilityRule() {
+        //微信转账支出
+        AccessibilityRuleEntity weChatTransferExpense = new AccessibilityRuleEntity(
+                "微信转账支出",
+                AccountType.EXPENSE.ordinal(),
+                "com.tencent.mm",
+                "com.tencent.mm.framework.app.UIPageFragmentActivity"
+        );
+        long weChatTransferExpenseId = accessibilityRuleDao().insertAccessibilityRule(weChatTransferExpense);
+        List<AccessibilityRuleKeywordGroupEntity> weChatTransferExpenseKgs = List.of(
+                new AccessibilityRuleKeywordGroupEntity(
+                        weChatTransferExpenseId, "支付成功 确认收款"
+                )
+        );
+        accessibilityRuleDao().insertKeywordGroup(weChatTransferExpenseKgs);
+
+        //微信转账收入
+        AccessibilityRuleEntity weChatTransferIncome = new AccessibilityRuleEntity(
+                "微信转账收入",
+                AccountType.INCOME.ordinal(),
+                "com.tencent.mm",
+                "com.tencent.mm.plugin.remittance.ui.RemittanceDetailUI"
+        );
+        long weChatTransferIncomeId = accessibilityRuleDao().insertAccessibilityRule(weChatTransferIncome);
+        List<AccessibilityRuleKeywordGroupEntity> weChatTransferIncomeKgs = List.of(
+                new AccessibilityRuleKeywordGroupEntity(
+                        weChatTransferIncomeId, "收款 存入"
+                )
+        );
+        accessibilityRuleDao().insertKeywordGroup(weChatTransferIncomeKgs);
+
+        //微信充值
+        AccessibilityRuleEntity weChatRecharge = new AccessibilityRuleEntity(
+                "微信充值",
+                AccountType.TRANSFER.ordinal(),
+                "com.tencent.mm",
+                "com.tencent.mm.framework.app.UIPageFragmentActivity"
+        );
+        long weChatRechargeId = accessibilityRuleDao().insertAccessibilityRule(weChatRecharge);
+        List<AccessibilityRuleKeywordGroupEntity> weChatRechargeKgs = List.of(
+                new AccessibilityRuleKeywordGroupEntity(
+                        weChatRechargeId, "充值成功"
+                )
+        );
+        accessibilityRuleDao().insertKeywordGroup(weChatRechargeKgs);
+
+        //微信收红包
+        AccessibilityRuleEntity weChatReceiveRedPacket = new AccessibilityRuleEntity(
+                "微信收红包",
+                AccountType.INCOME.ordinal(),
+                "com.tencent.mm",
+                "com.tencent.mm.plugin.luckymoney.ui.LuckyMoneyNewDetailUI"
+        );
+        long weChatReceiveRedPacketId = accessibilityRuleDao().insertAccessibilityRule(weChatReceiveRedPacket);
+        List<AccessibilityRuleKeywordGroupEntity> weChatReceiveRedPacketKgs = List.of(
+                new AccessibilityRuleKeywordGroupEntity(
+                        weChatReceiveRedPacketId, "红包 存入"
+                )
+        );
+        accessibilityRuleDao().insertKeywordGroup(weChatReceiveRedPacketKgs);
+
+        //微信发红包
+        AccessibilityRuleEntity weChatSendRedPacket = new AccessibilityRuleEntity(
+                "微信发红包",
+                AccountType.EXPENSE.ordinal(),
+                "com.tencent.mm",
+                "com.tencent.mm.framework.app.UIPageFragmentActivity"
+        );
+        long weChatSendRedPacketId = accessibilityRuleDao().insertAccessibilityRule(weChatSendRedPacket);
+        List<AccessibilityRuleKeywordGroupEntity> weChatSendRedPacketKgs = List.of(
+                new AccessibilityRuleKeywordGroupEntity(
+                        weChatSendRedPacketId, "微信红包"
+                )
+        );
+        accessibilityRuleDao().insertKeywordGroup(weChatSendRedPacketKgs);
     }
 }
