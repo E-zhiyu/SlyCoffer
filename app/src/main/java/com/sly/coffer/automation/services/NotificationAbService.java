@@ -360,13 +360,11 @@ public class NotificationAbService extends NotificationListenerService {
                     for (NotificationRuleGroupRefEntity triggeredRef : waitToTrigger.model.getGroupRefList()) {
                         //获取相关联的分组中的映射数据
                         long relatedGroupId = triggeredRef.getGroupId();
-                        long triggeredOrder = triggeredRef.getOrder();
                         List<NotificationRuleGroupRefEntity> relatedRefList = subGroupMap.get(relatedGroupId);
                         if (relatedRefList == null || relatedRefList.isEmpty()) continue;
 
                         //删除优先级比触发规则低的待触发规则
                         for (NotificationRuleGroupRefEntity relatedRef : relatedRefList) {
-                            if (relatedRef.getOrder() < triggeredOrder) continue;
                             waitToTriggerMap.remove(relatedRef.getRuleId());
                         }
                     }
