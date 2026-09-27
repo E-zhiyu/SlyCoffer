@@ -215,7 +215,7 @@ public class TextHelper {
         // 格式化数字
         String suffix = ENGLISH_SUFFIXES[index];
         String formatted;
-        int decimalPlaces = absValue < 0.1 ? 2 : 1;
+        int decimalPlaces = absValue < 0.1 && absValue > 0 ? 2 : 1;
         if (suffix.isEmpty()) {
             // 没有后缀（数值 < 1000 或 < 10000）：强制显示 .0
             String pattern = "0." + "0".repeat(decimalPlaces);
