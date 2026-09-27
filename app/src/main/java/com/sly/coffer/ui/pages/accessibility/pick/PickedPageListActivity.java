@@ -23,14 +23,12 @@ import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
 import com.sly.coffer.data.save.preference.SearchHistoryPreference;
 import com.sly.coffer.databinding.ActivityPickedPageListBinding;
-import com.sly.coffer.databinding.ViewHolderSeparatorTextChipBinding;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.PermissionHelper;
 import com.sly.coffer.helpers.SearchHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
-import com.sly.coffer.ui.others.decoration.sticky.StickyHeaderItemDecoration;
 import com.sly.coffer.ui.others.dialogs.EditTextDialogBuilder;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
@@ -146,12 +144,6 @@ public class PickedPageListActivity extends AppCompatActivity {
                 this::showPopupMenu
         );
         binding.recycler.setAdapter(adapter);
-        StickyHeaderItemDecoration<ViewHolderSeparatorTextChipBinding> decoration = new StickyHeaderItemDecoration<>(
-                adapter,
-                ViewHolderSeparatorTextChipBinding::inflate,
-                (binding1, data) -> binding1.separatorText.setText(data)
-        );
-        binding.recycler.addItemDecoration(decoration);
         PickedPageViewModel viewModel = new ViewModelProvider(this).get(PickedPageViewModel.class);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         disposable.add(viewModel.getPickedPageFlowable(db)
