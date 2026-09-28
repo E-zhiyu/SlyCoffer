@@ -262,9 +262,9 @@ public class UpdateHelper {
             @NonNull Context context,
             String versionName
     ) throws IllegalArgumentException {
-        //生成文件名
+        //生成文件名 (<RELEASE_FILE_NAME>_<versionName>_<bestAbi>.apk)
         String bestAbi = getPrimaryCpuAbi();
-        String fileName = String.format("%s_%s_%s.apk", RELEASE_FILE_NAME, bestAbi, versionName);
+        String fileName = String.format("%s_%s_%s.apk", RELEASE_FILE_NAME, versionName, bestAbi);
 
         //生成下载链接
         String downloadUrl = String.format(
