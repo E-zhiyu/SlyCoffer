@@ -46,8 +46,8 @@ jobs:
           cd app/build/outputs/apk/release/
           for file in *.apk; do
             if [ -f "$file" ]; then
-              # 将 app-<abi>-release.apk 替换为 <APP_NAME>_<abi>_<TAG_NAME>.apk
-              NEW_NAME=$(echo "$file" | sed "s/app-/${APP_NAME}_/" | sed "s/-release.apk/_${TAG_NAME}.apk/")
+              # 将 app-<abi>-release.apk 替换为 <APP_NAME>_<TAG_NAME>_<abi>.apk
+              NEW_NAME=$(echo "$file" | sed "s/^app-/${APP_NAME}_${TAG_NAME}_/" | sed "s/-release\.apk$/.apk/")
               mv "$file" "$NEW_NAME"
             fi
           done
