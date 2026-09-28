@@ -1,4 +1,6 @@
 {
-  "versionCode": 76,
-  "versionName": "1.12.4"
+  "versionCode": 77,
+  "versionName": "1.12.5",
+  "splitVersionCode": 77,
+  "splitVersionName": "1.12.5"
 }
