@@ -42,13 +42,12 @@ jobs:
         run: |
           APP_NAME="Sly.s-Coffer"
           TAG_NAME="${{ github.ref_name }}"
-
-          # 进入产物目录遍历重命名所有分包 APK
+          
           cd app/build/outputs/apk/release/
           for file in *.apk; do
             if [ -f "$file" ]; then
-              # 将 app-<架构>-release.apk 替换为 <APP_NAME>_<架构>_<TAG_NAME>.apk
-              NEW_NAME=$(echo "$file" | sed "s/app-/${APP_NAME}_/" \vert{} sed "s/-release.apk/_${TAG_NAME}.apk/")
+              # 将 app-<abi>-release.apk 替换为 <APP_NAME>_<abi>_<TAG_NAME>.apk
+              NEW_NAME=$(echo "$file" | sed "s/app-/${APP_NAME}_/" | sed "s/-release.apk/_${TAG_NAME}.apk/")
               mv "$file" "$NEW_NAME"
             fi
           done
