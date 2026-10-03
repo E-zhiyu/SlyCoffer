@@ -79,69 +79,83 @@ public class VisibilityHelper {
             boolean isVisible,
             long duration,
             @Nullable Runnable endAction,
-            @NonNull View... targetViews) {
-        if (targetViews.length == 0) return;
+            View... targetViews) {
+        if (targetViews == null || targetViews.length == 0) return;
 
-        //组装动画集：ChangeBounds(负责父容器平滑折叠) + Slide/Fade(负责子视图平滑过渡)
+        int targetVisibility = isVisible ? View.VISIBLE : View.GONE;
+        boolean needsAnimation = false;
+
+        // 1. 检查是否真的需要执行动画（只要有任何一个 View 状态发生变化即可）
+        for (View targetView : targetViews) {
+            if (targetView.getVisibility() != targetVisibility) {
+                needsAnimation = true;
+                break;
+            }
+        }
+
+        // 如果所有的 View 都已经是目标状态，直接执行结束操作并返回
+        if (!needsAnimation) {
+            if (endAction != null) {
+                endAction.run();
+            }
+            return;
+        }
+
+        // 2. 组装动画集
         TransitionSet transitionSet = new TransitionSet()
                 .setOrdering(TransitionSet.ORDERING_TOGETHER)
                 .setInterpolator(new FastOutSlowInInterpolator())
-                .addTransition(new ChangeBounds())
                 .setDuration(duration);
 
-        int i = 0;
-        int skippedCount = 0;
-        int targetVisibility = isVisible ? View.VISIBLE : View.GONE;
+        // ChangeBounds 负责父容器平滑折叠，以及其他被挤压/拉伸的兄弟 View 的位置移动。
+        transitionSet.addTransition(new ChangeBounds());
+
+        // Fade 负责控制透明度
+        Fade fadeTransition = new Fade(isVisible ? Fade.IN : Fade.OUT);
+
+        // 3. 【核心修正】只给 Fade 动画添加目标！这样可以防止 sceneRoot 中其他的子 View 发生不必要的透明度闪烁。
         for (View targetView : targetViews) {
-            i++;
-            if (targetView.getVisibility() == targetVisibility) {
-                skippedCount++;
-                continue;
+            if (targetView.getVisibility() != targetVisibility) {
+                fadeTransition.addTarget(targetView);
             }
+        }
+        transitionSet.addTransition(fadeTransition);
 
-            if (isVisible) {
-                transitionSet.addTransition(new Fade(Fade.IN));
-            } else {
-                transitionSet.addTransition(new Fade(Fade.OUT));
-            }
+        // 4. 设置动画结束回调（挂载在整个 TransitionSet 上）
+        if (endAction != null) {
+            transitionSet.addListener(new Transition.TransitionListener() {
+                @Override
+                public void onTransitionEnd(@NonNull Transition transition) {
+                    endAction.run();
+                    transition.removeListener(this);
+                }
 
-            //设置动画结束的回调监听（仅当最后一个视图动画执行完毕后）
-            if (i == targetViews.length) {
-                transitionSet.addListener(new Transition.TransitionListener() {
-                    @Override
-                    public void onTransitionEnd(@NonNull Transition transition) {
-                        if (endAction != null) {
-                            endAction.run();
-                            transition.removeListener(this);
-                        }
-                    }
+                @Override
+                public void onTransitionStart(@NonNull Transition transition) {
+                }
 
-                    @Override
-                    public void onTransitionStart(@NonNull Transition transition) {
-                    }
+                @Override
+                public void onTransitionCancel(@NonNull Transition transition) {
+                }
 
-                    @Override
-                    public void onTransitionCancel(@NonNull Transition transition) {
-                    }
+                @Override
+                public void onTransitionPause(@NonNull Transition transition) {
+                }
 
-                    @Override
-                    public void onTransitionPause(@NonNull Transition transition) {
-                    }
-
-                    @Override
-                    public void onTransitionResume(@NonNull Transition transition) {
-                    }
-                });
-            }
-
-            // 4. 开始执行动画
-            TransitionManager.beginDelayedTransition(sceneRoot, transitionSet);
-            targetView.setVisibility(targetVisibility);
+                @Override
+                public void onTransitionResume(@NonNull Transition transition) {
+                }
+            });
         }
 
-        //若所有视图都跳过，则直接执行 Action
-        if (skippedCount == targetViews.length && endAction != null) {
-            endAction.run();
+        // 5. 【核心修正】通知 TransitionManager 开始捕获变化（必须在改变可见性之前，且整个过程只调用一次！）
+        TransitionManager.beginDelayedTransition(sceneRoot, transitionSet);
+
+        // 6. 执行可见性变更（系统会自动计算旧状态到新状态的差异，并播放动画）
+        for (View targetView : targetViews) {
+            if (targetView.getVisibility() != targetVisibility) {
+                targetView.setVisibility(targetVisibility);
+            }
         }
     }
 }
