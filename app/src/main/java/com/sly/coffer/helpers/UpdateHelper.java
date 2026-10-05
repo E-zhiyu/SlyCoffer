@@ -351,7 +351,7 @@ public class UpdateHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.registerReceiver(downloadFinishReceiver, filter, Context.RECEIVER_EXPORTED);
         } else {
-            ContextCompat.registerReceiver(context, downloadFinishReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
+            ContextCompat.registerReceiver(context, downloadFinishReceiver, filter, ContextCompat.RECEIVER_EXPORTED);
         }
     }
 
