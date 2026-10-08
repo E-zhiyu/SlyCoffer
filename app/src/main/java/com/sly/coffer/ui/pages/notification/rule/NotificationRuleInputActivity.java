@@ -40,7 +40,7 @@ import com.sly.coffer.ui.others.adapters.NoFilteringArrayAdapter;
 import com.sly.coffer.ui.others.bottom.TagSelectBottomSheet;
 import com.sly.coffer.ui.others.viewmodel.TagMultiSelectViewModel;
 import com.sly.coffer.ui.pages.main.bookkeeping.AccountTagAdapter;
-import com.sly.coffer.ui.pages.app_list.AppSelectActivity;
+import com.sly.coffer.ui.pages.common.app_list.AppSelectActivity;
 import com.sly.coffer.ui.pages.notification.GroupSelectBottomSheet;
 import com.sly.coffer.ui.pages.notification.GroupSelectViewModel;
 import com.sly.coffer.ui.pages.notification.RuleGroupChipListAdapter;

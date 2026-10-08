@@ -17,6 +17,8 @@ import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.AccountUiModel;
 import com.sly.coffer.helpers.file.FileHelper;
 
+import org.jetbrains.annotations.Contract;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -31,7 +33,7 @@ import io.reactivex.rxjava3.core.Single;
 
 public class AccountService {
     /**
-     * 加载流水记录列表数据
+     * 根据过滤条件生成{@link SimpleSQLiteQuery}对象用于查询流水记录编号
      *
      * @param filterTagSet  标签白名单的 ID 列表
      * @param filterTypeSet 种类白名单的编号列表
@@ -39,17 +41,17 @@ public class AccountService {
      * @param end           结束日期（包含）
      * @param includeNoTag  是否包含无标签的流水记录
      * @param keyword       搜索关键词
-     * @param db            数据库实例
-     * @return 符合过滤条件的流水记录数据，支持响应式更新
+     * @return 根据过滤条件生成的数据库查询对象
      */
-    public static Flowable<List<AccountUiModel>> loadAccountListDataFlowable(
+    @NonNull
+    @Contract("_, _, _, _, _, _ -> new")
+    private static SimpleSQLiteQuery generateAccountIdRawQueryWithFilter(
             @NonNull Set<Long> filterTagSet,
             @NonNull Set<Integer> filterTypeSet,
             @Nullable LocalDate start,
             @Nullable LocalDate end,
             boolean includeNoTag,
-            @Nullable String keyword,
-            @NonNull BookkeepingDb db
+            @Nullable String keyword
     ) {
         //判断需要使用哪些过滤
         boolean useTypeFilter = !filterTypeSet.isEmpty();
@@ -59,7 +61,7 @@ public class AccountService {
 
         //生成基础 SQL 语句
         StringBuilder sql = new StringBuilder(
-                "SELECT * FROM accounts " +
+                "SELECT accountId FROM accounts " +
                         "WHERE 1=1"
         );
         List<Object> args = new ArrayList<>();
@@ -131,10 +133,73 @@ public class AccountService {
         //补上排序规则
         sql.append(" ORDER BY dateTime DESC");
 
-        //执行查询并返回结果
-        SimpleSQLiteQuery rawQuery = new SimpleSQLiteQuery(sql.toString(), args.toArray());
+        return new SimpleSQLiteQuery(sql.toString(), args.toArray());
+    }
+
+    /**
+     * 获取符合过滤条件的流水记录编号
+     *
+     * @param filterTagSet  标签白名单的 ID 列表
+     * @param filterTypeSet 种类白名单的编号列表
+     * @param start         起始日期（包含）
+     * @param end           结束日期（包含）
+     * @param includeNoTag  是否包含无标签的流水记录
+     * @param keyword       搜索关键词
+     * @param db            数据库实例
+     * @return 符合过滤条件的流水记录数据，支持响应式更新
+     */
+    public static Flowable<List<Long>> getAccountIdWithFilterFlowable(
+            @NonNull Set<Long> filterTagSet,
+            @NonNull Set<Integer> filterTypeSet,
+            @Nullable LocalDate start,
+            @Nullable LocalDate end,
+            boolean includeNoTag,
+            @Nullable String keyword,
+            @NonNull BookkeepingDb db
+    ) {
+        SimpleSQLiteQuery rawQuery = generateAccountIdRawQueryWithFilter(filterTagSet, filterTypeSet, start, end, includeNoTag, keyword);
         AccountDao dao = db.accountDao();
-        return dao.getAccountWithFilter(rawQuery)
+        return dao.getAccountIdWithFilterFlowable(rawQuery);
+    }
+
+    /**
+     * 获取符合过滤条件的流水记录编号
+     *
+     * @param filterTagSet  标签白名单的 ID 列表
+     * @param filterTypeSet 种类白名单的编号列表
+     * @param start         起始日期（包含）
+     * @param end           结束日期（包含）
+     * @param includeNoTag  是否包含无标签的流水记录
+     * @param keyword       搜索关键词
+     * @param db            数据库实例
+     * @return 符合过滤条件的流水记录数据
+     */
+    public static Single<List<Long>> getAccountIdWithFilterSingle(
+            @NonNull Set<Long> filterTagSet,
+            @NonNull Set<Integer> filterTypeSet,
+            @Nullable LocalDate start,
+            @Nullable LocalDate end,
+            boolean includeNoTag,
+            @Nullable String keyword,
+            @NonNull BookkeepingDb db
+    ) {
+        SimpleSQLiteQuery rawQuery = generateAccountIdRawQueryWithFilter(filterTagSet, filterTypeSet, start, end, includeNoTag, keyword);
+        AccountDao dao = db.accountDao();
+        return dao.getAccountIdWithFilterSingle(rawQuery);
+    }
+
+    /**
+     * 通过流水记录编号获取流水记录
+     *
+     * @param idList 流水记录的编号
+     * @param db     数据库实例
+     * @return 流水记录数据
+     */
+    public static Flowable<List<AccountUiModel>> getRunningAccountFlowableById(
+            List<Long> idList,
+            @NonNull BookkeepingDb db
+    ) {
+        return db.accountDao().getAccountByIdFlowable(idList)
                 .map(accountList -> {
                     //按照日期分组
                     Map<LocalDate, List<AccountEntity>> dateGroupedMap = accountList.stream()

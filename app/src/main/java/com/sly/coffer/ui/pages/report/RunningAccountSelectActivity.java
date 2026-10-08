@@ -268,7 +268,7 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
     private void observeLiveData() {
         AccountFilterViewModel filterViewModel = new ViewModelProvider(this).get(AccountFilterViewModel.class);
         filterViewModel.getFilterUpdatedLiveData().observe(this, v ->
-                setSearchMode(!filterViewModel.isNoFilter())
+                setSearchMode(filterViewModel.hasFilter())
         );
     }
 
