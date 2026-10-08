@@ -37,8 +37,8 @@ public class AccountService {
      *
      * @param filterTagSet  标签白名单的 ID 列表
      * @param filterTypeSet 种类白名单的编号列表
-     * @param start         起始日期（包含）
-     * @param end           结束日期（包含）
+     * @param startDate     起始日期（包含）
+     * @param endDate       结束日期（包含）
      * @param includeNoTag  是否包含无标签的流水记录
      * @param keyword       搜索关键词
      * @return 根据过滤条件生成的数据库查询对象
@@ -46,17 +46,16 @@ public class AccountService {
     @NonNull
     @Contract("_, _, _, _, _, _ -> new")
     private static SimpleSQLiteQuery generateAccountIdRawQueryWithFilter(
-            @NonNull Set<Long> filterTagSet,
-            @NonNull Set<Integer> filterTypeSet,
-            @Nullable LocalDate start,
-            @Nullable LocalDate end,
+            @Nullable Set<Long> filterTagSet,
+            @Nullable Set<Integer> filterTypeSet,
+            @Nullable LocalDate startDate,
+            @Nullable LocalDate endDate,
             boolean includeNoTag,
             @Nullable String keyword
     ) {
         //判断需要使用哪些过滤
-        boolean useTypeFilter = !filterTypeSet.isEmpty();
-        boolean useTagFilter = !filterTagSet.isEmpty();
-        boolean useTimeFilter = start != null && end != null;
+        boolean useTypeFilter = filterTypeSet != null && !filterTypeSet.isEmpty();
+        boolean useTagFilter = filterTagSet != null && !filterTagSet.isEmpty();
         boolean useSearchFilter = keyword != null && !keyword.isEmpty();
 
         //生成基础 SQL 语句
@@ -75,7 +74,7 @@ public class AccountService {
             for (Integer type : filterTypeSet) {
                 sql.append("?");
                 args.add(type);
-                if (i < filterTagSet.size() - 1) sql.append(",");
+                if (i < filterTypeSet.size() - 1) sql.append(",");
                 i++;
             }
 
@@ -115,11 +114,15 @@ public class AccountService {
         }
 
         //日期过滤
-        if (useTimeFilter) {
+        if (startDate != null) {
             sql.append(" AND ");
-            sql.append("dateTime >= ? AND dateTime < ?");
-            args.add(DateTimeConverter.fromLocalDate(start));
-            args.add(DateTimeConverter.fromLocalDate(end.plusDays(1)));
+            sql.append("dateTime >= ?");
+            args.add(DateTimeConverter.fromLocalDate(startDate));
+        }
+        if (endDate != null) {
+            sql.append(" AND ");
+            sql.append("dateTime < ?");
+            args.add(DateTimeConverter.fromLocalDate(endDate.plusDays(1)));
         }
 
         //搜索过滤
@@ -149,8 +152,8 @@ public class AccountService {
      * @return 符合过滤条件的流水记录数据，支持响应式更新
      */
     public static Flowable<List<Long>> getAccountIdWithFilterFlowable(
-            @NonNull Set<Long> filterTagSet,
-            @NonNull Set<Integer> filterTypeSet,
+            @Nullable Set<Long> filterTagSet,
+            @Nullable Set<Integer> filterTypeSet,
             @Nullable LocalDate start,
             @Nullable LocalDate end,
             boolean includeNoTag,
@@ -175,8 +178,8 @@ public class AccountService {
      * @return 符合过滤条件的流水记录数据
      */
     public static Single<List<Long>> getAccountIdWithFilterSingle(
-            @NonNull Set<Long> filterTagSet,
-            @NonNull Set<Integer> filterTypeSet,
+            @Nullable Set<Long> filterTagSet,
+            @Nullable Set<Integer> filterTypeSet,
             @Nullable LocalDate start,
             @Nullable LocalDate end,
             boolean includeNoTag,

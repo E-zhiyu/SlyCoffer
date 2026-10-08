@@ -86,6 +86,15 @@ public interface BudgetDao {
     Single<Optional<BudgetUnionModel>> getBudgetWithDetailById(long budgetId);
 
     /**
+     * 通过预算编号获取预算与标签的映射关系
+     *
+     * @param budgetId 预算编号
+     * @return 与该预算关联的标签的编号
+     */
+    @Query("SELECT tagId FROM budgetTagRef WHERE budgetId = :budgetId")
+    Single<List<Long>> getTagIdFromRefByBudgetId(long budgetId);
+
+    /**
      * 插入预算和标签的映射关系数据
      *
      * @param refList 映射关系数据列表

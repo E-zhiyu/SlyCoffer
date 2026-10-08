@@ -149,7 +149,7 @@
     <string name="account_type_help">该流水记录的类型</string>
     <string name="match_group_position">捕获组位置</string>
     <string name="notification_rule_match_group_helper">解析通知时表示金额的捕获组的位置，默认为1</string>
-    <string name="reset">重置</string>
+    <string name="reset_balance">重置余额</string>
     <string name="delete_budget">删除预算</string>
     <string name="reset_budget">重置预算</string>
     <string name="btn_of_date_range_select">日期范围选择按钮</string>
@@ -249,6 +249,7 @@
     <string name="update_question">Q : 我要如何更新软件版本？</string>
     <string name="update_answer">A : 您可以直接访问项目仓库，从发行版(Release)中下载安装包。更推荐的方式是通过APP内的更新检测功能，APP会自动从仓库中下载最新版安装包，下载完成后点击立刻更新即可安装新版本。部分用户可能在安装时出现问题，此时您可以尝试进入手机上的文件管理应用，进入Downloads文件夹并手动安装新版本。</string>
     <string name="running_account">流水记录</string>
+    <string name="check_account_detail">查看流水详情</string>
 
 
     <string-array name="tips_array">
