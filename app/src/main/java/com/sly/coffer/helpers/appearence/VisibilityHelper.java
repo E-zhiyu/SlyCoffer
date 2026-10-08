@@ -152,10 +152,12 @@ public class VisibilityHelper {
         TransitionManager.beginDelayedTransition(sceneRoot, transitionSet);
 
         // 6. 执行可见性变更（系统会自动计算旧状态到新状态的差异，并播放动画）
-        for (View targetView : targetViews) {
-            if (targetView.getVisibility() != targetVisibility) {
-                targetView.setVisibility(targetVisibility);
+        sceneRoot.post(() -> {
+            for (View targetView : targetViews) {
+                if (targetView.getVisibility() != targetVisibility) {
+                    targetView.setVisibility(targetVisibility);
+                }
             }
-        }
+        });
     }
 }
