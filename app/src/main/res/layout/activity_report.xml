@@ -215,10 +215,11 @@
 
             <!-- 收入来源卡片 -->
             <LinearLayout
-                android:id="@+id/income_source_card"
+                android:id="@+id/income_source_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:visibility="gone">
 
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
@@ -241,10 +242,11 @@
 
             <!-- 支出来源卡片 -->
             <LinearLayout
-                android:id="@+id/expense_source_card"
+                android:id="@+id/expense_source_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:visibility="gone">
 
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"

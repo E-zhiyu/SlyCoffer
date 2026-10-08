@@ -172,7 +172,7 @@ public class ReportActivity extends AppCompatActivity {
                                         binding.scrollLayout,
                                         false,
                                         () -> incomeAdapter.submitList(new ArrayList<>()),
-                                        binding.incomeSourceCard
+                                        binding.incomeSourceLayout
                                 );
                             } else {
                                 incomeAdapter.submitList(
@@ -181,7 +181,7 @@ public class ReportActivity extends AppCompatActivity {
                                                 binding.scrollLayout,
                                                 true,
                                                 null,
-                                                binding.incomeSourceCard
+                                                binding.incomeSourceLayout
                                         )
                                 );
                             }
@@ -197,7 +197,7 @@ public class ReportActivity extends AppCompatActivity {
                                         binding.scrollLayout,
                                         false,
                                         () -> expenseAdapter.submitList(new ArrayList<>()),
-                                        binding.expenseSourceCard
+                                        binding.expenseSourceLayout
                                 );
                             } else {
                                 expenseAdapter.submitList(
@@ -206,7 +206,7 @@ public class ReportActivity extends AppCompatActivity {
                                                 binding.scrollLayout,
                                                 true,
                                                 null,
-                                                binding.expenseSourceCard
+                                                binding.expenseSourceLayout
                                         )
                                 );
                             }

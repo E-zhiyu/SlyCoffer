@@ -111,7 +111,10 @@ public class UpdateHelper {
                     }
 
                     //获取更新日志
-                    String changeLog = readChangeLogFromRemote(versionName);
+                    String changeLog = readChangeLogFromRemote(
+                            AboutHelper.getVersionName(context),
+                            info.getSplitVersionName()
+                    );
                     if (!changeLog.isEmpty()) {
                         info.setChangeLog(changeLog);
                     } else {
@@ -202,16 +205,15 @@ public class UpdateHelper {
     /**
      * 从远程地址中读取更新日志
      *
-     * @param targetVersion 目标版本
+     * @param currentVersionName 当前版本的名称
+     * @param latestVersionName  远程文件中最新版本的名称
      * @return 读取到的更新日志内容
      * @throws ConnectException       无法创建连接时抛出的异常
      * @throws UnknownHostException   无法解析主机名时抛出的异常（例如没有网络时）
      * @throws SocketTimeoutException 连接超时异常
      */
     @NonNull
-    private static String readChangeLogFromRemote(String targetVersion) throws IOException {
-        if (targetVersion == null) return "";
-
+    private static String readChangeLogFromRemote(String currentVersionName, String latestVersionName) throws IOException {
         //获取连接
         URL url = new URL(REPOSITORY_ADDRESS + CHANGE_LOG_PART);
         HttpsURLConnection versionConnection = (HttpsURLConnection) url.openConnection();
@@ -224,21 +226,21 @@ public class UpdateHelper {
         StringBuilder content = new StringBuilder();
 
         //逐行解析
-        boolean isCollecting = false;   //是否正在将读取到的行保存到 StringBuilder 中
+        boolean isCollecting = false;
         final String VERSION_REGEX = "^#\\s+v.*";
         String line;
         while ((line = reader.readLine()) != null) {
             String trimmedLine = line.trim();
 
-            // 检测是否匹配版本号标题（例如：# v1.9.0）
+            //检测是否匹配版本号标题
             if (trimmedLine.matches(VERSION_REGEX)) {
-                if (isCollecting) {
-                    // 如果已经在读取目标版本的日志，遇到下一个版本号说明目标日志已读取完毕，直接跳出循环
+                //如果版本号为当前版本，说明新版本的更新日志已经读取完毕，直接结束循环
+                if (trimmedLine.contains(currentVersionName)) {
                     break;
                 }
 
-                // 判断是否是我们要找的目标版本
-                if (trimmedLine.contains(targetVersion)) {
+                //仅从远程文件的最新版本开始读取更新日志
+                if (isCollecting || trimmedLine.contains(latestVersionName)) {
                     isCollecting = true;
                     content.append(line).append("\n");
                 }
