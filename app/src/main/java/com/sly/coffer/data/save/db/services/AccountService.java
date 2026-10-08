@@ -133,9 +133,6 @@ public class AccountService {
             args.add("%" + safeKeyword + "%");
         }
 
-        //补上排序规则
-        sql.append(" ORDER BY dateTime DESC");
-
         return new SimpleSQLiteQuery(sql.toString(), args.toArray());
     }
 
