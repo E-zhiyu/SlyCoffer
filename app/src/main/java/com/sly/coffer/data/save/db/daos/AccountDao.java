@@ -301,7 +301,7 @@ public interface AccountDao {
      * @param idList 流水记录编号列表
      * @return 编号列表包含的流水记录数据
      */
-    @Query("SELECT * FROM accounts WHERE accountId IN (:idList)")
+    @Query("SELECT * FROM accounts WHERE accountId IN (:idList) ORDER BY dateTime DESC")
     Flowable<List<AccountEntity>> getAccountByIdFlowable(List<Long> idList);
 
     /**
