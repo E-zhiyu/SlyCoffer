@@ -6,6 +6,8 @@ import androidx.room.ForeignKey;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
+import java.util.Objects;
+
 @Entity(
         tableName = "tags",
         foreignKeys = @ForeignKey(
@@ -65,5 +67,17 @@ public class TagEntity {
 
     public void setGroupId(long groupId) {
         this.groupId = groupId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        TagEntity tagEntity = (TagEntity) o;
+        return tagId == tagEntity.tagId;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(tagId);
     }
 }

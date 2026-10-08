@@ -1,4 +1,4 @@
-package com.sly.coffer.ui.pages.app_list;
+package com.sly.coffer.ui.pages.common.app_list;
 
 import android.graphics.Bitmap;
 import android.view.LayoutInflater;

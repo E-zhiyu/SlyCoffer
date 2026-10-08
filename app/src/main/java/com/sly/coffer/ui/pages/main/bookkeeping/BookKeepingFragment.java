@@ -234,7 +234,7 @@ public class BookKeepingFragment extends Fragment {
     private void observeLiveData() {
         AccountFilterViewModel filterViewModel = new ViewModelProvider(requireActivity()).get(AccountFilterViewModel.class);
         filterViewModel.getFilterUpdatedLiveData().observe(getViewLifecycleOwner(), v ->
-                setSearchMode(!filterViewModel.isNoFilter())
+                setSearchMode(filterViewModel.hasFilter())
         );
     }
 

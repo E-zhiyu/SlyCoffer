@@ -20,6 +20,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.sly.coffer.R;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
+import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.db.services.BudgetService;
 import com.sly.coffer.databinding.ActivityBudgetListBinding;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
@@ -27,8 +28,10 @@ import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
+import com.sly.coffer.ui.pages.common.account.AccountListActivity;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Locale;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -152,6 +155,9 @@ public class BudgetListActivity extends AppCompatActivity {
                         if (id == R.id.action_delete_budget) {
                             deleteBudget(entity);
                             return true;
+                        } else if (id == R.id.action_check_account_detail) {
+                            checkAccountDetail(entity);
+                            return true;
                         } else if (id == R.id.action_reset_budget) {
                             resetBudget(entity);
                             return true;
@@ -238,5 +244,44 @@ public class BudgetListActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("取消", null)
                 .show();
+    }
+
+    /**
+     * 查看预算的流水记录详情
+     *
+     * @param budget 需要查看详情的预算
+     */
+    private void checkAccountDetail(@NonNull BudgetEntity budget) {
+        BookkeepingDb db = BookkeepingDb.getInstance(this);
+        disposable.add(db.budgetDao().getTagIdFromRefByBudgetId(budget.getBudgetId())
+                .flatMap(tagIdList -> AccountService.getAccountIdWithFilterSingle(
+                        new HashSet<>(tagIdList),
+                        null,
+                        budget.getStartDate(),
+                        null,
+                        tagIdList.isEmpty(),
+                        null,
+                        db
+                ))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        accountIdList -> {
+                            long[] accountIds = accountIdList.stream()
+                                    .mapToLong(Long::longValue)
+                                    .toArray();
+
+                            //生成数据包
+                            Bundle bundle = new Bundle();
+                            bundle.putLongArray(KeyStrings.RUNNING_ID.v(), accountIds);
+
+                            //跳转界面
+                            Intent intent = new Intent(this, AccountListActivity.class);
+                            intent.putExtras(bundle);
+                            startActivity(intent);
+                        },
+                        e -> ExceptionHelper.showExceptionDialog(this, e)
+                )
+        );
     }
 }

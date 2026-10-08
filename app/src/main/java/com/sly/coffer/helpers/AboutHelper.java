@@ -10,7 +10,14 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.12.6\n" +
+    private static final String UPDATE_LOG_MD = "# v1.12.7\n" +
+            "\n" +
+            "### 新增内容\n" +
+            "\n" +
+            "- 在报表统计界面能够点击某个来源查看该来源包含的所有流水记录\n" +
+            "- 在预算列表界面能够长按预算查看影响到余额的流水记录\n" +
+            "\n" +
+            "# v1.12.6\n" +
             "\n" +
             "### BUG修复\n" +
             "\n" +

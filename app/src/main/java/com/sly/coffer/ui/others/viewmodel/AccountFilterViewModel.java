@@ -58,6 +58,7 @@ public class AccountFilterViewModel extends ViewModel {
     public boolean isIncludeNoTag() {
         return includeNoTag;
     }
+
     public MutableLiveData<Void> getFilterUpdatedLiveData() {
         return filterUpdatedLiveData;
     }
@@ -74,7 +75,7 @@ public class AccountFilterViewModel extends ViewModel {
                         filterUpdateProcessor.debounce(50, TimeUnit.MILLISECONDS),
                         (keyword, b) -> keyword
                 )
-                .switchMap(keyword -> AccountService.loadAccountListDataFlowable(
+                .switchMap(keyword -> AccountService.getAccountIdWithFilterFlowable(
                         filterTagSet,
                         filterTypeSet,
                         start,
@@ -82,7 +83,8 @@ public class AccountFilterViewModel extends ViewModel {
                         includeNoTag,
                         keyword,
                         db
-                ));
+                ))
+                .switchMap(idList -> AccountService.getRunningAccountFlowableById(idList, db));
     }
 
     /**
@@ -104,18 +106,18 @@ public class AccountFilterViewModel extends ViewModel {
     }
 
     /**
-     * 判断是否没有过滤条件
+     * 判断是否有过滤条件
      *
-     * @return 是否没有过滤条件
+     * @return 是否有过滤条件
      */
-    public boolean isNoFilter() {
+    public boolean hasFilter() {
         String searchText = searchKeywordProcessor.getValue();
-        return start == null &&
-                end == null &&
-                filterTypeSet.isEmpty() &&
-                filterTagSet.isEmpty() &&
-                !includeNoTag &&
-                (searchText == null || searchText.isEmpty());
+        return start != null ||
+                end != null ||
+                !filterTypeSet.isEmpty() ||
+                !filterTagSet.isEmpty() ||
+                includeNoTag ||
+                (searchText != null && !searchText.isEmpty());
     }
 
     /**

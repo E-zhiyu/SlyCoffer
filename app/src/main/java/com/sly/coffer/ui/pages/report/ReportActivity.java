@@ -12,7 +12,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.PopupMenu;
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.util.Pair;
 import androidx.core.view.ViewCompat;
@@ -36,6 +35,7 @@ import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
 import com.sly.coffer.helpers.time.DateTimePickerHelper;
+import com.sly.coffer.ui.pages.common.account.AccountListActivity;
 
 import org.jetbrains.annotations.Contract;
 
@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -143,9 +144,13 @@ public class ReportActivity extends AppCompatActivity {
         );
 
         //收支来源
-        AmountProportionAdapter expenseAdapter = new AmountProportionAdapter();
+        AmountProportionAdapter expenseAdapter = new AmountProportionAdapter(
+                (entity, anchor) -> showProportionAccountDetail(entity)
+        );
         binding.expenseSourceRecycler.setAdapter(expenseAdapter);
-        AmountProportionAdapter incomeAdapter = new AmountProportionAdapter();
+        AmountProportionAdapter incomeAdapter = new AmountProportionAdapter(
+                (entity, anchor) -> showProportionAccountDetail(entity)
+        );
         binding.incomeSourceRecycler.setAdapter(incomeAdapter);
         ReportViewModel viewModel = new ViewModelProvider(this).get(ReportViewModel.class);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
@@ -236,7 +241,9 @@ public class ReportActivity extends AppCompatActivity {
         );
 
         //每月结余
-        AmountProportionAdapter monthAdapter = new AmountProportionAdapter();
+        AmountProportionAdapter monthAdapter = new AmountProportionAdapter(
+                (entity, anchor) -> showProportionAccountDetail(entity)
+        );
         binding.monthAccountRecycler.setAdapter(monthAdapter);
         disposable.add(viewModel.getMonthAccountDataFlowable(db)
                 .observeOn(AndroidSchedulers.mainThread())
@@ -338,52 +345,68 @@ public class ReportActivity extends AppCompatActivity {
             return new Pair<>(new ArrayList<>(), 0.0);
         }
 
-        final String OTHERS_NAME = ContextCompat.getString(this, R.string.others);
-        Map<String, Double> amountMap = new HashMap<>();
+        List<AccountEntity> noTagAccountList = new ArrayList<>();
+        Map<TagEntity, List<AccountEntity>> accountMap = new HashMap<>();
         double totalAmount = 0.0;
         for (AccountUnionModel model : modelList) {
             AccountEntity account = model.getAccount();
             List<TagEntity> tagList = model.getTagList();
             double amount = account.getAmount();
 
-            //根据标签分类
-            if (!tagList.isEmpty()) {
-                for (TagEntity tag : tagList) {
-                    String name = tag.getName();
-                    Double oldAmount = amountMap.getOrDefault(name, 0.0);
-                    if (oldAmount != null) {
-                        amountMap.put(name, oldAmount + amount);
-                    } else {
-                        amountMap.put(name, amount);
-                    }
-                }
+            if (tagList.isEmpty()) {
+                noTagAccountList.add(account);
             } else {
-                //处理没有被标签标记的流水记录
-                Double oldAmount = amountMap.getOrDefault(OTHERS_NAME, 0.0);
-                if (oldAmount != null) {
-                    amountMap.put(OTHERS_NAME, oldAmount + amount);
-                } else {
-                    amountMap.put(OTHERS_NAME, amount);
+                for (TagEntity tag : tagList) {
+                    List<AccountEntity> savedAccountList = accountMap.get(tag);
+                    if (savedAccountList != null) {
+                        savedAccountList.add(account);
+                    } else {
+                        List<AccountEntity> newList = new ArrayList<>();
+                        newList.add(account);
+                        accountMap.put(tag, newList);
+                    }
                 }
             }
             totalAmount += amount;
         }
 
-        //转换为 AmountProportionInfo 列表
+        //添加非“其他”类别的来源
         List<AmountProportionInfo> proportionList = new ArrayList<>();
-        for (Map.Entry<String, Double> entry : amountMap.entrySet()) {
-            String name = entry.getKey();
-            double amount = entry.getValue();
+        for (Map.Entry<TagEntity, List<AccountEntity>> entry : accountMap.entrySet()) {
+            TagEntity tag = entry.getKey();
+            List<AccountEntity> accountList = entry.getValue();
+            double amount = 0;
+            for (AccountEntity account : accountList) {
+                amount += Math.abs(account.getAmount());
+            }
 
-            // 计算百分比（防止分母为 0）
+            //计算百分比
             int percentage = 0;
             if (totalAmount > 0) {
-                // 使用 Math.round 四舍五入计算百分比
                 percentage = (int) Math.round(amount * 100 / totalAmount);
             }
 
-            proportionList.add(new AmountProportionInfo(percentage, amount, name));
+            //添加到 AmountProportionInfo 列表
+            List<Long> accountIdList = accountList.stream()
+                    .map(AccountEntity::getAccountId)
+                    .collect(Collectors.toList());
+            proportionList.add(new AmountProportionInfo(percentage, amount, tag.getName(), tag.getTagId(), accountIdList));
         }
+
+        //添加“其他”类别的来源
+        double amount = 0;
+        for (AccountEntity account : noTagAccountList) {
+            amount += Math.abs(account.getAmount());
+        }
+        int percentage = 0;
+        if (totalAmount > 0) {
+            percentage = (int) Math.round(amount * 100 / totalAmount);
+        }
+        List<Long> otherAccountIdList = noTagAccountList.stream()
+                .map(AccountEntity::getAccountId)
+                .collect(Collectors.toList());
+        proportionList.add(new AmountProportionInfo(percentage, amount, getString(R.string.others), -1, otherAccountIdList));
+
         proportionList.sort(Comparator.comparing(AmountProportionInfo::getAmount).reversed());  //从大到小排序
 
         return new Pair<>(proportionList, totalAmount);
@@ -397,52 +420,59 @@ public class ReportActivity extends AppCompatActivity {
      */
     @NonNull
     private List<AmountProportionInfo> convertToMonthProportions(@NonNull List<AccountUnionModel> modelList) {
-        Map<Integer, Double> amountMap = new HashMap<>();
+        Map<Integer, List<AccountEntity>> amountMap = new LinkedHashMap<>();
         double totalBalance = 0.0;
         AccountType[] types = AccountType.values();
         for (int i = 1; i <= 12; i++) {
-            amountMap.put(i, 0.0);
+            amountMap.put(i, new ArrayList<>());
         }
 
         //根据月份分类并存放到 Map 中
         for (AccountUnionModel model : modelList) {
             AccountEntity account = model.getAccount();
-            AccountType type = types[account.getType()];
             double amount = account.getAmount();
             int monthValue = account.getDateTime().getMonthValue();
 
-            if (type.isExpenseType()) {
-                Double oldAmount = amountMap.getOrDefault(monthValue, 0.0);
-                if (oldAmount != null) {
-                    amountMap.put(monthValue, oldAmount - amount);
-                } else {
-                    amountMap.put(monthValue, -amount);
-                }
-            } else if (type.isIncomeType()) {
-                Double oldAmount = amountMap.getOrDefault(monthValue, 0.0);
-                if (oldAmount != null) {
-                    amountMap.put(monthValue, oldAmount + amount);
-                } else {
-                    amountMap.put(monthValue, amount);
-                }
+            List<AccountEntity> savedAccountList = amountMap.get(monthValue);
+            if (savedAccountList != null) {
+                savedAccountList.add(account);
+            } else {
+                List<AccountEntity> newList = new ArrayList<>();
+                newList.add(account);
+                amountMap.put(monthValue, newList);
             }
             totalBalance += amount;
         }
 
         //转换为 AmountProportionInfo 列表
         List<AmountProportionInfo> proportionList = new ArrayList<>();
-        for (Map.Entry<Integer, Double> entry : amountMap.entrySet()) {
-            String name = String.format(Locale.getDefault(), "%d月", entry.getKey());
-            double amount = entry.getValue();
+        for (Map.Entry<Integer, List<AccountEntity>> entry : amountMap.entrySet()) {
+            int month = entry.getKey();
+            String name = String.format(Locale.getDefault(), "%d月", month);
+            List<AccountEntity> accountList = entry.getValue();
 
-            // 计算百分比（防止分母为 0）
-            int percentage = 0;
-            if (totalBalance != 0) {
-                // 使用 Math.round 四舍五入计算百分比
-                percentage = Math.abs((int) Math.round(amount * 100 / totalBalance));
+            //计算结余
+            double balance = 0;
+            for (AccountEntity account : accountList) {
+                AccountType type = types[account.getType()];
+                if (type.isExpenseType()) {
+                    balance -= account.getAmount();
+                } else if (type.isIncomeType()) {
+                    balance += account.getAmount();
+                }
             }
 
-            proportionList.add(new AmountProportionInfo(percentage, amount, name));
+            //计算百分比（防止分母为 0）
+            int percentage = 0;
+            if (totalBalance != 0) {
+                percentage = Math.abs((int) Math.round(balance * 100 / totalBalance));
+            }
+
+            //添加到 AmountProportionInfo 列表
+            List<Long> accountIdList = accountList.stream()
+                    .map(AccountEntity::getAccountId)
+                    .collect(Collectors.toList());
+            proportionList.add(new AmountProportionInfo(percentage, balance, name, month, accountIdList));
         }
 
         return proportionList;
@@ -551,5 +581,28 @@ public class ReportActivity extends AppCompatActivity {
         //设置菜单消失监听并显示菜单
         dateRangeSelectMenu.setOnDismissListener(menu -> binding.dateRangeSelectBtn.setChecked(false));
         dateRangeSelectMenu.show();
+    }
+
+    /**
+     * 显示来源的流水记录详情
+     *
+     * @param info 来源数据
+     */
+    private void showProportionAccountDetail(AmountProportionInfo info) {
+        if (info == null || info.getAccountIdList().isEmpty()) {
+            return;
+        }
+
+        //构建数据包
+        long[] accountIds = info.getAccountIdList().stream()
+                .mapToLong(Long::longValue)
+                .toArray();
+        Bundle bundle = new Bundle();
+        bundle.putLongArray(KeyStrings.RUNNING_ID.v(), accountIds);
+
+        //跳转界面
+        Intent intent = new Intent(this, AccountListActivity.class);
+        intent.putExtras(bundle);
+        startActivity(intent);
     }
 }

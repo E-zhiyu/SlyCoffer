@@ -62,13 +62,22 @@ public interface AccountDao {
     Flowable<List<AccountEntity>> getAccountInDateRange(LocalDate start, LocalDate end);
 
     /**
-     * 获取符合过滤条件的流水记录
+     * 获取符合过滤条件的流水记录编号
      *
      * @param query 数据库查询实例
-     * @return 符合过滤条件的流水记录列表，支持响应式更新
+     * @return 符合过滤条件的流水记录编号列表，支持响应式更新
      */
     @RawQuery(observedEntities = {AccountEntity.class, AccountTagRefEntity.class})
-    Flowable<List<AccountEntity>> getAccountWithFilter(SupportSQLiteQuery query);
+    Flowable<List<Long>> getAccountIdWithFilterFlowable(SupportSQLiteQuery query);
+
+    /**
+     * 获取符合过滤条件的流水记录编号
+     *
+     * @param query 数据库查询实例
+     * @return 符合过滤条件的流水记录编号列表
+     */
+    @RawQuery(observedEntities = {AccountEntity.class, AccountTagRefEntity.class})
+    Single<List<Long>> getAccountIdWithFilterSingle(SupportSQLiteQuery query);
 
     /**
      * 根据流水 ID 获取带有标签的流水记录
@@ -279,11 +288,21 @@ public interface AccountDao {
 
     /**
      * 通过流水记录编号获取流水记录
+     *
      * @param accountId 流水编号
      * @return 该编号对应的流水记录
      */
     @Query("SELECT * FROM accounts WHERE accountId = :accountId")
     Optional<AccountEntity> getAccountById(long accountId);
+
+    /**
+     * 通过流水记录编号获取流水记录
+     *
+     * @param idList 流水记录编号列表
+     * @return 编号列表包含的流水记录数据
+     */
+    @Query("SELECT * FROM accounts WHERE accountId IN (:idList)")
+    Flowable<List<AccountEntity>> getAccountByIdFlowable(List<Long> idList);
 
     /**
      * 修改流水记录的事务

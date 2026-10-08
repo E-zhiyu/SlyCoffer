@@ -21,7 +21,7 @@ import com.sly.coffer.data.save.db.services.AccessibilityRuleService;
 import com.sly.coffer.databinding.ActivityPickedPageInputBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
-import com.sly.coffer.ui.pages.app_list.AppSelectActivity;
+import com.sly.coffer.ui.pages.common.app_list.AppSelectActivity;
 
 import java.time.LocalDateTime;
 
