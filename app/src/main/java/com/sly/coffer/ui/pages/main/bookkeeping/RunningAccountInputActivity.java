@@ -93,7 +93,6 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class RunningAccountInputActivity extends AppCompatActivity {
-    private AccountType type = AccountType.EXPENSE;         //流水种类
     private ActivityRunningAccountInputBinding binding;     //绑定的XML视图引用
     @Nullable
     private Bundle initBundle = null;                       //传递初始数据的数据包
@@ -274,13 +273,17 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 List<MediaEntity> mediaList = model.getMediaList();
 
                                 //显示文本框数据
+                                AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+                                AccountType type = AccountType.values()[account.getType()];
+                                accountViewModel.updateAccountType(type);
                                 binding.amountInput.setText(String.valueOf(account.getAmount()));   //金额
                                 binding.remarkInput.setText(account.getRemark());                   //备注
-                                type = AccountType.values()[account.getType()];
                                 binding.typeInput.setText(type.getTitle());                         //种类
                                 binding.datetimeInput.setText(account.getDateTime().format(
                                         CustomDateTimeFormatter.DATE_TIME
                                 ));                                                                 //日期和时间
+
+                                //转账相关的文本框
                                 if (type == AccountType.TRANSFER) {
                                     binding.exportAccountLayout.setVisibility(View.VISIBLE);
                                     binding.importAccountLayout.setVisibility(View.VISIBLE);
@@ -289,6 +292,15 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                         binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
                                         binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
                                     }
+                                }
+
+                                //关联的借款记录文本框
+                                if (type != AccountType.TRANSFER &&
+                                        type != AccountType.LEND &&
+                                        type != AccountType.BORROW) {
+                                    binding.relatedLoanLayout.setVisibility(View.VISIBLE);
+
+                                    //TODO:填充文本框内容
                                 }
 
                                 //显示标签
@@ -328,26 +340,19 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         });
 
         //种类
+        AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
         NoFilteringArrayAdapter<String> typeAdapter = new NoFilteringArrayAdapter<>(
                 this,
                 Arrays.stream(AccountType.values())
                         .map(AccountType::getTitle)
                         .toArray(String[]::new)
         );
-        binding.typeInput.setText(type.getTitle());
+        binding.typeInput.setText(accountViewModel.getAccountType().getTitle());
         binding.typeInput.setAdapter(typeAdapter);
         binding.typeInput.setOnItemClickListener(
                 (parent, view, position, id) -> {
-                    boolean transferVisible = position == AccountType.TRANSFER.ordinal();
-                    VisibilityHelper.toggleViewExpansion(
-                            binding.scrollLayout,
-                            transferVisible,
-                            null,
-                            binding.exportAccountLayout,
-                            binding.importAccountLayout
-                    );
-
-                    type = AccountType.values()[position];
+                    AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+                    viewModel.updateAccountType(AccountType.values()[position]);
                 }
         );
 
@@ -387,7 +392,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.exportAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.exportAccountInput.getText()).trim();
-                if (type == AccountType.TRANSFER && input.isEmpty()) {
+                if (accountViewModel.getAccountType() == AccountType.TRANSFER && input.isEmpty()) {
                     binding.exportAccountLayout.setError("转出账户不能为空");
                 }
             }
@@ -399,7 +404,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.importAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.importAccountInput.getText()).trim();
-                if (type == AccountType.TRANSFER && input.isEmpty()) {
+                if (accountViewModel.getAccountType() == AccountType.TRANSFER && input.isEmpty()) {
                     binding.importAccountLayout.setError("转出账户不能为空");
                 }
             }
@@ -409,7 +414,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         binding.tagSelectBtn.setOnClickListener(view -> {
             TagSelectBottomSheet bottomSheet = new TagSelectBottomSheet();
             Bundle bundle = new Bundle();
-            bundle.putInt(KeyStrings.TAG_SCOPE.v(), (int) Math.pow(2, type.ordinal())); //传递标签作用域标识符
+            bundle.putInt(KeyStrings.TAG_SCOPE.v(), (int) Math.pow(2, accountViewModel.getAccountType().ordinal())); //传递标签作用域标识符
             bottomSheet.setArguments(bundle);
             bottomSheet.show(getSupportFragmentManager(), TagStrings.TAG_SELECT_BOTTOM.t());
         });
@@ -534,6 +539,31 @@ public class RunningAccountInputActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
+        //流水记录种类
+        AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+        accountViewModel.getTypeLiveData().observe(this, type -> {
+            //转账账户输入框
+            boolean transferVisible = type == AccountType.TRANSFER;
+            VisibilityHelper.toggleViewExpansion(
+                    binding.scrollLayout,
+                    transferVisible,
+                    null,
+                    binding.exportAccountLayout,
+                    binding.importAccountLayout
+            );
+
+            //关联的借款记录输入框
+            boolean relatedLoanVisible = type != AccountType.TRANSFER &&
+                    type != AccountType.LEND &&
+                    type != AccountType.BORROW;
+            VisibilityHelper.toggleViewExpansion(
+                    binding.scrollLayout,
+                    relatedLoanVisible,
+                    null,
+                    binding.relatedLoanLayout
+            );
+        });
+
         //媒体添加选项
         MediaAddOptionViewModel mediaAddOptionViewModel = new ViewModelProvider(this).get(MediaAddOptionViewModel.class);
         mediaAddOptionViewModel.getClickEvent().observe(this, integer -> {
@@ -823,6 +853,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
         String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
 
+        AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
         if (amount.isEmpty()) {
             err = "金额不能为空";
             binding.amountLayout.setError(err);
@@ -832,10 +863,10 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         } else if (dateTimeStr.isEmpty()) {
             err = "日期和时间不能为空";
             binding.datetimeLayout.setError(err);
-        } else if (type == AccountType.TRANSFER && exportAccount.isEmpty()) {
+        } else if (accountViewModel.getAccountType() == AccountType.TRANSFER && exportAccount.isEmpty()) {
             err = "转出账户不能为空";
             binding.exportAccountLayout.setError(err);
-        } else if (type == AccountType.TRANSFER && importAccount.isEmpty()) {
+        } else if (accountViewModel.getAccountType() == AccountType.TRANSFER && importAccount.isEmpty()) {
             err = "转入账户不能为空";
             binding.importAccountLayout.setError(err);
         }
@@ -859,7 +890,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 String.valueOf(binding.datetimeInput.getText()),
                 CustomDateTimeFormatter.DATE_TIME
         );
-        int typeOrdinal = this.type.ordinal();
         String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
         String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
 
@@ -868,7 +898,15 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
 
-        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, dateTime, AutoBookkeepingType.NONE.ordinal());
+        //生成数据实例并保存
+        AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+        AccountEntity account = new AccountEntity(
+                amount,
+                remark,
+                viewModel.getAccountType().ordinal(),
+                dateTime,
+                AutoBookkeepingType.NONE.ordinal()
+        );
         AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
         if (initBundle == null) {
             disposable.add(AccountService.addNewAccount(account, transfer, copiedMediaUriList, tagIdList, this)

@@ -52,6 +52,7 @@
             android:orientation="vertical"
             android:padding="10dp">
 
+            <!-- 金额 -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/amount_layout"
                 style="@style/CommonTextInputLayoutStyle"
@@ -74,6 +75,7 @@
                     android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- 备注 -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/remark_layout"
                 style="@style/CommonTextInputLayoutStyle"
@@ -89,6 +91,7 @@
                     android:layout_height="wrap_content" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- 日期和时间 -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/datetime_layout"
                 style="@style/CommonTextInputLayoutStyle"
@@ -105,6 +108,7 @@
                     android:layout_height="wrap_content" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- 流水类型 -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/type_layout"
                 style="@style/DropdownMenuTextInputLayoutStyle"
@@ -120,6 +124,7 @@
                     android:layout_height="wrap_content" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- 转出账户 -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/export_account_layout"
                 style="@style/DropdownMenuTextInputLayoutStyle"
@@ -136,6 +141,7 @@
                     android:hint="@string/export_account" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- 转入账户 -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/import_account_layout"
                 style="@style/DropdownMenuTextInputLayoutStyle"
@@ -152,6 +158,23 @@
                     android:hint="@string/import_account" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- 关联的借款记录 -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/related_loan_layout"
+                style="@style/CommonTextInputLayoutStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:helperText="@string/account_related_loan_help">
+
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/related_loan_input"
+                    style="@style/UneditableAutoCompleteTextViewStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/loan_record" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- 标签 -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">

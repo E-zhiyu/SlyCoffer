@@ -1,17 +1,19 @@
 package com.sly.coffer.auxiliary.enums.types;
 
-public enum AccountType {
-    EXPENSE("支出", -1, "EXPENSE"),
-    INCOME("收入", 1, "INCOME"),
-    TRANSFER("转账", 0, "TRANSFER");
-    private final String title; //名称
-    private final int flag;     //是否为收入/支出种类的标识符
-    private final String oldValue;  //旧枚举值
+import org.jetbrains.annotations.Contract;
 
-    AccountType(String title, int flag, String oldValue) {
+public enum AccountType {
+    EXPENSE("支出", -1),
+    INCOME("收入", 1),
+    TRANSFER("转账", 0),
+    LEND("借出", -1),
+    BORROW("借入", 1);
+    private final String title;     //名称
+    private final int flag;         //是否为收入/支出种类的标识符
+
+    AccountType(String title, int flag) {
         this.title = title;
         this.flag = flag;
-        this.oldValue = oldValue;
     }
 
     public String getTitle() {
@@ -32,12 +34,17 @@ public enum AccountType {
      * @param oldValue 旧枚举值
      * @return 流水种类
      */
+    @Contract(pure = true)
     public static AccountType fromOldValue(String oldValue) {
-        for (AccountType type : values()) {
-            if (type.oldValue.equals(oldValue)) {
-                return type;
-            }
+        if (oldValue == null) return EXPENSE;
+        switch (oldValue) {
+            case "INCOME":
+                return INCOME;
+            case "TRANSFER":
+                return TRANSFER;
+            case "EXPENSE":
+            default:
+                return EXPENSE;
         }
-        return EXPENSE;
     }
 }
