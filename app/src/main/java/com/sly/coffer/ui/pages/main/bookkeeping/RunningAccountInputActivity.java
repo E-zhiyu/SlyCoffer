@@ -923,22 +923,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         );
         if (initBundle == null) {
             disposable.add(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, this)
-                    .flatMapCompletable(accountId -> {
-                        AccountType type = viewModel.getAccountType();
-                        BookkeepingDb db = BookkeepingDb.getInstance(this);
-                        if (type == AccountType.TRANSFER) {
-                            String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
-                            String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
-                            AccountTransferEntity transfer = new AccountTransferEntity(
-                                    accountId,
-                                    exportAccount,
-                                    importAccount
-                            );
-                            return db.accountDao().insertAccountTransferCompletable(transfer);
-                        } else {
-                            return Completable.complete();
-                        }
-                    })
+                    .flatMapCompletable(this::saveExtraData)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -961,22 +946,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
             account.setAccountId(accountId);
             disposable.add(AccountService.modifyAccount(account, copiedMediaUriList, tagIdList, this)
-                    .flatMapCompletable(id -> {
-                        AccountType type = viewModel.getAccountType();
-                        BookkeepingDb db = BookkeepingDb.getInstance(this);
-                        if (type == AccountType.TRANSFER) {
-                            String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
-                            String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
-                            AccountTransferEntity transfer = new AccountTransferEntity(
-                                    id,
-                                    exportAccount,
-                                    importAccount
-                            );
-                            return db.accountDao().insertAccountTransferCompletable(transfer);
-                        } else {
-                            return Completable.complete();
-                        }
-                    })
+                    .flatMapCompletable(this::saveExtraData)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -995,6 +965,30 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                             }
                     )
             );
+        }
+    }
+
+    /**
+     * 保存额外的数据
+     *
+     * @param accountId 流水记录的编号
+     * @return 是否完成
+     */
+    private Completable saveExtraData(long accountId) {
+        AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+        AccountType type = viewModel.getAccountType();
+        BookkeepingDb db = BookkeepingDb.getInstance(this);
+        if (type == AccountType.TRANSFER) {
+            String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
+            String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
+            AccountTransferEntity transfer = new AccountTransferEntity(
+                    accountId,
+                    exportAccount,
+                    importAccount
+            );
+            return db.accountDao().insertAccountTransferCompletable(transfer);
+        } else {
+            return Completable.complete();
         }
     }
 

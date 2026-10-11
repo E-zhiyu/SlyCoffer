@@ -146,29 +146,13 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
         }
 
         //实例化实体类
-        int autoBookkeepingType = bundle.getInt(KeyStrings.AUTO_BOOKKEEPING_TYPE.v(), 0);
+        int autoBookkeepingTag = bundle.getInt(KeyStrings.AUTO_BOOKKEEPING_TAG.v(), 0);
         LocalDateTime dateTime = DateTimeConverter.toLocalDateTime(dateTimeMillis);
-        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, dateTime, autoBookkeepingType);
+        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, dateTime, autoBookkeepingTag);
 
         //保存数据
         disposable.add(AccountService.addNewAccount(account, null, tagIdList, context)
-                .flatMap(accountId -> {
-                    AccountType type = AccountType.values()[typeOrdinal];
-                    BookkeepingDb db = BookkeepingDb.getInstance(context);
-                    if (type == AccountType.TRANSFER) {
-                        String exportAccount = bundle.getString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v());
-                        String importAccount = bundle.getString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v());
-                        AccountTransferEntity transfer = new AccountTransferEntity(
-                                accountId,
-                                exportAccount,
-                                importAccount
-                        );
-                        return db.accountDao().insertAccountTransferCompletable(transfer)
-                                .andThen(Single.fromCallable(() -> accountId));
-                    } else {
-                        return Single.just(accountId);
-                    }
-                })
+                .flatMap(accountId -> saveExtraData(accountId, bundle, typeOrdinal, context))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
@@ -230,6 +214,33 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
                         }
                 )
         );
+    }
+
+    /**
+     * 保存流水记录的额外数据
+     *
+     * @param accountId   流水记录编号
+     * @param bundle      包含参数的数据包
+     * @param typeOrdinal 流水记录种类枚举序数
+     * @param context     上下文
+     * @return 带有流水记录编号的{@link Single}对象
+     */
+    private Single<Long> saveExtraData(long accountId, Bundle bundle, int typeOrdinal, Context context) {
+        AccountType type = AccountType.values()[typeOrdinal];
+        BookkeepingDb db = BookkeepingDb.getInstance(context);
+        if (type == AccountType.TRANSFER) {
+            String exportAccount = bundle.getString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v());
+            String importAccount = bundle.getString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v());
+            AccountTransferEntity transfer = new AccountTransferEntity(
+                    accountId,
+                    exportAccount,
+                    importAccount
+            );
+            return db.accountDao().insertAccountTransferCompletable(transfer)
+                    .andThen(Single.fromCallable(() -> accountId));
+        } else {
+            return Single.just(accountId);
+        }
     }
 
     /**

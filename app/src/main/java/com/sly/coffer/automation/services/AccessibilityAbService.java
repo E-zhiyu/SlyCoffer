@@ -463,7 +463,7 @@ public class AccessibilityAbService extends AccessibilityService {
             bundle.putString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v(), exportAccount); //转出账户
             bundle.putString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v(), importAccount); //转入账户
         }
-        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TYPE.v(), AutoBookkeepingType.ACCESSIBILITY.ordinal());   //自动记账种类
+        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TAG.v(), AutoBookkeepingType.ACCESSIBILITY.ordinal());   //自动记账种类
 
         return bundle;
     }
@@ -651,28 +651,7 @@ public class AccessibilityAbService extends AccessibilityService {
         String ruleName = rule.getName();
         int notificationId = (int) (rule.getRuleId() + System.currentTimeMillis() + NotificationID.AUTO_BOOKKEEPING_CONFIRM.ordinal());
         disposable.add(AccountService.addNewAccount(account, null, tagIdList, this)
-                .flatMap(id -> {
-                    BookkeepingDb db = BookkeepingDb.getInstance(this);
-                    AccountType type = AccountType.values()[typeOrdinal];
-                    if (type == AccountType.TRANSFER) {
-                        AccessibilityRuleTransferEntity ruleTransfer = model.getTransfer();
-                        String exportAccount = "";
-                        String importAccount = "";
-                        if (ruleTransfer != null) {
-                            exportAccount = ruleTransfer.getExportAccount();
-                            importAccount = ruleTransfer.getImportAccount();
-                        }
-                        AccountTransferEntity transfer = new AccountTransferEntity(
-                                id,
-                                exportAccount,
-                                importAccount
-                        );
-                        return db.accountDao().insertAccountTransferCompletable(transfer)
-                                .andThen(Single.fromCallable(() -> id));
-                    } else {
-                        return Single.just(id);
-                    }
-                })
+                .flatMap(id -> saveExtraData(id, model))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
@@ -708,6 +687,37 @@ public class AccessibilityAbService extends AccessibilityService {
                         }
                 )
         );
+    }
+
+    /**
+     * 保存流水记录的额外数据
+     *
+     * @param accountId 流水记录编号
+     * @param model     无障碍规则数据模型
+     * @return 带有流水记录编号的{@link Single}对象
+     */
+    private Single<Long> saveExtraData(long accountId, @NonNull AccessibilityRuleUnionModel model) {
+        BookkeepingDb db = BookkeepingDb.getInstance(this);
+        int typeOrdinal = model.getRule().getType();
+        AccountType type = AccountType.values()[typeOrdinal];
+        if (type == AccountType.TRANSFER) {
+            AccessibilityRuleTransferEntity ruleTransfer = model.getTransfer();
+            String exportAccount = "";
+            String importAccount = "";
+            if (ruleTransfer != null) {
+                exportAccount = ruleTransfer.getExportAccount();
+                importAccount = ruleTransfer.getImportAccount();
+            }
+            AccountTransferEntity transfer = new AccountTransferEntity(
+                    accountId,
+                    exportAccount,
+                    importAccount
+            );
+            return db.accountDao().insertAccountTransferCompletable(transfer)
+                    .andThen(Single.fromCallable(() -> accountId));
+        } else {
+            return Single.just(accountId);
+        }
     }
 
     /**
