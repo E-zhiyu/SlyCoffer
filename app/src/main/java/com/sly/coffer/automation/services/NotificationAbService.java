@@ -58,6 +58,7 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -640,26 +641,40 @@ public class NotificationAbService extends NotificationListenerService {
         //解析规则数据
         NotificationRuleEntity rule = model.getRule();
         String remark = rule.getName();
-        int type = rule.getType();
-        NotificationRuleTransferEntity ruleTransfer = model.getTransfer();
-        String exportAccount = "";
-        String importAccount = "";
-        if (ruleTransfer != null) {
-            exportAccount = ruleTransfer.getExportAccount();
-            importAccount = ruleTransfer.getImportAccount();
-        }
+        int typeOrdinal = rule.getType();
         List<Long> tagIdList = model.getTagList().stream()
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
 
         //实例化实体类
-        AccountEntity account = new AccountEntity(amount, remark, type, LocalDateTime.now(), AutoBookkeepingType.NOTIFICATION.ordinal());
-        AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
+        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, LocalDateTime.now(), AutoBookkeepingType.NOTIFICATION.ordinal());
 
         //保存数据
         String ruleName = rule.getName();
         int notificationId = (int) (rule.getRuleId() + System.currentTimeMillis() + NotificationID.AUTO_BOOKKEEPING_CONFIRM.ordinal());
-        disposable.add(AccountService.addNewAccount(account, transfer, null, tagIdList, this)
+        disposable.add(AccountService.addNewAccount(account, null, tagIdList, this)
+                .flatMap(id -> {
+                    BookkeepingDb db = BookkeepingDb.getInstance(this);
+                    AccountType type = AccountType.values()[typeOrdinal];
+                    if (type == AccountType.TRANSFER) {
+                        NotificationRuleTransferEntity ruleTransfer = model.getTransfer();
+                        String exportAccount = "";
+                        String importAccount = "";
+                        if (ruleTransfer != null) {
+                            exportAccount = ruleTransfer.getExportAccount();
+                            importAccount = ruleTransfer.getImportAccount();
+                        }
+                        AccountTransferEntity transfer = new AccountTransferEntity(
+                                id,
+                                exportAccount,
+                                importAccount
+                        );
+                        return db.accountDao().insertAccountTransferCompletable(transfer)
+                                .andThen(Single.fromCallable(() -> id));
+                    } else {
+                        return Single.just(id);
+                    }
+                })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(

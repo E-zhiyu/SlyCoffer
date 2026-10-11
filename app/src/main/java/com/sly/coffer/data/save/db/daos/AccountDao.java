@@ -13,7 +13,6 @@ import androidx.room.Transaction;
 import androidx.room.Update;
 import androidx.sqlite.db.SupportSQLiteQuery;
 
-import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
@@ -28,6 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 
@@ -208,19 +208,12 @@ public interface AccountDao {
      * 流水记录添加事务
      *
      * @param account         新流水记录实体
-     * @param transfer        转账账户数据（仅当记录类型为转账时会写入）
      * @param mediaEntityList 附带的位于永久目录下的媒体文件实体列表
      * @param tagIdList       与该记录绑定的标签的 ID 列表
      */
     @Transaction
-    default long addAccount(AccountEntity account, AccountTransferEntity transfer, @Nullable List<MediaEntity> mediaEntityList, @Nullable List<Long> tagIdList) {
+    default long addAccount(AccountEntity account, @Nullable List<MediaEntity> mediaEntityList, @Nullable List<Long> tagIdList) {
         long accountId = insertAccount(account);
-
-        //写入转账账户数据
-        if (account.getType() == AccountType.TRANSFER.ordinal()) {
-            transfer.setAccountId(accountId);
-            insertAccountTransfer(transfer);
-        }
 
         //生成媒体实体列表并写入数据
         if (mediaEntityList != null) {
@@ -244,6 +237,14 @@ public interface AccountDao {
 
         return accountId;
     }
+
+    /**
+     * 插入流水记录转账数据
+     * @param transfer 流水记录转账数据
+     * @return 是否完成
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Completable insertAccountTransferCompletable(AccountTransferEntity transfer);
 
     /**
      * 通过流水编号删除转账账户记录
@@ -308,14 +309,12 @@ public interface AccountDao {
      * 修改流水记录的事务
      *
      * @param account         修改后的流水数据
-     * @param transfer        转账账户数据（仅当记录类型为转账时会写入）
      * @param mediaEntityList 位于永久目录下的媒体文件实体列表，可能包含主键值为0的媒体实体
      * @param tagIdList       修改后的标签列表
      */
     @Transaction
     default Set<Uri> modifyAccount(
             AccountEntity account,
-            AccountTransferEntity transfer,
             List<MediaEntity> mediaEntityList,
             List<Long> tagIdList
     ) {
@@ -343,12 +342,8 @@ public interface AccountDao {
         //更新流水记录
         updateAccount(account);
 
-        //更新转账账户数据
+        //删除转账账户数据
         deleteAccountTransferByAccountId(accountId);
-        if (account.getType() == AccountType.TRANSFER.ordinal()) {
-            transfer.setAccountId(accountId);
-            insertAccountTransfer(transfer);
-        }
 
         //更新标签
         List<Long> oldTagIdList = getTagIdListByAccountId(accountId);   //获取原来的标签绑定关系

@@ -88,6 +88,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -904,8 +905,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 String.valueOf(binding.datetimeInput.getText()),
                 CustomDateTimeFormatter.DATE_TIME
         );
-        String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
-        String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
 
         //生成标签 ID 列表
         List<Long> tagIdList = tagAdapter.getCurrentList().stream()
@@ -922,13 +921,28 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 dateTime,
                 AutoBookkeepingType.NONE.ordinal()
         );
-        AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
         if (initBundle == null) {
-            disposable.add(AccountService.addNewAccount(account, transfer, copiedMediaUriList, tagIdList, this)
+            disposable.add(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, this)
+                    .flatMapCompletable(accountId -> {
+                        AccountType type = viewModel.getAccountType();
+                        BookkeepingDb db = BookkeepingDb.getInstance(this);
+                        if (type == AccountType.TRANSFER) {
+                            String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
+                            String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
+                            AccountTransferEntity transfer = new AccountTransferEntity(
+                                    accountId,
+                                    exportAccount,
+                                    importAccount
+                            );
+                            return db.accountDao().insertAccountTransferCompletable(transfer);
+                        } else {
+                            return Completable.complete();
+                        }
+                    })
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
-                            accountId -> {
+                            () -> {
                                 Toast.makeText(this, "流水记录添加成功", Toast.LENGTH_SHORT).show();
                                 finish();
                             },
@@ -946,7 +960,23 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         } else {
             long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
             account.setAccountId(accountId);
-            disposable.add(AccountService.modifyAccount(account, transfer, copiedMediaUriList, tagIdList, this)
+            disposable.add(AccountService.modifyAccount(account, copiedMediaUriList, tagIdList, this)
+                    .flatMapCompletable(id -> {
+                        AccountType type = viewModel.getAccountType();
+                        BookkeepingDb db = BookkeepingDb.getInstance(this);
+                        if (type == AccountType.TRANSFER) {
+                            String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
+                            String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
+                            AccountTransferEntity transfer = new AccountTransferEntity(
+                                    id,
+                                    exportAccount,
+                                    importAccount
+                            );
+                            return db.accountDao().insertAccountTransferCompletable(transfer);
+                        } else {
+                            return Completable.complete();
+                        }
+                    })
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(

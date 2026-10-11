@@ -639,26 +639,40 @@ public class AccessibilityAbService extends AccessibilityService {
         //解析规则数据
         AccessibilityRuleEntity rule = model.getRule();
         String remark = rule.getName();
-        int type = rule.getType();
-        AccessibilityRuleTransferEntity ruleTransfer = model.getTransfer();
-        String exportAccount = "";
-        String importAccount = "";
-        if (ruleTransfer != null) {
-            exportAccount = ruleTransfer.getExportAccount();
-            importAccount = ruleTransfer.getImportAccount();
-        }
+        int typeOrdinal = rule.getType();
         List<Long> tagIdList = model.getTagList().stream()
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
 
         //实例化实体类
-        AccountEntity account = new AccountEntity(amount, remark, type, LocalDateTime.now(), AutoBookkeepingType.ACCESSIBILITY.ordinal());
-        AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
+        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, LocalDateTime.now(), AutoBookkeepingType.ACCESSIBILITY.ordinal());
 
         //保存数据
         String ruleName = rule.getName();
         int notificationId = (int) (rule.getRuleId() + System.currentTimeMillis() + NotificationID.AUTO_BOOKKEEPING_CONFIRM.ordinal());
-        disposable.add(AccountService.addNewAccount(account, transfer, null, tagIdList, this)
+        disposable.add(AccountService.addNewAccount(account, null, tagIdList, this)
+                .flatMap(id -> {
+                    BookkeepingDb db = BookkeepingDb.getInstance(this);
+                    AccountType type = AccountType.values()[typeOrdinal];
+                    if (type == AccountType.TRANSFER) {
+                        AccessibilityRuleTransferEntity ruleTransfer = model.getTransfer();
+                        String exportAccount = "";
+                        String importAccount = "";
+                        if (ruleTransfer != null) {
+                            exportAccount = ruleTransfer.getExportAccount();
+                            importAccount = ruleTransfer.getImportAccount();
+                        }
+                        AccountTransferEntity transfer = new AccountTransferEntity(
+                                id,
+                                exportAccount,
+                                importAccount
+                        );
+                        return db.accountDao().insertAccountTransferCompletable(transfer)
+                                .andThen(Single.fromCallable(() -> id));
+                    } else {
+                        return Single.just(id);
+                    }
+                })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(

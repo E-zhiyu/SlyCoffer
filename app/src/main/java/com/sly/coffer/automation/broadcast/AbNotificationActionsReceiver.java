@@ -14,6 +14,8 @@ import androidx.core.app.TaskStackBuilder;
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.enums.settings.NotificationCancelBehaviour;
 import com.sly.coffer.auxiliary.enums.settings.NotificationClickBehaviour;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
+import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
@@ -32,6 +34,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -129,7 +132,7 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
     private void saveAccountData(PendingResult syncResult, @NonNull Bundle bundle, String ruleName, int notificationID, Context context) {
         //解包数据包
         long dateTimeMillis = bundle.getLong(KeyStrings.RUNNING_DATETIME.v());
-        int type = bundle.getInt(KeyStrings.RUNNING_TYPE.v());
+        int typeOrdinal = bundle.getInt(KeyStrings.RUNNING_TYPE.v());
         String remark = bundle.getString(KeyStrings.RUNNING_REMARK.v());
         double amount = bundle.getDouble(KeyStrings.RUNNING_AMOUNT.v());
         long[] tagIds = bundle.getLongArray(KeyStrings.TAG_ID.v());
@@ -141,17 +144,31 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
         } else {
             tagIdList = null;
         }
-        String exportAccount = bundle.getString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v());
-        String importAccount = bundle.getString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v());
 
         //实例化实体类
         int autoBookkeepingType = bundle.getInt(KeyStrings.AUTO_BOOKKEEPING_TYPE.v(), 0);
         LocalDateTime dateTime = DateTimeConverter.toLocalDateTime(dateTimeMillis);
-        AccountEntity account = new AccountEntity(amount, remark, type, dateTime, autoBookkeepingType);
-        AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
+        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, dateTime, autoBookkeepingType);
 
         //保存数据
-        disposable.add(AccountService.addNewAccount(account, transfer, null, tagIdList, context)
+        disposable.add(AccountService.addNewAccount(account, null, tagIdList, context)
+                .flatMap(accountId -> {
+                    AccountType type = AccountType.values()[typeOrdinal];
+                    BookkeepingDb db = BookkeepingDb.getInstance(context);
+                    if (type == AccountType.TRANSFER) {
+                        String exportAccount = bundle.getString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v());
+                        String importAccount = bundle.getString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v());
+                        AccountTransferEntity transfer = new AccountTransferEntity(
+                                accountId,
+                                exportAccount,
+                                importAccount
+                        );
+                        return db.accountDao().insertAccountTransferCompletable(transfer)
+                                .andThen(Single.fromCallable(() -> accountId));
+                    } else {
+                        return Single.just(accountId);
+                    }
+                })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
