@@ -23,19 +23,19 @@ import java.time.LocalDate;
 )
 public class LoanEntity {
     @PrimaryKey
-    private long accountId;         //附属的流水记录的编号
-    private String targetName;      //借钱对象的名称
-    private int basepoint;          //利率基点
+    private long accountId;                 //附属的流水记录的编号
+    private String loanTargetName;          //借钱对象的名称
+    private int interestPeriodType;         //结息周期种类
+    private int yearBasepoint;              //年利率基点
     private boolean allowCompoundInterest;  //是否允许复利
-    private int type;               //种类(借入或借出)
-    private LocalDate repayDate;    //应还日期
+    private LocalDate repayDate;            //应还日期
 
-    public LoanEntity(long accountId, String targetName, int basepoint, boolean allowCompoundInterest, int type, LocalDate repayDate) {
+    public LoanEntity(long accountId, String loanTargetName, int interestPeriodType, int yearBasepoint, boolean allowCompoundInterest, LocalDate repayDate) {
         this.accountId = accountId;
-        this.targetName = targetName;
-        this.basepoint = basepoint;
+        this.loanTargetName = loanTargetName;
+        this.interestPeriodType = interestPeriodType;
+        this.yearBasepoint = yearBasepoint;
         this.allowCompoundInterest = allowCompoundInterest;
-        this.type = type;
         this.repayDate = repayDate;
     }
 
@@ -47,20 +47,20 @@ public class LoanEntity {
         this.accountId = accountId;
     }
 
-    public String getTargetName() {
-        return targetName;
+    public String getLoanTargetName() {
+        return loanTargetName;
     }
 
-    public void setTargetName(String targetName) {
-        this.targetName = targetName;
+    public void setLoanTargetName(String loanTargetName) {
+        this.loanTargetName = loanTargetName;
     }
 
-    public int getBasepoint() {
-        return basepoint;
+    public int getYearBasepoint() {
+        return yearBasepoint;
     }
 
-    public void setBasepoint(int basepoint) {
-        this.basepoint = basepoint;
+    public void setYearBasepoint(int yearBasepoint) {
+        this.yearBasepoint = yearBasepoint;
     }
 
     public boolean isAllowCompoundInterest() {
@@ -71,19 +71,19 @@ public class LoanEntity {
         this.allowCompoundInterest = allowCompoundInterest;
     }
 
-    public int getType() {
-        return type;
-    }
-
-    public void setType(int type) {
-        this.type = type;
-    }
-
     public LocalDate getRepayDate() {
         return repayDate;
     }
 
     public void setRepayDate(LocalDate repayDate) {
         this.repayDate = repayDate;
+    }
+
+    public int getInterestPeriodType() {
+        return interestPeriodType;
+    }
+
+    public void setInterestPeriodType(int interestPeriodType) {
+        this.interestPeriodType = interestPeriodType;
     }
 }

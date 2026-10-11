@@ -285,8 +285,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
                                 //转账相关的文本框
                                 if (type == AccountType.TRANSFER) {
-                                    binding.exportAccountLayout.setVisibility(View.VISIBLE);
-                                    binding.importAccountLayout.setVisibility(View.VISIBLE);
+                                    binding.transferInputLayout.setVisibility(View.VISIBLE);
 
                                     if (transfer != null) {
                                         binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
@@ -298,9 +297,16 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 if (type != AccountType.TRANSFER &&
                                         type != AccountType.LEND &&
                                         type != AccountType.BORROW) {
-                                    binding.relatedLoanLayout.setVisibility(View.VISIBLE);
+                                    binding.relatedLoanInputLayout.setVisibility(View.VISIBLE);
 
                                     //TODO:填充文本框内容
+                                }
+
+                                //借款信息文本框
+                                if (type == AccountType.BORROW || type == AccountType.LEND) {
+                                    binding.loanInfoInputLayout.setVisibility(View.VISIBLE);
+
+                                    //TODO:填充内容
                                 }
 
                                 //显示标签
@@ -548,8 +554,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                     binding.scrollLayout,
                     transferVisible,
                     null,
-                    binding.exportAccountLayout,
-                    binding.importAccountLayout
+                    binding.transferInputLayout
             );
 
             //关联的借款记录输入框
@@ -560,7 +565,16 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                     binding.scrollLayout,
                     relatedLoanVisible,
                     null,
-                    binding.relatedLoanLayout
+                    binding.relatedLoanInputLayout
+            );
+
+            //借款信息输入框
+            boolean loanInfoVisible = type == AccountType.LEND || type == AccountType.BORROW;
+            VisibilityHelper.toggleViewExpansion(
+                    binding.scrollLayout,
+                    loanInfoVisible,
+                    null,
+                    binding.loanInfoInputLayout
             );
         });
 
@@ -899,6 +913,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 .collect(Collectors.toList());
 
         //生成数据实例并保存
+        //TODO:根据种类独立生成各个实体并写入数据库
         AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
         AccountEntity account = new AccountEntity(
                 amount,
