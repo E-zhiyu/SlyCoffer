@@ -285,7 +285,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 ));                                                                 //日期和时间
 
                                 //转账相关的文本框
-                                if (type == AccountType.TRANSFER) {
+                                if (type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER)) {
                                     binding.transferInputLayout.setVisibility(View.VISIBLE);
 
                                     if (transfer != null) {
@@ -294,17 +294,15 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                     }
                                 }
 
-                                //关联的借款记录文本框
-                                if (type != AccountType.TRANSFER &&
-                                        type != AccountType.LEND &&
-                                        type != AccountType.BORROW) {
+                                //还款所需的文本框
+                                if (type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY)) {
                                     binding.relatedLoanInputLayout.setVisibility(View.VISIBLE);
 
                                     //TODO:填充文本框内容
                                 }
 
                                 //借款信息文本框
-                                if (type == AccountType.BORROW || type == AccountType.LEND) {
+                                if (type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO)) {
                                     binding.loanInfoInputLayout.setVisibility(View.VISIBLE);
 
                                     //TODO:填充内容
@@ -399,7 +397,8 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.exportAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.exportAccountInput.getText()).trim();
-                if (accountViewModel.getAccountType() == AccountType.TRANSFER && input.isEmpty()) {
+                if (accountViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER) &&
+                        input.isEmpty()) {
                     binding.exportAccountLayout.setError("转出账户不能为空");
                 }
             }
@@ -411,7 +410,8 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.importAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.importAccountInput.getText()).trim();
-                if (accountViewModel.getAccountType() == AccountType.TRANSFER && input.isEmpty()) {
+                if (accountViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER) &&
+                        input.isEmpty()) {
                     binding.importAccountLayout.setError("转出账户不能为空");
                 }
             }
@@ -550,30 +550,25 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
         accountViewModel.getTypeLiveData().observe(this, type -> {
             //转账账户输入框
-            boolean transferVisible = type == AccountType.TRANSFER;
             VisibilityHelper.toggleViewExpansion(
                     binding.scrollLayout,
-                    transferVisible,
+                    type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER),
                     null,
                     binding.transferInputLayout
             );
 
-            //关联的借款记录输入框
-            boolean relatedLoanVisible = type != AccountType.TRANSFER &&
-                    type != AccountType.LEND &&
-                    type != AccountType.BORROW;
+            //还款信息输入框
             VisibilityHelper.toggleViewExpansion(
                     binding.scrollLayout,
-                    relatedLoanVisible,
+                    type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY),
                     null,
                     binding.relatedLoanInputLayout
             );
 
             //借款信息输入框
-            boolean loanInfoVisible = type == AccountType.LEND || type == AccountType.BORROW;
             VisibilityHelper.toggleViewExpansion(
                     binding.scrollLayout,
-                    loanInfoVisible,
+                    type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO),
                     null,
                     binding.loanInfoInputLayout
             );
@@ -869,6 +864,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
 
         AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+        AccountType type = accountViewModel.getAccountType();
         if (amount.isEmpty()) {
             err = "金额不能为空";
             binding.amountLayout.setError(err);
@@ -878,13 +874,14 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         } else if (dateTimeStr.isEmpty()) {
             err = "日期和时间不能为空";
             binding.datetimeLayout.setError(err);
-        } else if (accountViewModel.getAccountType() == AccountType.TRANSFER && exportAccount.isEmpty()) {
+        } else if (type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER) && exportAccount.isEmpty()) {
             err = "转出账户不能为空";
             binding.exportAccountLayout.setError(err);
-        } else if (accountViewModel.getAccountType() == AccountType.TRANSFER && importAccount.isEmpty()) {
+        } else if (type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER) && importAccount.isEmpty()) {
             err = "转入账户不能为空";
             binding.importAccountLayout.setError(err);
         }
+        //TODO:完成剩下的额外数据输入校验
 
         return err;
     }
@@ -978,7 +975,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
         AccountType type = viewModel.getAccountType();
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        if (type == AccountType.TRANSFER) {
+        if (type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER)) {
             String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
             String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
             AccountTransferEntity transfer = new AccountTransferEntity(
