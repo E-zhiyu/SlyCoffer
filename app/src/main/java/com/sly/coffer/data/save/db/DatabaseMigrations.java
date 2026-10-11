@@ -75,7 +75,19 @@ public class DatabaseMigrations {
         public void migrate(@NonNull SupportSQLiteDatabase db) {
             db.execSQL("ALTER TABLE notificationRuleGroups ADD COLUMN `order` INTEGER NOT NULL DEFAULT 0");
             db.execSQL("UPDATE notificationRuleGroups SET `order` = groupId");
-            db.execSQL( "CREATE INDEX IF NOT EXISTS `index_notificationRuleGroups_order` ON `notificationRuleGroups` (`order`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_notificationRuleGroups_order` ON `notificationRuleGroups` (`order`)");
+        }
+    };
+
+    //添加借款记录相关的数据实体
+    static final Migration MIGRATION_7_8 = new Migration(7, 8) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `loans` (`accountId` INTEGER NOT NULL, `loanTargetName` TEXT, `interestPeriodType` INTEGER NOT NULL, `yearBasepoint` INTEGER NOT NULL, `allowCompoundInterest` INTEGER NOT NULL, `repayDate` INTEGER, PRIMARY KEY(`accountId`), FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_accountId` ON `loans` (`accountId`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_loanTargetName` ON `loans` (`loanTargetName`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_repayDate` ON `loans` (`repayDate`)");
+            db.execSQL("CREATE TABLE IF NOT EXISTS `loanRepayRef` (`repayAccountId` INTEGER NOT NULL, `loanAccountId` INTEGER NOT NULL, PRIMARY KEY(`repayAccountId`, `loanAccountId`), FOREIGN KEY(`repayAccountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`loanAccountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )");
         }
     };
 }

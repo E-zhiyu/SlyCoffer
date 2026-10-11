@@ -18,7 +18,9 @@ import java.time.LocalDate;
                 )
         },
         indices = {
-                @Index(value = "accountId")
+                @Index(value = "accountId"),
+                @Index(value = "loanTargetName"),
+                @Index(value = "repayDate")
         }
 )
 public class LoanEntity {
