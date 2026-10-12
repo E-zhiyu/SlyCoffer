@@ -165,9 +165,9 @@
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
-            <!-- 关联的借款记录输入项 -->
+            <!-- 还款额外输入项 -->
             <LinearLayout
-                android:id="@+id/related_loan_input_layout"
+                android:id="@+id/repay_extra_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -189,9 +189,9 @@
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
-            <!-- 借款（入/出）信息相关输入项 -->
+            <!-- 借款（入/出）额外输入项 -->
             <LinearLayout
-                android:id="@+id/loan_info_input_layout"
+                android:id="@+id/loan_extra_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -211,6 +211,24 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/loan_target" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- 应还日期 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/repay_date_layout"
+                    style="@style/CommonTextInputLayoutStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:helperText="@string/account_repay_date_help">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/repay_date_input"
+                        style="@style/UneditableAutoCompleteTextViewStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginBottom="5dp"
+                        android:hint="@string/repay_date" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- 结息周期 -->
@@ -249,22 +267,22 @@
                         android:inputType="numberDecimal" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- 应还日期 -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/repay_date_layout"
-                    style="@style/CommonTextInputLayoutStyle"
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/compound_interest_switch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:helperText="@string/account_repay_date_help">
-
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/repay_date_input"
-                        style="@style/UneditableAutoCompleteTextViewStyle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/repay_date" />
-                </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="10dp"
+                    android:text="@string/allow_compound_interest"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
             </LinearLayout>
+
+            <com.google.android.material.divider.MaterialDivider
+                style="@style/Widget.Material3.MaterialDivider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp" />
 
             <!-- 标签 -->
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -315,7 +333,6 @@
                 app:layoutManager="com.google.android.flexbox.FlexboxLayoutManager" />
 
             <com.google.android.material.divider.MaterialDivider
-                android:id="@+id/input_history_divider"
                 style="@style/Widget.Material3.MaterialDivider"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

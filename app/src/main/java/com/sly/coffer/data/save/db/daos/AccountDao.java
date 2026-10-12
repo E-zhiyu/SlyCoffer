@@ -16,6 +16,8 @@ import androidx.sqlite.db.SupportSQLiteQuery;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
+import com.sly.coffer.data.save.db.entities.LoanEntity;
+import com.sly.coffer.data.save.db.entities.LoanRepayRefEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
 
@@ -240,6 +242,7 @@ public interface AccountDao {
 
     /**
      * 插入流水记录转账数据
+     *
      * @param transfer 流水记录转账数据
      * @return 是否完成
      */
@@ -342,8 +345,10 @@ public interface AccountDao {
         //更新流水记录
         updateAccount(account);
 
-        //删除转账账户数据
+        //删除额外数据
         deleteAccountTransferByAccountId(accountId);
+        deleteLoanByAccountId(accountId);
+        deleteRepayRefByRepayAccountId(accountId);
 
         //更新标签
         List<Long> oldTagIdList = getTagIdListByAccountId(accountId);   //获取原来的标签绑定关系
@@ -400,4 +405,46 @@ public interface AccountDao {
 
         return uriSet;
     }
+
+    /**
+     * 插入借款记录数据
+     *
+     * @param loan 借款记录数据
+     * @return 是否完成
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Completable insertLoanCompletable(LoanEntity loan);
+
+    /**
+     * 通过流水记录编号删除借款额外数据
+     *
+     * @param accountId 流水记录编号
+     */
+    @Query("DELETE FROM loans WHERE accountId = :accountId")
+    void deleteLoanByAccountId(long accountId);
+
+    /**
+     * 插入还款记录关联的流水记录数据
+     *
+     * @param repayRef 还款记录关联的流水记录数据
+     * @return 是否完成
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Completable insertRepayRefCompletable(LoanRepayRefEntity repayRef);
+
+    /**
+     * 通过还款记录编号删除还款关联的借款记录数据
+     *
+     * @param accountId 用作还款的流水记录编号
+     */
+    @Query("DELETE FROM loanRepayRef WHERE repayAccountId = :accountId")
+    void deleteRepayRefByRepayAccountId(long accountId);
+
+    /**
+     * 获取借款对象名称
+     *
+     * @return 借款对象名称列表
+     */
+    @Query("SELECT loanTargetName FROM loans WHERE loanTargetName IS NOT NULL")
+    Single<List<String>> getLoanTargetNameSingle();
 }

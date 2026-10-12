@@ -9,6 +9,7 @@ import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.datepicker.CalendarConstraints;
 import com.google.android.material.datepicker.DateValidatorPointBackward;
+import com.google.android.material.datepicker.DateValidatorPointForward;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.datepicker.MaterialPickerOnPositiveButtonClickListener;
 import com.google.android.material.timepicker.MaterialTimePicker;
@@ -107,27 +108,31 @@ public class DateTimePickerHelper {
      * 选择日期
      *
      * @param initDate        初始化时选中的日期
+     * @param dateRange       可选日期的范围（闭区间）
      * @param fragmentManager 显示对话框的FragmentManager
      * @param listener        确定监听器
      */
     public static void selectDate(
             @Nullable LocalDate initDate,
+            @Nullable Pair<LocalDate, LocalDate> dateRange,
             FragmentManager fragmentManager,
             MaterialPickerOnPositiveButtonClickListener<Long> listener
     ) {
-        selectDate(initDate, fragmentManager, "选择日期", listener);
+        selectDate(initDate, dateRange, fragmentManager, "选择日期", listener);
     }
 
     /**
      * 选择日期
      *
      * @param initDate        初始化时选中的日期
-     * @param fragmentManager 显示对话框的FragmentManager
+     * @param dateRange       可选日期的范围（闭区间）
+     * @param fragmentManager 显示对话框的{@link FragmentManager}
      * @param title           日期选择对话框标题
      * @param listener        确定监听器
      */
     public static void selectDate(
             @Nullable LocalDate initDate,
+            @Nullable Pair<LocalDate, LocalDate> dateRange,
             FragmentManager fragmentManager,
             String title,
             MaterialPickerOnPositiveButtonClickListener<Long> listener
@@ -142,14 +147,35 @@ public class DateTimePickerHelper {
             dateBuilder.setSelection(dateSelection);
         }
 
-        //创建日期选择对话框
-        MaterialDatePicker<Long> datePicker = dateBuilder
-                .setCalendarConstraints(
+        //限制日期范围
+        if (dateRange != null) {
+            if (dateRange.first != null && dateRange.second != null) {  //当两个日期都不为 null 时，根据值大小判断起点和终点
+                boolean isFirstEarlier = dateRange.first.isBefore(dateRange.second);
+                LocalDate start = isFirstEarlier ? dateRange.first : dateRange.second;
+                LocalDate end = isFirstEarlier ? dateRange.second : dateRange.first;
+                dateBuilder.setCalendarConstraints(
                         new CalendarConstraints.Builder()
-                                .setValidator(DateValidatorPointBackward.now()) //限制为过去日期
+                                .setValidator(DateValidatorPointForward.from(fromLocalDate(start)))
+                                .setValidator(DateValidatorPointBackward.before(fromLocalDate(end)))
                                 .build()
-                )
-                .build();
+                );
+            } else if (dateRange.first != null) {
+                dateBuilder.setCalendarConstraints(
+                        new CalendarConstraints.Builder()
+                                .setValidator(DateValidatorPointForward.from(fromLocalDate(dateRange.first)))
+                                .build()
+                );
+            } else if (dateRange.second != null) {
+                dateBuilder.setCalendarConstraints(
+                        new CalendarConstraints.Builder()
+                                .setValidator(DateValidatorPointBackward.before(fromLocalDate(dateRange.second)))
+                                .build()
+                );
+            }
+        }
+
+        //创建日期选择对话框
+        MaterialDatePicker<Long> datePicker = dateBuilder.build();
 
         //设置回调
         datePicker.addOnPositiveButtonClickListener(listener);
@@ -214,5 +240,16 @@ public class DateTimePickerHelper {
         return Instant.ofEpochMilli(timeMilli)
                 .atZone(ZoneOffset.UTC)
                 .toLocalDateTime();
+    }
+
+    /**
+     * 将{@link LocalDate}类型转换为 UTC 时间戳
+     *
+     * @param date 需要转换为时间戳{@link LocalDate}对象
+     * @return 转换后的 UTC 时间戳
+     */
+    private static Long fromLocalDate(LocalDate date) {
+        // 将 LocalDate 转为该日凌晨的时间戳
+        return date == null ? null : date.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 }

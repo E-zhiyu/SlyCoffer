@@ -11,6 +11,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.core.util.Pair;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -120,6 +121,7 @@ public class BookKeepingFragment extends Fragment {
                             //弹出日期选择对话框
                             DateTimePickerHelper.selectDate(
                                     initDate,
+                                    new Pair<>(null, LocalDate.now()),
                                     getParentFragmentManager(),
                                     "选择跳转到的日期",
                                     selection -> {

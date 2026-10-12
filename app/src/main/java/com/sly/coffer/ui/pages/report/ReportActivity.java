@@ -489,6 +489,7 @@ public class ReportActivity extends AppCompatActivity {
             LocalDate selectedDate = viewModel.getSelectedDate();
             DateTimePickerHelper.selectDate(
                     selectedDate,
+                    new Pair<>(null, LocalDate.now()),
                     getSupportFragmentManager(),
                     selection -> {
                         //更新 ViewModel 中的选中日期的数据

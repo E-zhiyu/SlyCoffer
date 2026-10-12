@@ -62,4 +62,8 @@ public enum AccountType {
     public boolean shouldShowEdittext(int edittextFlag) {
         return (this.dataFlag & edittextFlag) == edittextFlag;
     }
+
+    public int getDataFlag() {
+        return dataFlag;
+    }
 }

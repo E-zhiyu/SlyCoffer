@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.entities;
 
+import androidx.annotation.Nullable;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Index;
@@ -30,9 +31,10 @@ public class LoanEntity {
     private int interestPeriodType;         //结息周期种类
     private int yearBasepoint;              //年利率基点
     private boolean allowCompoundInterest;  //是否允许复利
+    @Nullable
     private LocalDate repayDate;            //应还日期
 
-    public LoanEntity(long accountId, String loanTargetName, int interestPeriodType, int yearBasepoint, boolean allowCompoundInterest, LocalDate repayDate) {
+    public LoanEntity(long accountId, String loanTargetName, int interestPeriodType, int yearBasepoint, boolean allowCompoundInterest, @Nullable LocalDate repayDate) {
         this.accountId = accountId;
         this.loanTargetName = loanTargetName;
         this.interestPeriodType = interestPeriodType;
@@ -73,11 +75,12 @@ public class LoanEntity {
         this.allowCompoundInterest = allowCompoundInterest;
     }
 
+    @Nullable
     public LocalDate getRepayDate() {
         return repayDate;
     }
 
-    public void setRepayDate(LocalDate repayDate) {
+    public void setRepayDate(@Nullable LocalDate repayDate) {
         this.repayDate = repayDate;
     }
 

@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
+import androidx.core.util.Pair;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -358,6 +359,7 @@ public class BudgetInputActivity extends AppCompatActivity {
         //显示日期选择对话框
         DateTimePickerHelper.selectDate(
                 inputDate,
+                new Pair<>(null, LocalDate.now()),
                 getSupportFragmentManager(),
                 selection -> {
                     //时间戳转换为LocalDateTime

@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
+import androidx.core.util.Pair;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -133,6 +134,7 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
                         //弹出日期选择对话框
                         DateTimePickerHelper.selectDate(
                                 initDate,
+                                new Pair<>(null, LocalDate.now()),
                                 getSupportFragmentManager(),
                                 "选择跳转到的日期",
                                 selection -> {

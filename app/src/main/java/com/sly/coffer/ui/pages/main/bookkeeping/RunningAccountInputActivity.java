@@ -25,6 +25,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
+import androidx.core.util.Pair;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
@@ -42,11 +43,14 @@ import com.sly.coffer.R;
 import com.sly.coffer.SlyCoffer;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
+import com.sly.coffer.auxiliary.enums.types.InterestPeriodType;
 import com.sly.coffer.auxiliary.enums.unique.TransitionName;
 import com.sly.coffer.auxiliary.enums.bottom_options.MediaAddOption;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
+import com.sly.coffer.data.save.db.entities.LoanEntity;
+import com.sly.coffer.data.save.db.entities.LoanRepayRefEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
@@ -269,7 +273,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 //获取数据
                                 AccountUnionModel model = modelOptional.get();
                                 AccountEntity account = model.getAccount();
-                                AccountTransferEntity transfer = model.getTransfer();
                                 List<TagEntity> tagList = model.getTagList();
                                 List<MediaEntity> mediaList = model.getMediaList();
 
@@ -288,24 +291,38 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 if (type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER)) {
                                     binding.transferInputLayout.setVisibility(View.VISIBLE);
 
+                                    AccountTransferEntity transfer = model.getTransfer();
                                     if (transfer != null) {
                                         binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
                                         binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
                                     }
                                 }
 
-                                //还款所需的文本框
+                                //还款额外数据文本框
                                 if (type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY)) {
-                                    binding.relatedLoanInputLayout.setVisibility(View.VISIBLE);
+                                    binding.repayExtraLayout.setVisibility(View.VISIBLE);
 
-                                    //TODO:填充文本框内容
+                                    AccountEntity repayAccount = model.getRepayRelatedAccount();
+                                    if (repayAccount != null) {
+                                        binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
+                                    }
                                 }
 
-                                //借款信息文本框
+                                //借款额外数据文本框
                                 if (type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO)) {
-                                    binding.loanInfoInputLayout.setVisibility(View.VISIBLE);
+                                    binding.loanExtraLayout.setVisibility(View.VISIBLE);
 
-                                    //TODO:填充内容
+                                    LoanEntity loan = model.getLoan();
+                                    if (loan != null) {
+                                        binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
+                                        InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
+                                        binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
+                                        binding.annualInterestRateInput.setText(String.valueOf(loan.getYearBasepoint() / 100.0));   //年利率
+                                        if (loan.getRepayDate() != null) {
+                                            binding.repayDateInput.setText(loan.getRepayDate().format(CustomDateTimeFormatter.DATE));   //应还日期
+                                        }
+                                        binding.compoundInterestSwitch.setChecked(loan.isAllowCompoundInterest());  //允许复利
+                                    }
                                 }
 
                                 //显示标签
@@ -354,12 +371,10 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         );
         binding.typeInput.setText(accountViewModel.getAccountType().getTitle());
         binding.typeInput.setAdapter(typeAdapter);
-        binding.typeInput.setOnItemClickListener(
-                (parent, view, position, id) -> {
-                    AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
-                    viewModel.updateAccountType(AccountType.values()[position]);
-                }
-        );
+        binding.typeInput.setOnItemClickListener((parent, view, position, id) -> {
+            AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+            viewModel.updateAccountType(AccountType.values()[position]);
+        });
 
         //日期和时间
         binding.datetimeInput.setText(LocalDateTime.now().format(CustomDateTimeFormatter.DATE_TIME));
@@ -383,7 +398,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                     R.layout.exposed_dropdown_popup_item,
                                     transferAccountList
                             );
-
                             binding.exportAccountInput.setAdapter(adapter);
                             binding.importAccountInput.setAdapter(adapter);
                         },
@@ -391,14 +405,40 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 )
         );
 
+        //借款对象适配器
+        disposable.add(db.accountDao().getLoanTargetNameSingle()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                        loanTargetNameList -> {
+                            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                                    this,
+                                    R.layout.exposed_dropdown_popup_item,
+                                    loanTargetNameList
+                            );
+                            binding.loanTargetNameInput.setAdapter(adapter);
+                        },
+                        e -> ExceptionHelper.showExceptionDialog(this, e)
+                )
+        );
+
+        //结息周期自动填充适配器
+        List<String> interestPeriodTypeTitleList = Arrays.stream(InterestPeriodType.values())
+                .map(InterestPeriodType::getTitle)
+                .collect(Collectors.toList());
+        NoFilteringArrayAdapter<String> interestPeriodAdapter = new NoFilteringArrayAdapter<>(
+                this, interestPeriodTypeTitleList
+        );
+        binding.interestPeriodInput.setAdapter(interestPeriodAdapter);
+
         //转出账户
         binding.exportAccountInput.setOnFocusChangeListener((view, b) -> {
             if (b) {
                 binding.exportAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.exportAccountInput.getText()).trim();
-                if (accountViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER) &&
-                        input.isEmpty()) {
+                boolean isTransfer = accountViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
+                if (isTransfer && input.isEmpty()) {
                     binding.exportAccountLayout.setError("转出账户不能为空");
                 }
             }
@@ -410,11 +450,39 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.importAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.importAccountInput.getText()).trim();
-                if (accountViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER) &&
-                        input.isEmpty()) {
+                boolean isTransfer = accountViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
+                if (isTransfer && input.isEmpty()) {
                     binding.importAccountLayout.setError("转出账户不能为空");
                 }
             }
+        });
+
+        //应还日期
+        binding.repayDateInput.setOnClickListener(v -> selectRepayDate());
+        binding.repayDateInput.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                selectRepayDate();
+            }
+        });
+
+        //借款对象
+        binding.loanTargetNameInput.setOnFocusChangeListener((view, b) -> {
+            if (b) {
+                binding.loanTargetNameLayout.setError(null);
+            } else {
+                String input = String.valueOf(binding.loanTargetNameInput.getText()).trim();
+                boolean isLoan = accountViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
+                if (isLoan && input.isEmpty()) {
+                    binding.loanTargetNameLayout.setError("借款对象不能为空");
+                }
+            }
+        });
+
+        //结息周期
+        binding.interestPeriodInput.setText(accountViewModel.getInterestPeriodType().getTitle());
+        binding.interestPeriodInput.setOnItemClickListener((parent, view, position, id) -> {
+            AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+            viewModel.setInterestPeriodType(InterestPeriodType.values()[position]);
         });
 
         //标签选择按钮
@@ -562,7 +630,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                     binding.scrollLayout,
                     type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY),
                     null,
-                    binding.relatedLoanInputLayout
+                    binding.repayExtraLayout
             );
 
             //借款信息输入框
@@ -570,7 +638,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                     binding.scrollLayout,
                     type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO),
                     null,
-                    binding.loanInfoInputLayout
+                    binding.loanExtraLayout
             );
         });
 
@@ -857,14 +925,21 @@ public class RunningAccountInputActivity extends AppCompatActivity {
      * @return 错误提示，若无错误返回 null
      */
     private String verifyInput() {
+        //获取输入内容
         String err = null;
         String amount = String.valueOf(binding.amountInput.getText());
         String dateTimeStr = String.valueOf(binding.datetimeInput.getText());
         String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
         String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
+        String loanTargetName = String.valueOf(binding.loanTargetNameInput.getText()).trim();
 
+        //判断额外信息是否显示
         AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
         AccountType type = accountViewModel.getAccountType();
+        boolean isTransfer = type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
+        boolean isLoan = type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
+
+        //判断输入内容有效性
         if (amount.isEmpty()) {
             err = "金额不能为空";
             binding.amountLayout.setError(err);
@@ -874,14 +949,16 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         } else if (dateTimeStr.isEmpty()) {
             err = "日期和时间不能为空";
             binding.datetimeLayout.setError(err);
-        } else if (type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER) && exportAccount.isEmpty()) {
+        } else if (isTransfer && exportAccount.isEmpty()) {
             err = "转出账户不能为空";
             binding.exportAccountLayout.setError(err);
-        } else if (type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER) && importAccount.isEmpty()) {
+        } else if (isTransfer && importAccount.isEmpty()) {
             err = "转入账户不能为空";
             binding.importAccountLayout.setError(err);
+        } else if (isLoan && loanTargetName.isEmpty()) {
+            err = "借款对象不能为空";
+            binding.loanTargetNameLayout.setError(err);
         }
-        //TODO:完成剩下的额外数据输入校验
 
         return err;
     }
@@ -909,7 +986,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 .collect(Collectors.toList());
 
         //生成数据实例并保存
-        //TODO:根据种类独立生成各个实体并写入数据库
         AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
         AccountEntity account = new AccountEntity(
                 amount,
@@ -975,15 +1051,74 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
         AccountType type = viewModel.getAccountType();
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        if (type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER)) {
-            String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
-            String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
-            AccountTransferEntity transfer = new AccountTransferEntity(
-                    accountId,
-                    exportAccount,
-                    importAccount
-            );
-            return db.accountDao().insertAccountTransferCompletable(transfer);
+        if (type.getDataFlag() != 0) {
+            //判断是否需要保存额外数据
+            boolean isTransfer = type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
+            boolean isLoan = type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
+            boolean isRepay = type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY);
+
+            //转账额外数据
+            Completable transferTask, loanTask, repayTask;
+            if (isTransfer) {
+                String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
+                String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
+                AccountTransferEntity transfer = new AccountTransferEntity(
+                        accountId,
+                        exportAccount,
+                        importAccount
+                );
+                transferTask = db.accountDao().insertAccountTransferCompletable(transfer);
+            } else {
+                transferTask = Completable.complete();
+            }
+
+            //借款额外数据
+            if (isLoan) {
+                String loanTargetName = String.valueOf(binding.loanTargetNameInput.getText()).trim();
+                int interestPeriod = viewModel.getInterestPeriodType().ordinal();
+                int yearBasepoint;
+                String annualInterestStr = String.valueOf(binding.annualInterestRateInput.getText()).trim();
+                if (annualInterestStr.isEmpty()) {
+                    yearBasepoint = 0;
+                } else {
+                    try {
+                        double annualInterest = Double.parseDouble(annualInterestStr);
+                        yearBasepoint = (int) (annualInterest * 100);
+                    } catch (NumberFormatException e) {
+                        yearBasepoint = 0;
+                    }
+                }
+                String repayDateStr = String.valueOf(binding.repayDateInput.getText()).trim();
+                LocalDate repayDate;
+                if (repayDateStr.isEmpty()) {
+                    repayDate = null;
+                } else {
+                    repayDate = LocalDate.parse(repayDateStr, CustomDateTimeFormatter.DATE);
+                }
+                boolean allowCompoundInterest = binding.compoundInterestSwitch.isChecked();
+
+                LoanEntity loan = new LoanEntity(
+                        accountId,
+                        loanTargetName,
+                        interestPeriod,
+                        yearBasepoint,
+                        allowCompoundInterest,
+                        repayDate
+                );
+                loanTask = db.accountDao().insertLoanCompletable(loan);
+            } else {
+                loanTask = Completable.complete();
+            }
+
+            //还款额外数据
+            if (isRepay) {
+                LoanRepayRefEntity repayRef = new LoanRepayRefEntity(accountId, viewModel.getRelatedLoanAccountId());
+                repayTask = db.accountDao().insertRepayRefCompletable(repayRef);
+            } else {
+                repayTask = Completable.complete();
+            }
+
+            return transferTask.andThen(loanTask).andThen(repayTask);
         } else {
             return Completable.complete();
         }
@@ -994,7 +1129,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
      */
     private void selectDateTime() {
         //解析已输入的时间
-        String datetimeStr = String.valueOf(binding.datetimeInput.getText());
+        String datetimeStr = String.valueOf(binding.datetimeInput.getText()).trim();
         LocalDateTime inputDatetime = datetimeStr.isEmpty() ?
                 LocalDateTime.now() :
                 LocalDateTime.parse(datetimeStr, CustomDateTimeFormatter.DATE_TIME);
@@ -1002,6 +1137,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
         DateTimePickerHelper.selectDate(
                 date,
+                new Pair<>(null, LocalDate.now()),
                 getSupportFragmentManager(),
                 dateTimeMillis -> {
                     //组合日期和时间
@@ -1019,6 +1155,28 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 binding.datetimeInput.setText(CustomDateTimeFormatter.DATE_TIME.format(finalDatetime));
                             }
                     );
+                }
+        );
+    }
+
+    /**
+     * 选择应还日期
+     */
+    private void selectRepayDate() {
+        //解析已输入的时间
+        String datetimeStr = String.valueOf(binding.repayDateInput.getText()).trim();
+        LocalDate inputDate = datetimeStr.isEmpty() ?
+                LocalDate.now() :
+                LocalDate.parse(datetimeStr, CustomDateTimeFormatter.DATE);
+
+        DateTimePickerHelper.selectDate(
+                inputDate,
+                new Pair<>(LocalDate.now(), null),
+                getSupportFragmentManager(),
+                dateTimeMillis -> {
+                    //组合日期和时间
+                    LocalDate selectedDate = DateTimePickerHelper.getLocalDateFromTimeMilli(dateTimeMillis);
+                    binding.repayDateInput.setText(selectedDate.format(CustomDateTimeFormatter.DATE));
                 }
         );
     }
