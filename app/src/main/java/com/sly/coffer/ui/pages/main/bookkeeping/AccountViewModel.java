@@ -14,6 +14,7 @@ public class AccountViewModel extends ViewModel {
     public void updateAccountType(AccountType type) {
         typeLiveData.postValue(type);
     }
+    //TODO:限制自动记账的流水记录类型，或者实现它们的额外数据输入逻辑
 
     public MutableLiveData<AccountType> getTypeLiveData() {
         return typeLiveData;

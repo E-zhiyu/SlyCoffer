@@ -457,6 +457,15 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             }
         });
 
+        binding.relatedLoanInput.setOnClickListener(view -> {
+            //TODO:完成关联的借款记录选择逻辑
+        });
+        binding.relatedLoanInput.setOnFocusChangeListener((view, b) -> {
+            if (b) {
+                //TODO:完成关联的借款记录选择逻辑
+            }
+        });
+
         //应还日期
         binding.repayDateInput.setOnClickListener(v -> selectRepayDate());
         binding.repayDateInput.setOnFocusChangeListener((v, hasFocus) -> {

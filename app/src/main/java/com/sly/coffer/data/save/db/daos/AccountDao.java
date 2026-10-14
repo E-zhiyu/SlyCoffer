@@ -447,4 +447,16 @@ public interface AccountDao {
      */
     @Query("SELECT loanTargetName FROM loans WHERE loanTargetName IS NOT NULL")
     Single<List<String>> getLoanTargetNameSingle();
+
+    /**
+     * 获取带有借款记录的
+     *
+     * @param isBorrow true:获取借入记录；false:获取借出记录
+     * @return 带有借款记录的流水记录
+     */
+    @Query("SELECT * FROM accounts WHERE accountId IN (" +
+            "   SELECT accountId FROM loans" +
+            ") AND ((:isBorrow AND type = 4) OR type = 3) " +
+            "ORDER BY dateTime DESC")
+    Single<List<AccountEntity>> getAccountWithLoanDataSingle(boolean isBorrow);
 }
