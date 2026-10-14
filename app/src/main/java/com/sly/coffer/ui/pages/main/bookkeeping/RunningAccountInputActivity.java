@@ -48,8 +48,8 @@ import com.sly.coffer.auxiliary.enums.unique.TransitionName;
 import com.sly.coffer.auxiliary.enums.bottom_options.MediaAddOption;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
-import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
-import com.sly.coffer.data.save.db.entities.LoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.LoanRepayRefEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
@@ -94,6 +94,7 @@ import java.util.stream.Collectors;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -291,8 +292,8 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 if (type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER)) {
                                     binding.transferInputLayout.setVisibility(View.VISIBLE);
 
-                                    AccountTransferEntity transfer = model.getTransfer();
-                                    if (transfer != null) {
+                                    ExtraTransferEntity transfer = model.getTransfer();
+                                    if (account.getTransferId() >= 0 && transfer != null) {
                                         binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
                                         binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
                                     }
@@ -312,8 +313,8 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 if (type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO)) {
                                     binding.loanExtraLayout.setVisibility(View.VISIBLE);
 
-                                    LoanEntity loan = model.getLoan();
-                                    if (loan != null) {
+                                    ExtraLoanEntity loan = model.getLoan();
+                                    if (account.getLoanId() >= 0 && loan != null) {
                                         binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
                                         InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
                                         binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
@@ -973,6 +974,86 @@ public class RunningAccountInputActivity extends AppCompatActivity {
     }
 
     /**
+     * 首先保存额外的数据
+     *
+     * @param account 流水记录数据
+     * @return 是否完成
+     */
+    private Completable saveExtraDataFirstly(AccountEntity account) {
+        AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+        AccountType type = viewModel.getAccountType();
+        BookkeepingDb db = BookkeepingDb.getInstance(this);
+        if (type.getDataFlag() != 0) {
+            //判断是否需要保存额外数据
+            boolean isTransfer = type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
+            boolean isLoan = type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
+
+            //转账额外数据
+            Completable transferTask, loanTask;
+            if (isTransfer) {
+                String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
+                String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
+                ExtraTransferEntity transfer = new ExtraTransferEntity(
+                        exportAccount,
+                        importAccount
+                );
+                transferTask = db.accountDao().insertExtraTransferSingle(transfer)
+                        .flatMapCompletable(transferId -> {
+                            account.setTransferId(transferId);
+                            return Completable.complete();
+                        });
+            } else {
+                transferTask = Completable.complete();
+            }
+
+            //借款额外数据
+            if (isLoan) {
+                String loanTargetName = String.valueOf(binding.loanTargetNameInput.getText()).trim();
+                int interestPeriod = viewModel.getInterestPeriodType().ordinal();
+                int yearBasepoint;
+                String annualInterestStr = String.valueOf(binding.annualInterestRateInput.getText()).trim();
+                if (annualInterestStr.isEmpty()) {
+                    yearBasepoint = 0;
+                } else {
+                    try {
+                        double annualInterest = Double.parseDouble(annualInterestStr);
+                        yearBasepoint = (int) (annualInterest * 100);
+                    } catch (NumberFormatException e) {
+                        yearBasepoint = 0;
+                    }
+                }
+                String repayDateStr = String.valueOf(binding.repayDateInput.getText()).trim();
+                LocalDate repayDate;
+                if (repayDateStr.isEmpty()) {
+                    repayDate = null;
+                } else {
+                    repayDate = LocalDate.parse(repayDateStr, CustomDateTimeFormatter.DATE);
+                }
+                boolean allowCompoundInterest = binding.compoundInterestSwitch.isChecked();
+
+                ExtraLoanEntity loan = new ExtraLoanEntity(
+                        loanTargetName,
+                        interestPeriod,
+                        yearBasepoint,
+                        allowCompoundInterest,
+                        repayDate
+                );
+                loanTask = db.accountDao().insertExtraLoanSingle(loan)
+                        .flatMapCompletable(loanId -> {
+                            account.setLoanId(loanId);
+                            return Completable.complete();
+                        });
+            } else {
+                loanTask = Completable.complete();
+            }
+
+            return transferTask.andThen(loanTask);
+        } else {
+            return Completable.complete();
+        }
+    }
+
+    /**
      * 将数据保存到数据库
      */
     private void saveData(List<MediaEntity> copiedMediaUriList) {
@@ -1004,12 +1085,24 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 AutoBookkeepingType.NONE.ordinal()
         );
         if (initBundle == null) {
-            disposable.add(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, this)
-                    .flatMapCompletable(this::saveExtraData)
+            disposable.add(saveExtraDataFirstly(account)
+                    .andThen(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, this))
+                    .flatMap(accountId -> {
+                        AccountType type = viewModel.getAccountType();
+                        boolean isRepay = type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY);
+                        if (isRepay) {
+                            LoanRepayRefEntity repayRef = new LoanRepayRefEntity(account.getAccountId(), viewModel.getRelatedLoanAccountId());
+                            BookkeepingDb db = BookkeepingDb.getInstance(this);
+                            return db.accountDao().insertRepayRefCompletable(repayRef)
+                                    .andThen(Single.just(accountId));
+                        } else {
+                            return Single.just(accountId);
+                        }
+                    })
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
-                            () -> {
+                            accountId -> {
                                 Toast.makeText(this, "流水记录添加成功", Toast.LENGTH_SHORT).show();
                                 finish();
                             },
@@ -1025,14 +1118,26 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                     )
             );
         } else {
-            long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
+            long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v(), -1);
             account.setAccountId(accountId);
-            disposable.add(AccountService.modifyAccount(account, copiedMediaUriList, tagIdList, this)
-                    .flatMapCompletable(this::saveExtraData)
+            disposable.add(saveExtraDataFirstly(account)
+                    .andThen(AccountService.modifyAccount(account, copiedMediaUriList, tagIdList, this))
+                    .flatMap(id -> {
+                        AccountType type = viewModel.getAccountType();
+                        boolean isRepay = type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY);
+                        if (isRepay) {
+                            LoanRepayRefEntity repayRef = new LoanRepayRefEntity(account.getAccountId(), viewModel.getRelatedLoanAccountId());
+                            BookkeepingDb db = BookkeepingDb.getInstance(this);
+                            return db.accountDao().insertRepayRefCompletable(repayRef)
+                                    .andThen(Single.just(accountId));
+                        } else {
+                            return Single.just(accountId);
+                        }
+                    })
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
-                            () -> {
+                            id -> {
                                 Toast.makeText(this, "流水记录修改成功", Toast.LENGTH_SHORT).show();
                                 finish();
                             },
@@ -1047,90 +1152,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                             }
                     )
             );
-        }
-    }
-
-    /**
-     * 保存额外的数据
-     *
-     * @param accountId 流水记录的编号
-     * @return 是否完成
-     */
-    private Completable saveExtraData(long accountId) {
-        AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
-        AccountType type = viewModel.getAccountType();
-        BookkeepingDb db = BookkeepingDb.getInstance(this);
-        if (type.getDataFlag() != 0) {
-            //判断是否需要保存额外数据
-            boolean isTransfer = type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
-            boolean isLoan = type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
-            boolean isRepay = type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY);
-
-            //转账额外数据
-            Completable transferTask, loanTask, repayTask;
-            if (isTransfer) {
-                String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
-                String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
-                //TODO:将这里的额外数据实体换为新定义的
-                AccountTransferEntity transfer = new AccountTransferEntity(
-                        accountId,
-                        exportAccount,
-                        importAccount
-                );
-                transferTask = db.accountDao().insertAccountTransferCompletable(transfer);
-            } else {
-                transferTask = Completable.complete();
-            }
-
-            //借款额外数据
-            if (isLoan) {
-                String loanTargetName = String.valueOf(binding.loanTargetNameInput.getText()).trim();
-                int interestPeriod = viewModel.getInterestPeriodType().ordinal();
-                int yearBasepoint;
-                String annualInterestStr = String.valueOf(binding.annualInterestRateInput.getText()).trim();
-                if (annualInterestStr.isEmpty()) {
-                    yearBasepoint = 0;
-                } else {
-                    try {
-                        double annualInterest = Double.parseDouble(annualInterestStr);
-                        yearBasepoint = (int) (annualInterest * 100);
-                    } catch (NumberFormatException e) {
-                        yearBasepoint = 0;
-                    }
-                }
-                String repayDateStr = String.valueOf(binding.repayDateInput.getText()).trim();
-                LocalDate repayDate;
-                if (repayDateStr.isEmpty()) {
-                    repayDate = null;
-                } else {
-                    repayDate = LocalDate.parse(repayDateStr, CustomDateTimeFormatter.DATE);
-                }
-                boolean allowCompoundInterest = binding.compoundInterestSwitch.isChecked();
-
-                LoanEntity loan = new LoanEntity(
-                        accountId,
-                        loanTargetName,
-                        interestPeriod,
-                        yearBasepoint,
-                        allowCompoundInterest,
-                        repayDate
-                );
-                loanTask = db.accountDao().insertLoanCompletable(loan);
-            } else {
-                loanTask = Completable.complete();
-            }
-
-            //还款额外数据
-            if (isRepay) {
-                LoanRepayRefEntity repayRef = new LoanRepayRefEntity(accountId, viewModel.getRelatedLoanAccountId());
-                repayTask = db.accountDao().insertRepayRefCompletable(repayRef);
-            } else {
-                repayTask = Completable.complete();
-            }
-
-            return transferTask.andThen(loanTask).andThen(repayTask);
-        } else {
-            return Completable.complete();
         }
     }
 

@@ -30,31 +30,29 @@ import androidx.room.PrimaryKey;
 )
 public class NotificationRuleEntity {
     @PrimaryKey(autoGenerate = true)
-    private long ruleId;                //主键
-    private String name;                //名称
-    private int type;                   //生成的流水种类
-    private String packageName;         //包名
-    private String targetTitle;         //通知标题
-    private String contentRegex;        //通知内容正则
+    private long ruleId;            //主键
+    private String name;            //名称
+    private int type;               //生成的流水种类
+    private String packageName;     //包名
+    private String targetTitle;     //通知标题
+    private String contentRegex;    //通知内容正则
     @ColumnInfo(defaultValue = "1")
-    private int captureGroupPos;        //金额捕获组位置
+    private int captureGroupPos;    //金额捕获组位置
     @ColumnInfo(defaultValue = "true")
-    private boolean enabled;            //是否启用
+    private boolean enabled;        //是否启用
     @ColumnInfo(defaultValue = "-1")
-    private long transferId;        //转账账户额外数据编号
+    private long transferId = -1;   //转账账户额外数据编号
     @ColumnInfo(defaultValue = "-1")
-    private long loanId;            //借款额外数据编号
+    private long loanId = -1;       //借款额外数据编号
 
-    public NotificationRuleEntity(String name, int type, String packageName, String targetTitle, String contentRegex, int captureGroupPos, boolean enabled, long transferId, long loanId) {
+    public NotificationRuleEntity(String name, int type, String packageName, String targetTitle, String contentRegex, int captureGroupPos) {
         this.name = name;
         this.type = type;
         this.packageName = packageName;
         this.targetTitle = targetTitle;
         this.contentRegex = contentRegex;
         this.captureGroupPos = captureGroupPos;
-        this.enabled = enabled;
-        this.transferId = transferId;
-        this.loanId = loanId;
+        this.enabled = true;
     }
 
     public long getRuleId() {

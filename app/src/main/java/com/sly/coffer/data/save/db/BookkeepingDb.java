@@ -16,6 +16,7 @@ import com.sly.coffer.data.save.db.converters.UriConverter;
 import com.sly.coffer.data.save.db.daos.AccessibilityRuleDao;
 import com.sly.coffer.data.save.db.daos.AccountDao;
 import com.sly.coffer.data.save.db.daos.BudgetDao;
+import com.sly.coffer.data.save.db.daos.InitDao;
 import com.sly.coffer.data.save.db.daos.NotificationRuleDao;
 import com.sly.coffer.data.save.db.daos.TagDao;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
@@ -137,6 +138,8 @@ public abstract class BookkeepingDb extends RoomDatabase {
 
     public abstract DataBackupDao dataBackupDao();
 
+    protected abstract InitDao initDao();
+
     /**
      * 填充默认数据
      *
@@ -144,10 +147,8 @@ public abstract class BookkeepingDb extends RoomDatabase {
      */
     private Completable insertDefaultData() {
         return Completable.defer(() -> {
-            //默认标签分组
-            TagGroupEntity defaultGroup = new TagGroupEntity("默认分组");
-            defaultGroup.setGroupId(-1);
-            tagDao().insertTagGroup(defaultGroup);
+            //插入空外键对应的数据
+            insertEmptyForeignKeyData();
 
             //插入默认规则
             insertDefaultNotificationRule();    //默认通知规则
@@ -155,6 +156,24 @@ public abstract class BookkeepingDb extends RoomDatabase {
 
             return Completable.complete();
         });
+    }
+
+    /**
+     * 插入作为默认外键的数据
+     */
+    private void insertEmptyForeignKeyData() {
+        //默认标签分组
+        TagGroupEntity defaultGroup = new TagGroupEntity("默认分组");
+        defaultGroup.setGroupId(-1);
+        initDao().insertTagGroup(defaultGroup);
+
+        //转账额外数据
+        ExtraTransferEntity emptyTransfer = new ExtraTransferEntity();
+        initDao().insertExtraTransfer(emptyTransfer);
+
+        //借款额外数据
+        ExtraLoanEntity emptyLoan = new ExtraLoanEntity();
+        initDao().insertExtraLoan(emptyLoan);
     }
 
     /**

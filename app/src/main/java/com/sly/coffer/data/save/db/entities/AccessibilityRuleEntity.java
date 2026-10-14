@@ -38,18 +38,16 @@ public class AccessibilityRuleEntity {
     private String packageName;     //应用包名
     private String activityName;    //目标 Activity 的名称
     @ColumnInfo(defaultValue = "-1")
-    private long transferId;        //转账账户额外数据编号
+    private long transferId = -1;   //转账账户额外数据编号
     @ColumnInfo(defaultValue = "-1")
-    private long loanId;            //借款额外数据编号
+    private long loanId = -1;       //借款额外数据编号
 
-    public AccessibilityRuleEntity(String name, int type, boolean enabled, String packageName, String activityName, long transferId, long loanId) {
+    public AccessibilityRuleEntity(String name, int type, String packageName, String activityName) {
         this.name = name;
         this.type = type;
-        this.enabled = enabled;
+        this.enabled = true;
         this.packageName = packageName;
         this.activityName = activityName;
-        this.transferId = transferId;
-        this.loanId = loanId;
     }
 
     public long getRuleId() {
@@ -99,6 +97,7 @@ public class AccessibilityRuleEntity {
     public void setActivityName(String activityName) {
         this.activityName = activityName;
     }
+
     public long getTransferId() {
         return transferId;
     }

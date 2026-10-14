@@ -43,18 +43,16 @@ public class AccountEntity {
     @ColumnInfo(defaultValue = "0")
     private int autoTag;            //自动记账标识
     @ColumnInfo(defaultValue = "-1")
-    private long transferId;        //转账账户额外数据编号
+    private long transferId = -1;   //转账账户额外数据编号
     @ColumnInfo(defaultValue = "-1")
-    private long loanId;            //借款额外数据编号
+    private long loanId = -1;       //借款额外数据编号
 
-    public AccountEntity(double amount, String remark, int type, LocalDateTime dateTime, int autoTag, long transferId, long loanId) {
+    public AccountEntity(double amount, String remark, int type, LocalDateTime dateTime, int autoTag) {
         this.amount = amount;
         this.remark = remark;
         this.type = type;
         this.dateTime = dateTime;
         this.autoTag = autoTag;
-        this.transferId = transferId;
-        this.loanId = loanId;
     }
 
     public long getAccountId() {

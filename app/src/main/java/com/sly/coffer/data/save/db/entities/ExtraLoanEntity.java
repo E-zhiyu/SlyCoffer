@@ -2,6 +2,7 @@ package com.sly.coffer.data.save.db.entities;
 
 import androidx.annotation.Nullable;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 import java.time.LocalDate;
@@ -18,6 +19,19 @@ public class ExtraLoanEntity {
     private boolean allowCompoundInterest;  //是否允许复利
     @Nullable
     private LocalDate repayDate;            //应还日期
+
+    /**
+     * 作为空外键对象的构造方法
+     */
+    @Ignore
+    public ExtraLoanEntity() {
+        loanId = -1;
+        loanTargetName = null;
+        interestPeriodType = 0;
+        yearBasepoint = 0;
+        allowCompoundInterest = false;
+        repayDate = null;
+    }
 
     public ExtraLoanEntity(String loanTargetName, int interestPeriodType, int yearBasepoint, boolean allowCompoundInterest, @Nullable LocalDate repayDate) {
         this.loanTargetName = loanTargetName;

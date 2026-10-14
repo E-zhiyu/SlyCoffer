@@ -83,6 +83,8 @@ public class DatabaseMigrations {
     static final Migration MIGRATION_7_8 = new Migration(7, 8) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase db) {
+            //TODO:同步这里的数据库更新逻辑
+            //TODO:添加旧数据结构迁移逻辑
             db.execSQL("CREATE TABLE IF NOT EXISTS `loans` (`accountId` INTEGER NOT NULL, `loanTargetName` TEXT, `interestPeriodType` INTEGER NOT NULL, `yearBasepoint` INTEGER NOT NULL, `allowCompoundInterest` INTEGER NOT NULL, `repayDate` INTEGER, PRIMARY KEY(`accountId`), FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )");
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_accountId` ON `loans` (`accountId`)");
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_loanTargetName` ON `loans` (`loanTargetName`)");

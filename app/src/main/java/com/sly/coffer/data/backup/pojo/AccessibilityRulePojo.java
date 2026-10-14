@@ -10,6 +10,8 @@ public class AccessibilityRulePojo {
     private boolean enabled;
     private String packageName;
     private String activityName;
+    private long transferId = -1;
+    private long loanId = -1;
 
     public AccessibilityRulePojo() {
     }
@@ -60,5 +62,21 @@ public class AccessibilityRulePojo {
 
     public void setActivityName(String activityName) {
         this.activityName = activityName;
+    }
+
+    public long getTransferId() {
+        return transferId;
+    }
+
+    public void setTransferId(long transferId) {
+        this.transferId = transferId;
+    }
+
+    public long getLoanId() {
+        return loanId;
+    }
+
+    public void setLoanId(long loanId) {
+        this.loanId = loanId;
     }
 }

@@ -5,7 +5,7 @@ import androidx.room.ForeignKey;
 
 @Entity(
         tableName = "loanRepayRef",
-        primaryKeys = {"repayAccountId","loanAccountId"},
+        primaryKeys = {"repayAccountId", "loanAccountId"},
         foreignKeys = {
                 @ForeignKey(
                         entity = AccountEntity.class,
