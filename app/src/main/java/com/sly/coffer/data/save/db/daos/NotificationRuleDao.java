@@ -11,6 +11,8 @@ import androidx.room.Update;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.types.MoveDirectionType;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
@@ -66,7 +68,7 @@ public interface NotificationRuleDao {
      * @return 该编号对应的规则数据
      */
     @Query("SELECT * FROM notificationRules WHERE ruleId = :id")
-    Optional<NotificationRuleEntity> getNotificationRuleOptionalById(long id);
+    NotificationRuleEntity getNotificationRuleById(long id);
 
     /**
      * 通过编号有序获取通知规则
@@ -82,8 +84,10 @@ public interface NotificationRuleDao {
 
         List<NotificationRuleEntity> result = new ArrayList<>();
         for (Long id : idList) {
-            Optional<NotificationRuleEntity> optional = getNotificationRuleOptionalById(id);
-            optional.ifPresent(result::add);
+            NotificationRuleEntity existed = getNotificationRuleById(id);
+            if (existed != null) {
+                result.add(existed);
+            }
         }
 
         return result;
@@ -161,7 +165,7 @@ public interface NotificationRuleDao {
      * @param groupIdList 规则分组编号列表
      */
     @Transaction
-    default void addNotificationRule(
+    default void addRule(
             NotificationRuleEntity rule,
             NotificationRuleTransferEntity transfer,
             List<Long> tagIdList,
@@ -243,7 +247,7 @@ public interface NotificationRuleDao {
      * @param groupIdList 规则分组编号列表
      */
     @Transaction
-    default void modifyNotificationRule(
+    default void modifyRule(
             NotificationRuleEntity rule,
             NotificationRuleTransferEntity transfer,
             List<Long> tagIdList,
@@ -253,13 +257,20 @@ public interface NotificationRuleDao {
         long ruleId = rule.getRuleId();
 
         //获取旧数据
-        Optional<NotificationRuleEntity> optional = getNotificationRuleOptionalById(ruleId);
-        optional.ifPresent(oldRule -> rule.setEnabled(oldRule.isEnabled()));
+        NotificationRuleEntity old = getNotificationRuleById(ruleId);
+        if (old != null) {
+            rule.setEnabled(old.isEnabled());
+        }
+
+        //删除原来的额外数据
+        deleteExtraTransferById(rule.getTransferId());
+        deleteExtraLoanById(rule.getLoanId());
 
         //更新数据
         updateNotificationRule(rule);
 
         //转账账户数据
+        //TODO:删除这一块代码
         deleteNotificationRuleTransferByRuleId(ruleId);
         if (rule.getType() == AccountType.TRANSFER.ordinal()) {
             transfer.setRuleId(ruleId);
@@ -633,4 +644,38 @@ public interface NotificationRuleDao {
                 updateRuleGroupOrderById(groupId, target.getOrder() + 1);
         }
     }
+
+    /**
+     * 插入转账账户额外数据
+     *
+     * @param transfer 转账账户额外数据
+     * @return 新插入的数据的主键值
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Single<Long> insertExtraTransferSingle(ExtraTransferEntity transfer);
+
+    /**
+     * 通过转账账户编号删除转账账户数据
+     *
+     * @param transferId 转账账户编号
+     */
+    @Query("DELETE FROM extraTransfer WHERE transferId = :transferId")
+    void deleteExtraTransferById(long transferId);
+
+    /**
+     * 插入借款额外数据
+     *
+     * @param loan 借款额外数据
+     * @return 插入的数据的主键值
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Single<Long> insertExtraLoanSingle(ExtraLoanEntity loan);
+
+    /**
+     * 通过借款记录编号删除借款记录
+     *
+     * @param loanId 借款记录编号
+     */
+    @Query("DELETE FROM extraLoan WHERE loanId = :loanId")
+    void deleteExtraLoanById(long loanId);
 }

@@ -26,6 +26,8 @@ import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.LoanEntity;
 import com.sly.coffer.data.save.db.entities.LoanRepayRefEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
@@ -55,8 +57,10 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
                 NotificationRuleGroupEntity.class,
                 NotificationRuleGroupRefEntity.class,
                 AccountEntity.class,
-                AccountTransferEntity.class,
+                AccountTransferEntity.class,    //TODO:记得删除 AccountTransferEntity、LoanEntity、NotificationRuleTransferEntity、AccessibilityRuleTransferEntity
                 AccountTagRefEntity.class,
+                ExtraTransferEntity.class,
+                ExtraLoanEntity.class,
                 LoanEntity.class,
                 LoanRepayRefEntity.class,
                 MediaEntity.class,

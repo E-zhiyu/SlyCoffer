@@ -1071,6 +1071,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             if (isTransfer) {
                 String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
                 String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
+                //TODO:将这里的额外数据实体换为新定义的
                 AccountTransferEntity transfer = new AccountTransferEntity(
                         accountId,
                         exportAccount,

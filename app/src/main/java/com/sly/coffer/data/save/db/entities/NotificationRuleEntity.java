@@ -2,13 +2,30 @@ package com.sly.coffer.data.save.db.entities;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.ForeignKey;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 @Entity(
         tableName = "notificationRules",
+        foreignKeys = {
+                @ForeignKey(
+                        entity = ExtraTransferEntity.class,
+                        parentColumns = "transferId",
+                        childColumns = "transferId",
+                        onDelete = ForeignKey.SET_DEFAULT
+                ),
+                @ForeignKey(
+                        entity = ExtraLoanEntity.class,
+                        parentColumns = "loanId",
+                        childColumns = "loanId",
+                        onDelete = ForeignKey.SET_DEFAULT
+                )
+        },
         indices = {
-                @Index(value = "enabled")
+                @Index(value = "enabled"),
+                @Index(value = "transferId"),
+                @Index(value = "loanId")
         }
 )
 public class NotificationRuleEntity {
@@ -23,15 +40,21 @@ public class NotificationRuleEntity {
     private int captureGroupPos;        //金额捕获组位置
     @ColumnInfo(defaultValue = "true")
     private boolean enabled;            //是否启用
+    @ColumnInfo(defaultValue = "-1")
+    private long transferId;        //转账账户额外数据编号
+    @ColumnInfo(defaultValue = "-1")
+    private long loanId;            //借款额外数据编号
 
-    public NotificationRuleEntity(String name, int type, String packageName, String targetTitle, String contentRegex, int captureGroupPos) {
+    public NotificationRuleEntity(String name, int type, String packageName, String targetTitle, String contentRegex, int captureGroupPos, boolean enabled, long transferId, long loanId) {
         this.name = name;
         this.type = type;
         this.packageName = packageName;
         this.targetTitle = targetTitle;
         this.contentRegex = contentRegex;
         this.captureGroupPos = captureGroupPos;
-        enabled = true;
+        this.enabled = enabled;
+        this.transferId = transferId;
+        this.loanId = loanId;
     }
 
     public long getRuleId() {
@@ -96,5 +119,20 @@ public class NotificationRuleEntity {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+    public long getTransferId() {
+        return transferId;
+    }
+
+    public void setTransferId(long transferId) {
+        this.transferId = transferId;
+    }
+
+    public long getLoanId() {
+        return loanId;
+    }
+
+    public void setLoanId(long loanId) {
+        this.loanId = loanId;
     }
 }

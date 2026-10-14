@@ -16,6 +16,8 @@ import androidx.sqlite.db.SupportSQLiteQuery;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.LoanEntity;
 import com.sly.coffer.data.save.db.entities.LoanRepayRefEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
@@ -250,14 +252,6 @@ public interface AccountDao {
     Completable insertAccountTransferCompletable(AccountTransferEntity transfer);
 
     /**
-     * 通过流水编号删除转账账户记录
-     *
-     * @param accountId 需要删除转账账户记录的流水编号
-     */
-    @Query("DELETE FROM accountTransfers WHERE accountId = :accountId")
-    void deleteAccountTransferByAccountId(long accountId);
-
-    /**
      * 通过流水编号删除与标签的映射关系
      *
      * @param accountId 待删除的映射关系的流水记录 ID
@@ -342,13 +336,13 @@ public interface AccountDao {
                 .collect(Collectors.toSet());
         oldMediaUriSet.removeAll(newMediaUriSet);
 
+        //删除额外数据
+        deleteExtraTransferById(account.getTransferId());
+        deleteExtraLoanById(account.getLoanId());
+        deleteRepayRefByRepayAccountId(accountId);
+
         //更新流水记录
         updateAccount(account);
-
-        //删除额外数据
-        deleteAccountTransferByAccountId(accountId);
-        deleteLoanByAccountId(accountId);
-        deleteRepayRefByRepayAccountId(accountId);
 
         //更新标签
         List<Long> oldTagIdList = getTagIdListByAccountId(accountId);   //获取原来的标签绑定关系
@@ -416,12 +410,38 @@ public interface AccountDao {
     Completable insertLoanCompletable(LoanEntity loan);
 
     /**
-     * 通过流水记录编号删除借款额外数据
+     * 插入转账账户额外数据
      *
-     * @param accountId 流水记录编号
+     * @param transfer 转账账户额外数据
+     * @return 新插入的数据的主键值
      */
-    @Query("DELETE FROM loans WHERE accountId = :accountId")
-    void deleteLoanByAccountId(long accountId);
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Single<Long> insertExtraTransferSingle(ExtraTransferEntity transfer);
+
+    /**
+     * 通过转账账户编号删除转账账户数据
+     *
+     * @param transferId 转账账户编号
+     */
+    @Query("DELETE FROM extraTransfer WHERE transferId = :transferId")
+    void deleteExtraTransferById(long transferId);
+
+    /**
+     * 插入借款额外数据
+     *
+     * @param loan 借款额外数据
+     * @return 插入的数据的主键值
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Single<Long> insertExtraLoanSingle(ExtraLoanEntity loan);
+
+    /**
+     * 通过借款记录编号删除借款记录
+     *
+     * @param loanId 借款记录编号
+     */
+    @Query("DELETE FROM extraLoan WHERE loanId = :loanId")
+    void deleteExtraLoanById(long loanId);
 
     /**
      * 插入还款记录关联的流水记录数据

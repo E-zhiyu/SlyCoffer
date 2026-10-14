@@ -13,6 +13,8 @@ import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccessibilityRuleUnionModel;
 
@@ -117,7 +119,7 @@ public interface AccessibilityRuleDao {
      * @param tagIdList        新规则对应的标签编号列表
      */
     @Transaction
-    default void addAccessibilityRule(
+    default void addRule(
             AccessibilityRuleEntity rule,
             AccessibilityRuleTransferEntity transfer,
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
@@ -151,7 +153,7 @@ public interface AccessibilityRuleDao {
      * @return 该编号对应的规则
      */
     @Query("SELECT * FROM accessibilityRules WHERE ruleId = :ruleId")
-    Optional<AccessibilityRuleEntity> getAccessibilityRuleOptionalById(long ruleId);
+    AccessibilityRuleEntity getAccessibilityRuleById(long ruleId);
 
     /**
      * 更新无障碍规则
@@ -194,7 +196,7 @@ public interface AccessibilityRuleDao {
      * @param tagIdList        标签编号列表
      */
     @Transaction
-    default void modifyAccessibilityRule(
+    default void modifyRule(
             AccessibilityRuleEntity rule,
             AccessibilityRuleTransferEntity transfer,
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
@@ -204,13 +206,20 @@ public interface AccessibilityRuleDao {
         long ruleId = rule.getRuleId();
 
         //获取旧数据
-        Optional<AccessibilityRuleEntity> optional = getAccessibilityRuleOptionalById(ruleId);
-        optional.ifPresent(oldRule -> rule.setEnabled(oldRule.isEnabled()));
+        AccessibilityRuleEntity old = getAccessibilityRuleById(ruleId);
+        if (old != null) {
+            rule.setEnabled(old.isEnabled());
+        }
+
+        //删除原来的额外数据
+        deleteExtraTransferById(rule.getTransferId());
+        deleteExtraLoanById(rule.getLoanId());
 
         //更新规则
         updateAccessibilityRule(rule);
 
         //转账账户
+        //TODO:删除这一块代码
         deleteAccessibilityRuleTransferByRuleId(ruleId);
         if (rule.getType() == AccountType.TRANSFER.ordinal()) {
             transfer.setRuleId(ruleId);
@@ -353,4 +362,38 @@ public interface AccessibilityRuleDao {
      */
     @Query("SELECT * FROM pickedPages WHERE id = :id")
     Single<Optional<PickedPageEntity>> getPickedPageSingleById(long id);
+
+    /**
+     * 插入转账账户额外数据
+     *
+     * @param transfer 转账账户额外数据
+     * @return 新插入的数据的主键值
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Single<Long> insertExtraTransferSingle(ExtraTransferEntity transfer);
+
+    /**
+     * 通过转账账户编号删除转账账户数据
+     *
+     * @param transferId 转账账户编号
+     */
+    @Query("DELETE FROM extraTransfer WHERE transferId = :transferId")
+    void deleteExtraTransferById(long transferId);
+
+    /**
+     * 插入借款额外数据
+     *
+     * @param loan 借款额外数据
+     * @return 插入的数据的主键值
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    Single<Long> insertExtraLoanSingle(ExtraLoanEntity loan);
+
+    /**
+     * 通过借款记录编号删除借款记录
+     *
+     * @param loanId 借款记录编号
+     */
+    @Query("DELETE FROM extraLoan WHERE loanId = :loanId")
+    void deleteExtraLoanById(long loanId);
 }

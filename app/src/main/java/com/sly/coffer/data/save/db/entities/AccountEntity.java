@@ -2,6 +2,7 @@ package com.sly.coffer.data.save.db.entities;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.ForeignKey;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
@@ -9,11 +10,27 @@ import java.time.LocalDateTime;
 
 @Entity(
         tableName = "accounts",
+        foreignKeys = {
+                @ForeignKey(
+                        entity = ExtraTransferEntity.class,
+                        parentColumns = "transferId",
+                        childColumns = "transferId",
+                        onDelete = ForeignKey.SET_DEFAULT
+                ),
+                @ForeignKey(
+                        entity = ExtraLoanEntity.class,
+                        parentColumns = "loanId",
+                        childColumns = "loanId",
+                        onDelete = ForeignKey.SET_DEFAULT
+                )
+        },
         indices = {
                 @Index(value = "accountId"),
                 @Index(value = "remark"),
                 @Index(value = "type"),
-                @Index(value = "dateTime")
+                @Index(value = "dateTime"),
+                @Index(value = "transferId"),
+                @Index(value = "loanId")
         }
 )
 public class AccountEntity {
@@ -25,13 +42,19 @@ public class AccountEntity {
     private LocalDateTime dateTime; //日期和时间
     @ColumnInfo(defaultValue = "0")
     private int autoTag;            //自动记账标识
+    @ColumnInfo(defaultValue = "-1")
+    private long transferId;        //转账账户额外数据编号
+    @ColumnInfo(defaultValue = "-1")
+    private long loanId;            //借款额外数据编号
 
-    public AccountEntity(double amount, String remark, int type, LocalDateTime dateTime, int autoTag) {
+    public AccountEntity(double amount, String remark, int type, LocalDateTime dateTime, int autoTag, long transferId, long loanId) {
         this.amount = amount;
         this.remark = remark;
         this.type = type;
         this.dateTime = dateTime;
         this.autoTag = autoTag;
+        this.transferId = transferId;
+        this.loanId = loanId;
     }
 
     public long getAccountId() {
@@ -80,5 +103,21 @@ public class AccountEntity {
 
     public int getAutoTag() {
         return autoTag;
+    }
+
+    public long getTransferId() {
+        return transferId;
+    }
+
+    public void setTransferId(long transferId) {
+        this.transferId = transferId;
+    }
+
+    public long getLoanId() {
+        return loanId;
+    }
+
+    public void setLoanId(long loanId) {
+        this.loanId = loanId;
     }
 }

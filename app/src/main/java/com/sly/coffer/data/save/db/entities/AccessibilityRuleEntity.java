@@ -2,13 +2,30 @@ package com.sly.coffer.data.save.db.entities;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.ForeignKey;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 @Entity(
         tableName = "accessibilityRules",
+        foreignKeys = {
+                @ForeignKey(
+                        entity = ExtraTransferEntity.class,
+                        parentColumns = "transferId",
+                        childColumns = "transferId",
+                        onDelete = ForeignKey.SET_DEFAULT
+                ),
+                @ForeignKey(
+                        entity = ExtraLoanEntity.class,
+                        parentColumns = "loanId",
+                        childColumns = "loanId",
+                        onDelete = ForeignKey.SET_DEFAULT
+                )
+        },
         indices = {
-                @Index(value = "enabled")
+                @Index(value = "enabled"),
+                @Index(value = "transferId"),
+                @Index(value = "loanId")
         }
 )
 public class AccessibilityRuleEntity {
@@ -20,13 +37,19 @@ public class AccessibilityRuleEntity {
     private boolean enabled;        //是否启用
     private String packageName;     //应用包名
     private String activityName;    //目标 Activity 的名称
+    @ColumnInfo(defaultValue = "-1")
+    private long transferId;        //转账账户额外数据编号
+    @ColumnInfo(defaultValue = "-1")
+    private long loanId;            //借款额外数据编号
 
-    public AccessibilityRuleEntity(String name, int type, String packageName, String activityName) {
+    public AccessibilityRuleEntity(String name, int type, boolean enabled, String packageName, String activityName, long transferId, long loanId) {
         this.name = name;
         this.type = type;
-        this.enabled = true;
+        this.enabled = enabled;
         this.packageName = packageName;
         this.activityName = activityName;
+        this.transferId = transferId;
+        this.loanId = loanId;
     }
 
     public long getRuleId() {
@@ -75,5 +98,20 @@ public class AccessibilityRuleEntity {
 
     public void setActivityName(String activityName) {
         this.activityName = activityName;
+    }
+    public long getTransferId() {
+        return transferId;
+    }
+
+    public void setTransferId(long transferId) {
+        this.transferId = transferId;
+    }
+
+    public long getLoanId() {
+        return loanId;
+    }
+
+    public void setLoanId(long loanId) {
+        this.loanId = loanId;
     }
 }
