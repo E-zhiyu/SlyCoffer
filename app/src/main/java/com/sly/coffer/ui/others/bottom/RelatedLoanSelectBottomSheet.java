@@ -12,22 +12,40 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.databinding.BottomSheetRelatedLoanSelectBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
 import com.sly.coffer.ui.others.adapters.RelatedLoanSelectAdapter;
+import com.sly.coffer.ui.pages.main.bookkeeping.AccountExtraDataViewModel;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
-public class RelatedLoanSelectBottom extends BaseBottomSheetDialogFragment {
+public class RelatedLoanSelectBottomSheet extends BaseBottomSheetDialogFragment {
     private BottomSheetRelatedLoanSelectBinding binding;                        //绑定的 XML 布局
     private final CompositeDisposable disposable = new CompositeDisposable();
+    private boolean getBorrow = false;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        if (getArguments() != null) {
+            int typeOrdinal = getArguments().getInt(KeyStrings.RUNNING_TYPE.v(), -1);
+            if (typeOrdinal >= 0) {
+                AccountType type = AccountType.values()[typeOrdinal];
+                getBorrow = type.isExpenseType();
+            }
+        }
+    }
 
     @Nullable
     @Override
@@ -88,14 +106,16 @@ public class RelatedLoanSelectBottom extends BaseBottomSheetDialogFragment {
         //设置适配器
         RelatedLoanSelectAdapter adapter = new RelatedLoanSelectAdapter(
                 (entity, anchor) -> {
-                    //TODO:点击监听
+                    AccountExtraDataViewModel viewModel = new ViewModelProvider(requireActivity()).get(AccountExtraDataViewModel.class);
+                    viewModel.updateRelatedLoan(entity);
+                    dismiss();
                 }
         );
         binding.recycler.setAdapter(adapter);
 
         //订阅数据
         BookkeepingDb db = BookkeepingDb.getInstance(requireContext());
-        disposable.add(db.accountDao().getAccountWithLoanDataSingle(true)   //TODO:这里的 isBorrow 参数需要动态生成
+        disposable.add(db.accountDao().getAccountWithLoanDataSingle(getBorrow)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -112,5 +132,12 @@ public class RelatedLoanSelectBottom extends BaseBottomSheetDialogFragment {
                         e -> ExceptionHelper.showExceptionDialog(requireContext(), e)
                 )
         );
+
+        //清除按钮
+        binding.clearBtn.setOnClickListener(v -> {
+            AccountExtraDataViewModel viewModel = new ViewModelProvider(requireActivity()).get(AccountExtraDataViewModel.class);
+            viewModel.updateRelatedLoan(null);
+            dismiss();
+        });
     }
 }

@@ -89,7 +89,6 @@ public class DatabaseMigrations {
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_accountId` ON `loans` (`accountId`)");
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_loanTargetName` ON `loans` (`loanTargetName`)");
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_repayDate` ON `loans` (`repayDate`)");
-            db.execSQL("CREATE TABLE IF NOT EXISTS `loanRepayRef` (`repayAccountId` INTEGER NOT NULL, `loanAccountId` INTEGER NOT NULL, PRIMARY KEY(`repayAccountId`, `loanAccountId`), FOREIGN KEY(`repayAccountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`loanAccountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )");
         }
     };
 }

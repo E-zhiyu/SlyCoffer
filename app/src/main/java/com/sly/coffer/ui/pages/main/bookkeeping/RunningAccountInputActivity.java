@@ -50,7 +50,6 @@ import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
-import com.sly.coffer.data.save.db.entities.LoanRepayRefEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
@@ -71,6 +70,7 @@ import com.sly.coffer.helpers.appearence.VisibilityHelper;
 import com.sly.coffer.helpers.file.FileHelper;
 import com.sly.coffer.ui.others.adapters.NoFilteringArrayAdapter;
 import com.sly.coffer.ui.others.bottom.MediaAddBottomSheet;
+import com.sly.coffer.ui.others.bottom.RelatedLoanSelectBottomSheet;
 import com.sly.coffer.ui.others.bottom.TagSelectBottomSheet;
 import com.sly.coffer.ui.others.dialogs.ProgressDialogBuilder;
 import com.sly.coffer.ui.others.selections.media.MediaIdKeyProvider;
@@ -94,7 +94,6 @@ import java.util.stream.Collectors;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -278,9 +277,9 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 List<MediaEntity> mediaList = model.getMediaList();
 
                                 //显示文本框数据
-                                AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+                                AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
                                 AccountType type = AccountType.values()[account.getType()];
-                                accountViewModel.updateAccountType(type);
+                                accountExtraDataViewModel.updateAccountType(type);
                                 binding.amountInput.setText(String.valueOf(account.getAmount()));   //金额
                                 binding.remarkInput.setText(account.getRemark());                   //备注
                                 binding.typeInput.setText(type.getTitle());                         //种类
@@ -304,7 +303,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                     binding.repayExtraLayout.setVisibility(View.VISIBLE);
 
                                     AccountEntity repayAccount = model.getRepayRelatedAccount();
-                                    if (repayAccount != null) {
+                                    if (account.getRepayAccountId() >= 0 && repayAccount != null) {
                                         binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
                                     }
                                 }
@@ -363,17 +362,17 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         });
 
         //种类
-        AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+        AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         NoFilteringArrayAdapter<String> typeAdapter = new NoFilteringArrayAdapter<>(
                 this,
                 Arrays.stream(AccountType.values())
                         .map(AccountType::getTitle)
                         .toArray(String[]::new)
         );
-        binding.typeInput.setText(accountViewModel.getAccountType().getTitle());
+        binding.typeInput.setText(accountExtraDataViewModel.getAccountType().getTitle());
         binding.typeInput.setAdapter(typeAdapter);
         binding.typeInput.setOnItemClickListener((parent, view, position, id) -> {
-            AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+            AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
             viewModel.updateAccountType(AccountType.values()[position]);
         });
 
@@ -438,7 +437,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.exportAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.exportAccountInput.getText()).trim();
-                boolean isTransfer = accountViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
+                boolean isTransfer = accountExtraDataViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
                 if (isTransfer && input.isEmpty()) {
                     binding.exportAccountLayout.setError("转出账户不能为空");
                 }
@@ -451,19 +450,32 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.importAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.importAccountInput.getText()).trim();
-                boolean isTransfer = accountViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
+                boolean isTransfer = accountExtraDataViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
                 if (isTransfer && input.isEmpty()) {
                     binding.importAccountLayout.setError("转出账户不能为空");
                 }
             }
         });
 
+        //关联的借款记录
         binding.relatedLoanInput.setOnClickListener(view -> {
-            //TODO:完成关联的借款记录选择逻辑
+            AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+            Bundle bundle = new Bundle();
+            bundle.putInt(KeyStrings.RUNNING_TYPE.v(), viewModel.getAccountType().ordinal());
+
+            RelatedLoanSelectBottomSheet bottomSheet = new RelatedLoanSelectBottomSheet();
+            bottomSheet.setArguments(bundle);
+            bottomSheet.show(getSupportFragmentManager(), TagStrings.RELATED_LOAN_SELECT_BOTTOM.t());
         });
         binding.relatedLoanInput.setOnFocusChangeListener((view, b) -> {
             if (b) {
-                //TODO:完成关联的借款记录选择逻辑
+                AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+                Bundle bundle = new Bundle();
+                bundle.putInt(KeyStrings.RUNNING_TYPE.v(), viewModel.getAccountType().ordinal());
+
+                RelatedLoanSelectBottomSheet bottomSheet = new RelatedLoanSelectBottomSheet();
+                bottomSheet.setArguments(bundle);
+                bottomSheet.show(getSupportFragmentManager(), TagStrings.RELATED_LOAN_SELECT_BOTTOM.t());
             }
         });
 
@@ -481,7 +493,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.loanTargetNameLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.loanTargetNameInput.getText()).trim();
-                boolean isLoan = accountViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
+                boolean isLoan = accountExtraDataViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
                 if (isLoan && input.isEmpty()) {
                     binding.loanTargetNameLayout.setError("借款对象不能为空");
                 }
@@ -489,9 +501,9 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         });
 
         //结息周期
-        binding.interestPeriodInput.setText(accountViewModel.getInterestPeriodType().getTitle());
+        binding.interestPeriodInput.setText(accountExtraDataViewModel.getInterestPeriodType().getTitle());
         binding.interestPeriodInput.setOnItemClickListener((parent, view, position, id) -> {
-            AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+            AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
             viewModel.setInterestPeriodType(InterestPeriodType.values()[position]);
         });
 
@@ -499,7 +511,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         binding.tagSelectBtn.setOnClickListener(view -> {
             TagSelectBottomSheet bottomSheet = new TagSelectBottomSheet();
             Bundle bundle = new Bundle();
-            bundle.putInt(KeyStrings.TAG_SCOPE.v(), (int) Math.pow(2, accountViewModel.getAccountType().ordinal())); //传递标签作用域标识符
+            bundle.putInt(KeyStrings.TAG_SCOPE.v(), (int) Math.pow(2, accountExtraDataViewModel.getAccountType().ordinal())); //传递标签作用域标识符
             bottomSheet.setArguments(bundle);
             bottomSheet.show(getSupportFragmentManager(), TagStrings.TAG_SELECT_BOTTOM.t());
         });
@@ -625,8 +637,8 @@ public class RunningAccountInputActivity extends AppCompatActivity {
      */
     private void observeLiveData() {
         //流水记录种类
-        AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
-        accountViewModel.getTypeLiveData().observe(this, type -> {
+        AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+        accountExtraDataViewModel.getAccountTypeLiveData().observe(this, type -> {
             //转账账户输入框
             VisibilityHelper.toggleViewExpansion(
                     binding.scrollLayout,
@@ -651,6 +663,11 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                     binding.loanExtraLayout
             );
         });
+
+        //关联的还款记录
+        accountExtraDataViewModel.getRelatedLoanAccountLiveData().observe(this, account ->
+                binding.relatedLoanInput.setText(account == null ? "" : account.getRemark())
+        );
 
         //媒体添加选项
         MediaAddOptionViewModel mediaAddOptionViewModel = new ViewModelProvider(this).get(MediaAddOptionViewModel.class);
@@ -944,8 +961,8 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         String loanTargetName = String.valueOf(binding.loanTargetNameInput.getText()).trim();
 
         //判断额外信息是否显示
-        AccountViewModel accountViewModel = new ViewModelProvider(this).get(AccountViewModel.class);
-        AccountType type = accountViewModel.getAccountType();
+        AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+        AccountType type = accountExtraDataViewModel.getAccountType();
         boolean isTransfer = type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
         boolean isLoan = type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
 
@@ -980,7 +997,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
      * @return 是否完成
      */
     private Completable saveExtraDataFirstly(AccountEntity account) {
-        AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+        AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         AccountType type = viewModel.getAccountType();
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         if (type.getDataFlag() != 0) {
@@ -1076,7 +1093,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 .collect(Collectors.toList());
 
         //生成数据实例并保存
-        AccountViewModel viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
+        AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         AccountEntity account = new AccountEntity(
                 amount,
                 remark,
@@ -1084,21 +1101,10 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 dateTime,
                 AutoBookkeepingType.NONE.ordinal()
         );
+        account.setRepayAccountId(viewModel.getRelatedLoanAccountId()); //设置关联的借款记录的编号
         if (initBundle == null) {
             disposable.add(saveExtraDataFirstly(account)
                     .andThen(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, this))
-                    .flatMap(accountId -> {
-                        AccountType type = viewModel.getAccountType();
-                        boolean isRepay = type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY);
-                        if (isRepay) {
-                            LoanRepayRefEntity repayRef = new LoanRepayRefEntity(account.getAccountId(), viewModel.getRelatedLoanAccountId());
-                            BookkeepingDb db = BookkeepingDb.getInstance(this);
-                            return db.accountDao().insertRepayRefCompletable(repayRef)
-                                    .andThen(Single.just(accountId));
-                        } else {
-                            return Single.just(accountId);
-                        }
-                    })
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -1122,18 +1128,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             account.setAccountId(accountId);
             disposable.add(saveExtraDataFirstly(account)
                     .andThen(AccountService.modifyAccount(account, copiedMediaUriList, tagIdList, this))
-                    .flatMap(id -> {
-                        AccountType type = viewModel.getAccountType();
-                        boolean isRepay = type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY);
-                        if (isRepay) {
-                            LoanRepayRefEntity repayRef = new LoanRepayRefEntity(account.getAccountId(), viewModel.getRelatedLoanAccountId());
-                            BookkeepingDb db = BookkeepingDb.getInstance(this);
-                            return db.accountDao().insertRepayRefCompletable(repayRef)
-                                    .andThen(Single.just(accountId));
-                        } else {
-                            return Single.just(accountId);
-                        }
-                    })
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(

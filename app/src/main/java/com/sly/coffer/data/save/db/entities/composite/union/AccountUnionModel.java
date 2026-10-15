@@ -9,7 +9,6 @@ import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
-import com.sly.coffer.data.save.db.entities.LoanRepayRefEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 
@@ -33,13 +32,9 @@ public class AccountUnionModel {
     )
     private final ExtraLoanEntity loan;                 //借款额外数据
     @Relation(
-            parentColumn = "accountId",
+            parentColumn = "repayAccountId",
             entityColumn = "accountId",
-            associateBy = @Junction(
-                    value = LoanRepayRefEntity.class,
-                    parentColumn = "repayAccountId",
-                    entityColumn = "loanAccountId"
-            )
+            entity = AccountEntity.class
     )
     @Nullable
     private final AccountEntity repayRelatedAccount;    //还款额外数据，包含其关联的借款记录

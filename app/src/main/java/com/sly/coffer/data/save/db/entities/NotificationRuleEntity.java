@@ -44,6 +44,8 @@ public class NotificationRuleEntity {
     private long transferId = -1;   //转账账户额外数据编号
     @ColumnInfo(defaultValue = "-1")
     private long loanId = -1;       //借款额外数据编号
+    @ColumnInfo(defaultValue = "-1")
+    private long repayAccountId = -1;   //作为还款记录时，把钱还给的那个借款记录的编号
 
     public NotificationRuleEntity(String name, int type, String packageName, String targetTitle, String contentRegex, int captureGroupPos) {
         this.name = name;
@@ -132,5 +134,13 @@ public class NotificationRuleEntity {
 
     public void setLoanId(long loanId) {
         this.loanId = loanId;
+    }
+
+    public long getRepayAccountId() {
+        return repayAccountId;
+    }
+
+    public void setRepayAccountId(long repayAccountId) {
+        this.repayAccountId = repayAccountId;
     }
 }

@@ -19,7 +19,6 @@ import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.LoanEntity;
-import com.sly.coffer.data.save.db.entities.LoanRepayRefEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
 
@@ -339,7 +338,6 @@ public interface AccountDao {
         //删除额外数据
         deleteExtraTransferById(account.getTransferId());
         deleteExtraLoanById(account.getLoanId());
-        deleteRepayRefByRepayAccountId(accountId);
 
         //更新流水记录
         updateAccount(account);
@@ -444,23 +442,6 @@ public interface AccountDao {
     void deleteExtraLoanById(long loanId);
 
     /**
-     * 插入还款记录关联的流水记录数据
-     *
-     * @param repayRef 还款记录关联的流水记录数据
-     * @return 是否完成
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    Completable insertRepayRefCompletable(LoanRepayRefEntity repayRef);
-
-    /**
-     * 通过还款记录编号删除还款关联的借款记录数据
-     *
-     * @param accountId 用作还款的流水记录编号
-     */
-    @Query("DELETE FROM loanRepayRef WHERE repayAccountId = :accountId")
-    void deleteRepayRefByRepayAccountId(long accountId);
-
-    /**
      * 获取借款对象名称
      *
      * @return 借款对象名称列表
@@ -471,12 +452,12 @@ public interface AccountDao {
     /**
      * 获取带有借款记录的
      *
-     * @param isBorrow true:获取借入记录；false:获取借出记录
+     * @param getBorrow true:获取借入记录；false:获取借出记录
      * @return 带有借款记录的流水记录
      */
-    @Query("SELECT * FROM accounts WHERE accountId IN (" +
-            "   SELECT accountId FROM loans" +
-            ") AND ((:isBorrow AND type = 4) OR type = 3) " +
+    @Query("SELECT * FROM accounts WHERE loanId IN (" +
+            "   SELECT loanId FROM extraLoan" +
+            ") AND ((:getBorrow AND type = 4) OR (NOT :getBorrow AND type = 3)) " +
             "ORDER BY dateTime DESC")
-    Single<List<AccountEntity>> getAccountWithLoanDataSingle(boolean isBorrow);
+    Single<List<AccountEntity>> getAccountWithLoanDataSingle(boolean getBorrow);
 }

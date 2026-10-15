@@ -178,6 +178,7 @@
                     style="@style/CommonTextInputLayoutStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:endIconMode="none"
                     app:helperText="@string/account_related_loan_help">
 
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
