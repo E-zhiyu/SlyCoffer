@@ -20,12 +20,19 @@ import androidx.room.PrimaryKey;
                         parentColumns = "loanId",
                         childColumns = "loanId",
                         onDelete = ForeignKey.SET_DEFAULT
+                ),
+                @ForeignKey(
+                        entity = AccountEntity.class,
+                        parentColumns = "repayAccountId",
+                        childColumns = "accountId",
+                        onDelete = ForeignKey.SET_DEFAULT
                 )
         },
         indices = {
                 @Index(value = "enabled"),
                 @Index(value = "transferId"),
-                @Index(value = "loanId")
+                @Index(value = "loanId"),
+                @Index(value = "repayAccountId")
         }
 )
 public class AccessibilityRuleEntity {

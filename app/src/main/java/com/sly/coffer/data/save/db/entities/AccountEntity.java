@@ -22,6 +22,12 @@ import java.time.LocalDateTime;
                         parentColumns = "loanId",
                         childColumns = "loanId",
                         onDelete = ForeignKey.SET_DEFAULT
+                ),
+                @ForeignKey(
+                        entity = AccountEntity.class,
+                        parentColumns = "repayAccountId",
+                        childColumns = "accountId",
+                        onDelete = ForeignKey.SET_DEFAULT
                 )
         },
         indices = {
@@ -30,7 +36,8 @@ import java.time.LocalDateTime;
                 @Index(value = "type"),
                 @Index(value = "dateTime"),
                 @Index(value = "transferId"),
-                @Index(value = "loanId")
+                @Index(value = "loanId"),
+                @Index(value = "repayAccountId")
         }
 )
 public class AccountEntity {
