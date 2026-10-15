@@ -127,13 +127,9 @@ public interface AccountDao {
      *
      * @return 包含所有转出和转入账户的列表
      */
-    @Query("SELECT exportAccount FROM accountTransfers WHERE exportAccount IS NOT NULL " +
+    @Query("SELECT exportAccount FROM extraTransfer WHERE exportAccount IS NOT NULL " +
             "UNION " +
-            "SELECT importAccount FROM accountTransfers WHERE importAccount IS NOT NULL " +
-            "UNION " +
-            "SELECT exportAccount FROM notificationRuleTransfers WHERE exportAccount IS NOT NULL " +
-            "UNION " +
-            "SELECT importAccount FROM notificationRuleTransfers WHERE importAccount IS NOT NULL " +
+            "SELECT importAccount FROM extraTransfer WHERE importAccount IS NOT NULL " +
             "ORDER BY 1 ASC")
     Single<List<String>> getTransferAccountsSingle();
 
