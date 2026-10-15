@@ -1,6 +1,12 @@
 package com.sly.coffer.auxiliary.enums.unique;
 
 public enum KeyStrings {
+    LOAN_TARGET_NAME("loan_target_name"),                   //借款对象
+    LOAN_INTEREST_ACCRUAL_PERIOD("loan_interest_accrual_period"),       //借款记录的结息周期
+    LOAN_ANNUAL_INTEREST_BASEPOINT("loan_annual_interest_basepoint"),   //年利率基点
+    LOAN_REPAY_DATE("loan_repay_date"),                     //应还日期
+    LOAN_ALLOW_COMPOUND_INTEREST("loan_allow_compound_interest"),   //是否允许复利
+    REPAY_ACCOUNT_ID("repay_account_id"),                   //作为还款记录时，关联的借款记录的编号
     AUTO_BOOKKEEPING_TAG("auto_bookkeeping_type"),          //自动记账的种类
     RESTORE_IS_OLD_DATA("restore_is_old_data"),             //导入数据时是否为旧数据
     BACKUP_CHOICES("backup_choices"),                       //备份时的选择情况

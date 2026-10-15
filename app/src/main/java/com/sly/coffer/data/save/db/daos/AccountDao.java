@@ -18,7 +18,6 @@ import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
-import com.sly.coffer.data.save.db.entities.LoanEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
 
@@ -399,15 +398,6 @@ public interface AccountDao {
     }
 
     /**
-     * 插入借款记录数据
-     *
-     * @param loan 借款记录数据
-     * @return 是否完成
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    Completable insertLoanCompletable(LoanEntity loan);
-
-    /**
      * 插入转账账户额外数据
      *
      * @param transfer 转账账户额外数据
@@ -446,7 +436,7 @@ public interface AccountDao {
      *
      * @return 借款对象名称列表
      */
-    @Query("SELECT loanTargetName FROM loans WHERE loanTargetName IS NOT NULL")
+    @Query("SELECT loanTargetName FROM extraLoan WHERE loanTargetName IS NOT NULL")
     Single<List<String>> getLoanTargetNameSingle();
 
     /**
