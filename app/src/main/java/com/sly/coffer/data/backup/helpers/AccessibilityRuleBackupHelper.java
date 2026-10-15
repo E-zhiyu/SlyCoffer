@@ -39,8 +39,13 @@ public class AccessibilityRuleBackupHelper extends BackupHelperBase<BookkeepingD
     }
 
     @Override
-    protected AccessibilityRuleDataMap convertOldData(String json) throws JsonProcessingException {
+    protected AccessibilityRuleDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(json, mapClass);
+    }
+
+    @Override
+    protected AccessibilityRuleDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
+        return null;
     }
 }

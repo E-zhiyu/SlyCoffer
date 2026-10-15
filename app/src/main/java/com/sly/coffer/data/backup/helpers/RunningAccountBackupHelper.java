@@ -53,7 +53,7 @@ public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, 
     }
 
     @Override
-    protected RunningAccountDataMap convertOldData(String json) throws JsonProcessingException {
+    protected RunningAccountDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
         RoomRunningAccountDataMap oldMap = mapper.readValue(json, RoomRunningAccountDataMap.class);
@@ -141,5 +141,10 @@ public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, 
         map.setTagGroupList(tagGroupPojoList);
         map.setTagList(tagPojoList);
         return map;
+    }
+
+    @Override
+    protected RunningAccountDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
+        return null;
     }
 }

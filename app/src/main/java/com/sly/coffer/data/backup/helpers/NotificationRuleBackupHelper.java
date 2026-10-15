@@ -47,7 +47,7 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
     }
 
     @Override
-    protected NotificationRuleDataMap convertOldData(String json) throws JsonProcessingException {
+    protected NotificationRuleDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
         RoomNotificationRuleDataMap oldMap = mapper.readValue(json, RoomNotificationRuleDataMap.class);
@@ -98,5 +98,10 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
         map.setNotificationRuleTransferList(notificationRuleTransferPojoList);
         map.setNotificationRuleTagRefList(notificationRuleTagRefPojoList);
         return map;
+    }
+
+    @Override
+    protected NotificationRuleDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
+        return null;
     }
 }

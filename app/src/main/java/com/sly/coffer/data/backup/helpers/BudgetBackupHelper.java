@@ -51,7 +51,7 @@ public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDa
     }
 
     @Override
-    protected BudgetDataMap convertOldData(String json) throws JsonProcessingException {
+    protected BudgetDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
         RoomBudgetDataMap oldMap = mapper.readValue(json, RoomBudgetDataMap.class);
@@ -92,5 +92,10 @@ public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDa
         map.setBudgetList(budgetPojoList);
         map.setBudgetTagRefList(budgetTagRefPojoList);
         return map;
+    }
+
+    @Override
+    protected BudgetDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
+        return null;
     }
 }
