@@ -9,7 +9,7 @@ public enum AccountType {
     LEND("借出", -1, 2),
     BORROW("借入", 1, 2);
     public static final int DATA_FLAG_TRANSFER = 1;
-    public static final int DATA_FLAG_LOAN_INFO = 2;
+    public static final int DATA_FLAG_LOAN = 2;
     public static final int DATA_FLAG_REPAY = 4;
     private final String title;     //名称
     private final int reportFlag;   //钱增加/减少的标识符
@@ -54,16 +54,21 @@ public enum AccountType {
     }
 
     /**
-     * 判断是否需要输入指定的额外数据
+     * 判断是否能够输入指定的额外数据
      *
      * @param edittextFlag 额外数据标识符，详见{@link AccountType}中的静态常量
-     * @return 是否需要输入指定的额外数据
+     * @return 是否能够输入指定的额外数据
      */
-    public boolean shouldShowEdittext(int edittextFlag) {
+    public boolean hasExtraData(int edittextFlag) {
         return (this.dataFlag & edittextFlag) == edittextFlag;
     }
 
-    public int getDataFlag() {
-        return dataFlag;
+    /**
+     * 判断是否能输入额外数据
+     *
+     * @return 是否能输入额外数据
+     */
+    public boolean hasExtraData() {
+        return dataFlag != 0;
     }
 }

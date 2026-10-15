@@ -18,7 +18,7 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.composite.union.BookkeepingNotiRuleUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotiBkRuleUnionModel;
 import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleAndGroupUnionModel;
 import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleGroupListUnionModel;
 import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleUnionModel;
@@ -100,7 +100,7 @@ public interface NotificationRuleDao {
      */
     @Transaction
     @Query("SELECT * FROM notificationRules WHERE enabled = 1")
-    Flowable<List<BookkeepingNotiRuleUnionModel>> getEnabledNotificationRuleFlowable();
+    Flowable<List<NotiBkRuleUnionModel>> getEnabledNotificationRuleFlowable();
 
     /**
      * 获取规则与分组映射关系

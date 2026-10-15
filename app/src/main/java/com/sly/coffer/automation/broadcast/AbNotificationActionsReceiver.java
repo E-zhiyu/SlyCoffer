@@ -234,53 +234,57 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
         //判断是否需要保存额外数据
         AccountType type = AccountType.values()[typeOrdinal];
         BookkeepingDb db = BookkeepingDb.getInstance(context);
-        boolean isTransfer = type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
-        boolean isLoan = type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
+        if (type.hasExtraData()) {
+            boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
+            boolean isLoan = type.hasExtraData(AccountType.DATA_FLAG_LOAN);
 
-        //转账额外数据
-        Completable transferTask, loanTask;
-        if (isTransfer) {
-            String exportAccount = bundle.getString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v());
-            String importAccount = bundle.getString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v());
-            ExtraTransferEntity transfer = new ExtraTransferEntity(
-                    exportAccount,
-                    importAccount
-            );
-            transferTask = db.accountDao().insertExtraTransferSingle(transfer)
-                    .flatMapCompletable(transferId -> {
-                        account.setTransferId(transferId);
-                        return Completable.complete();
-                    });
+            //转账额外数据
+            Completable transferTask, loanTask;
+            if (isTransfer) {
+                String exportAccount = bundle.getString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v());
+                String importAccount = bundle.getString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v());
+                ExtraTransferEntity transfer = new ExtraTransferEntity(
+                        exportAccount,
+                        importAccount
+                );
+                transferTask = db.accountDao().insertExtraTransferSingle(transfer)
+                        .flatMapCompletable(transferId -> {
+                            account.setTransferId(transferId);
+                            return Completable.complete();
+                        });
+            } else {
+                transferTask = Completable.complete();
+            }
+
+            //借款额外数据
+            if (isLoan) {
+                String loanTargetName = bundle.getString(KeyStrings.LOAN_TARGET_NAME.v());
+                int interestPeriod = bundle.getInt(KeyStrings.LOAN_INTEREST_ACCRUAL_PERIOD.v(), InterestPeriodType.EVERY_MONTH.ordinal());
+                int yearBasepoint = bundle.getInt(KeyStrings.LOAN_ANNUAL_INTEREST_BASEPOINT.v(), 0);
+                long repayDateMillis = bundle.getLong(KeyStrings.LOAN_REPAY_DATE.v(), -1);
+                LocalDate repayDate = repayDateMillis >= 0 ? DateTimeConverter.toLocalDate(repayDateMillis) : null;
+                boolean allowCompoundInterest = bundle.getBoolean(KeyStrings.LOAN_ALLOW_COMPOUND_INTEREST.v());
+
+                ExtraLoanEntity loan = new ExtraLoanEntity(
+                        loanTargetName,
+                        interestPeriod,
+                        yearBasepoint,
+                        allowCompoundInterest,
+                        repayDate
+                );
+                loanTask = db.accountDao().insertExtraLoanSingle(loan)
+                        .flatMapCompletable(loanId -> {
+                            account.setLoanId(loanId);
+                            return Completable.complete();
+                        });
+            } else {
+                loanTask = Completable.complete();
+            }
+
+            return transferTask.andThen(loanTask);
         } else {
-            transferTask = Completable.complete();
+            return Completable.complete();
         }
-
-        //借款额外数据
-        if (isLoan) {
-            String loanTargetName = bundle.getString(KeyStrings.LOAN_TARGET_NAME.v());
-            int interestPeriod = bundle.getInt(KeyStrings.LOAN_INTEREST_ACCRUAL_PERIOD.v(), InterestPeriodType.EVERY_MONTH.ordinal());
-            int yearBasepoint = bundle.getInt(KeyStrings.LOAN_ANNUAL_INTEREST_BASEPOINT.v(), 0);
-            long repayDateMillis = bundle.getLong(KeyStrings.LOAN_REPAY_DATE.v(), -1);
-            LocalDate repayDate = repayDateMillis >= 0 ? DateTimeConverter.toLocalDate(repayDateMillis) : null;
-            boolean allowCompoundInterest = bundle.getBoolean(KeyStrings.LOAN_ALLOW_COMPOUND_INTEREST.v());
-
-            ExtraLoanEntity loan = new ExtraLoanEntity(
-                    loanTargetName,
-                    interestPeriod,
-                    yearBasepoint,
-                    allowCompoundInterest,
-                    repayDate
-            );
-            loanTask = db.accountDao().insertExtraLoanSingle(loan)
-                    .flatMapCompletable(loanId -> {
-                        account.setLoanId(loanId);
-                        return Completable.complete();
-                    });
-        } else {
-            loanTask = Completable.complete();
-        }
-
-        return transferTask.andThen(loanTask);
     }
 
     /**

@@ -23,13 +23,13 @@ import com.sly.coffer.auxiliary.enums.settings.NotificationClickBehaviour;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
-import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
-import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.union.BookkeepingNotiRuleUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.NotiBkRuleUnionModel;
 import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
@@ -41,6 +41,7 @@ import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;
 import com.sly.coffer.ui.pages.notification.rule.NotificationRuleListActivity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,7 +59,7 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -66,7 +67,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 public class NotificationAbService extends NotificationListenerService {
     private final CompositeDisposable disposable = new CompositeDisposable();
     private final PublishSubject<RuleWaitToTrigger> waitToTriggerSubject = PublishSubject.create(); //待触发规则的缓冲队列，用于同时处理多个通知
-    private final Map<NotificationKey, List<BookkeepingNotiRuleUnionModel>> ruleMap = new HashMap<>();  //已启用规则的哈希表
+    private final Map<NotificationKey, List<NotiBkRuleUnionModel>> ruleMap = new HashMap<>();  //已启用规则的哈希表
     private final Map<Long, List<NotificationRuleGroupRefEntity>> groupMap = new LinkedHashMap<>();                                     //分组哈希表（k:分组编号，v:该组中的规则编号)
 
     private static class NotificationKey {
@@ -99,10 +100,10 @@ public class NotificationAbService extends NotificationListenerService {
      * 等待被触发的通知规则与金额的集合类
      */
     private static class RuleWaitToTrigger {
-        final BookkeepingNotiRuleUnionModel model;    //规则模型
+        final NotiBkRuleUnionModel model;    //规则模型
         final double amount;                          //该规则识别到的金额数据
 
-        public RuleWaitToTrigger(BookkeepingNotiRuleUnionModel model, double amount) {
+        public RuleWaitToTrigger(NotiBkRuleUnionModel model, double amount) {
             this.model = model;
             this.amount = amount;
         }
@@ -127,7 +128,7 @@ public class NotificationAbService extends NotificationListenerService {
                 .subscribe(
                         modelList -> {
                             ruleMap.clear();
-                            Map<NotificationKey, List<BookkeepingNotiRuleUnionModel>> map = modelList.stream()
+                            Map<NotificationKey, List<NotiBkRuleUnionModel>> map = modelList.stream()
                                     .collect(Collectors.groupingBy(
                                             model -> {
                                                 NotificationRuleEntity rule = model.getRule();
@@ -217,11 +218,11 @@ public class NotificationAbService extends NotificationListenerService {
 
         //获取与包名和标题匹配的规则
         NotificationKey key = new NotificationKey(packageName, title);
-        List<BookkeepingNotiRuleUnionModel> ruleModelList = ruleMap.get(key);
+        List<NotiBkRuleUnionModel> ruleModelList = ruleMap.get(key);
         if (ruleModelList == null || ruleModelList.isEmpty()) return;
 
         //获取待触发的规则
-        for (BookkeepingNotiRuleUnionModel model : ruleModelList) {
+        for (NotiBkRuleUnionModel model : ruleModelList) {
             //解析数据
             NotificationRuleEntity rule = model.getRule();
             String contentRegex = rule.getContentRegex();
@@ -389,44 +390,69 @@ public class NotificationAbService extends NotificationListenerService {
     }
 
     /**
-     * 获得流水记录数据
+     * 生成确认通知的数据包
      *
      * @param amount 提取的金额数据
      * @param model  匹配到的通知规则详情数据
-     * @return 流水数据包
+     * @return 可以作为通知参数的{@link Bundle}对象
      */
     @NonNull
-    private Bundle getNewAccountData(
+    private Bundle generateBundle(
             double amount,
-            @NonNull BookkeepingNotiRuleUnionModel model
+            @NonNull NotiBkRuleUnionModel model
     ) {
-        //获取规则数据
+        //流水记录本体数据
+        Bundle bundle = new Bundle();
         NotificationRuleEntity rule = model.getRule();
-        String remark = rule.getName();                     //规则名称
-        int type = rule.getType();                          //流水种类枚举序数
+        String remark = rule.getName();                             //规则名称
+        int typeOrdinal = rule.getType();                           //流水种类枚举序数
         long[] tagIds = model.getTagList().stream()
                 .map(TagEntity::getTagId)
                 .mapToLong(Long::longValue)
-                .toArray();                                 //标签列表
-        NotificationRuleTransferEntity transfer = model.getTransfer();  //转账账户数据
-
-        //生成流水记录数据包
-        Bundle bundle = new Bundle();
-        bundle.putLongArray(KeyStrings.TAG_ID.v(), tagIds);                         //标签 ID
-        bundle.putLong(                                                             //日期和时间
+                .toArray();                                         //标签列表
+        bundle.putLongArray(KeyStrings.TAG_ID.v(), tagIds);         //标签 ID
+        bundle.putLong(                                             //日期和时间
                 KeyStrings.RUNNING_DATETIME.v(),
                 DateTimeConverter.fromLocalDateTime(LocalDateTime.now())
         );
-        bundle.putInt(KeyStrings.RUNNING_TYPE.v(), type);                           //种类
-        bundle.putDouble(KeyStrings.RUNNING_AMOUNT.v(), amount);                    //金额
-        bundle.putString(KeyStrings.RUNNING_REMARK.v(), remark);                    //备注
-        if (type == AccountType.TRANSFER.ordinal() && transfer != null) {
+        bundle.putInt(KeyStrings.RUNNING_TYPE.v(), typeOrdinal);    //种类
+        bundle.putDouble(KeyStrings.RUNNING_AMOUNT.v(), amount);    //金额
+        bundle.putString(KeyStrings.RUNNING_REMARK.v(), remark);    //备注
+
+        //转账额外数据
+        AccountType type = AccountType.values()[typeOrdinal];
+        ExtraTransferEntity transfer = model.getTransfer();
+        if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER) && transfer != null) {
             String exportAccount = transfer.getExportAccount();
             String importAccount = transfer.getImportAccount();
             bundle.putString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v(), exportAccount); //转出账户
             bundle.putString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v(), importAccount); //转入账户
         }
         bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TAG.v(), AutoBookkeepingType.NOTIFICATION.ordinal());    //自动记账种类
+
+        //借款额外数据
+        ExtraLoanEntity loan = model.getLoan();
+        if (type.hasExtraData(AccountType.DATA_FLAG_LOAN) && loan != null) {
+            String loanTargetName = loan.getLoanTargetName();
+            int interestPeriod = loan.getInterestPeriodType();
+            int yearBasepoint = loan.getYearBasepoint();
+            LocalDate repayDate = loan.getRepayDate();
+            boolean allowCompoundInterest = loan.isAllowCompoundInterest();
+
+            bundle.putString(KeyStrings.LOAN_TARGET_NAME.v(), loanTargetName);
+            bundle.putInt(KeyStrings.LOAN_INTEREST_ACCRUAL_PERIOD.v(), interestPeriod);
+            bundle.putInt(KeyStrings.LOAN_ANNUAL_INTEREST_BASEPOINT.v(), yearBasepoint);
+            if (repayDate != null) {
+                bundle.putLong(KeyStrings.LOAN_REPAY_DATE.v(), DateTimeConverter.fromLocalDate(repayDate));
+            }
+            bundle.putBoolean(KeyStrings.LOAN_ALLOW_COMPOUND_INTEREST.v(), allowCompoundInterest);
+        }
+
+        //还款额外数据
+        long repayAccountId = rule.getRepayAccountId();
+        if (type.hasExtraData(AccountType.DATA_FLAG_REPAY) && repayAccountId >= 0) {
+            bundle.putLong(KeyStrings.REPAY_ACCOUNT_ID.v(), repayAccountId);
+        }
 
         return bundle;
     }
@@ -476,10 +502,10 @@ public class NotificationAbService extends NotificationListenerService {
      * @param amount 提取的金额
      * @param model  触发自动记账的规则（包含抓张账户等其他数据）
      */
-    private void sendConfirmNotification(double amount, @NonNull BookkeepingNotiRuleUnionModel model) {
+    private void sendConfirmNotification(double amount, @NonNull NotiBkRuleUnionModel model) {
         //生成数据包
         NotificationRuleEntity rule = model.getRule();
-        Bundle bundle = getNewAccountData(amount, model);
+        Bundle bundle = generateBundle(amount, model);
 
         //生成通知唯一标识符
         String ruleName = rule.getName();
@@ -637,7 +663,7 @@ public class NotificationAbService extends NotificationListenerService {
      * @param amount 提取的金额数据
      * @param model  触发的通知规则（包含转账账户等其他数据）
      */
-    private void saveInDbDirectly(double amount, @NonNull BookkeepingNotiRuleUnionModel model) {
+    private void saveInDbDirectly(double amount, @NonNull NotiBkRuleUnionModel model) {
         //解析规则数据
         NotificationRuleEntity rule = model.getRule();
         String remark = rule.getName();
@@ -647,13 +673,20 @@ public class NotificationAbService extends NotificationListenerService {
                 .collect(Collectors.toList());
 
         //实例化实体类
-        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, LocalDateTime.now(), AutoBookkeepingType.NOTIFICATION.ordinal());
+        AccountEntity account = new AccountEntity(
+                amount,
+                remark,
+                typeOrdinal,
+                LocalDateTime.now(),
+                AutoBookkeepingType.NOTIFICATION.ordinal()
+        );
+        account.setRepayAccountId(rule.getRepayAccountId());    //还款关联的借款记录
 
         //保存数据
         String ruleName = rule.getName();
         int notificationId = (int) (rule.getRuleId() + System.currentTimeMillis() + NotificationID.AUTO_BOOKKEEPING_CONFIRM.ordinal());
-        disposable.add(AccountService.addNewAccount(account, null, tagIdList, this)
-                .flatMap(id -> saveExtraData(id, model))
+        disposable.add(saveExtraDataFirstly(account, model)
+                .andThen(AccountService.addNewAccount(account, null, tagIdList, this))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
@@ -694,31 +727,66 @@ public class NotificationAbService extends NotificationListenerService {
     /**
      * 保存流水记录的额外数据
      *
-     * @param accountId 流水记录编号
-     * @param model     通知规则数据模型
-     * @return 带有流水记录编号的{@link Single}对象
+     * @param account 需要保存的流水记录
+     * @param model   通知规则数据模型
+     * @return 是否完成
      */
-    private Single<Long> saveExtraData(long accountId, @NonNull BookkeepingNotiRuleUnionModel model) {
+    private Completable saveExtraDataFirstly(AccountEntity account, @NonNull NotiBkRuleUnionModel model) {
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         int typeOrdinal = model.getRule().getType();
         AccountType type = AccountType.values()[typeOrdinal];
-        if (type == AccountType.TRANSFER) {
-            NotificationRuleTransferEntity ruleTransfer = model.getTransfer();
-            String exportAccount = "";
-            String importAccount = "";
-            if (ruleTransfer != null) {
-                exportAccount = ruleTransfer.getExportAccount();
-                importAccount = ruleTransfer.getImportAccount();
+        if (type.hasExtraData()) {
+            //判断是否需要保存额外数据
+            boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
+            boolean isLoan = type.hasExtraData(AccountType.DATA_FLAG_LOAN);
+
+            //转账额外数据
+            Completable transferTask, loanTask;
+            ExtraTransferEntity ruleTransfer = model.getTransfer();
+            if (isTransfer && ruleTransfer != null) {
+                String exportAccount = ruleTransfer.getExportAccount();
+                String importAccount = ruleTransfer.getImportAccount();
+                ExtraTransferEntity transfer = new ExtraTransferEntity(
+                        exportAccount,
+                        importAccount
+                );
+                transferTask = db.accountDao().insertExtraTransferSingle(transfer)
+                        .flatMapCompletable(transferId -> {
+                            account.setTransferId(transferId);
+                            return Completable.complete();
+                        });
+            } else {
+                transferTask = Completable.complete();
             }
-            AccountTransferEntity transfer = new AccountTransferEntity(
-                    accountId,
-                    exportAccount,
-                    importAccount
-            );
-            return db.accountDao().insertAccountTransferCompletable(transfer)
-                    .andThen(Single.fromCallable(() -> accountId));
+
+            //借款额外数据
+            ExtraLoanEntity ruleLoan = model.getLoan();
+            if (isLoan && ruleLoan != null) {
+                String loanTargetName = ruleLoan.getLoanTargetName();
+                int interestPeriod = ruleLoan.getInterestPeriodType();
+                int yearBasepoint = ruleLoan.getYearBasepoint();
+                LocalDate repayDate = ruleLoan.getRepayDate();
+                boolean allowCompoundInterest = ruleLoan.isAllowCompoundInterest();
+
+                ExtraLoanEntity loan = new ExtraLoanEntity(
+                        loanTargetName,
+                        interestPeriod,
+                        yearBasepoint,
+                        allowCompoundInterest,
+                        repayDate
+                );
+                loanTask = db.accountDao().insertExtraLoanSingle(loan)
+                        .flatMapCompletable(loanId -> {
+                            account.setLoanId(loanId);
+                            return Completable.complete();
+                        });
+            } else {
+                loanTask = Completable.complete();
+            }
+
+            return transferTask.andThen(loanTask);
         } else {
-            return Single.just(accountId);
+            return Completable.complete();
         }
     }
 

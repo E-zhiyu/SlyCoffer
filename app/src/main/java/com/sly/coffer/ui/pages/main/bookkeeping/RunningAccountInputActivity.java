@@ -288,7 +288,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 ));                                                                 //日期和时间
 
                                 //转账相关的文本框
-                                if (type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER)) {
+                                if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
                                     binding.transferInputLayout.setVisibility(View.VISIBLE);
 
                                     ExtraTransferEntity transfer = model.getTransfer();
@@ -299,7 +299,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 }
 
                                 //还款额外数据文本框
-                                if (type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY)) {
+                                if (type.hasExtraData(AccountType.DATA_FLAG_REPAY)) {
                                     binding.repayExtraLayout.setVisibility(View.VISIBLE);
 
                                     AccountEntity repayAccount = model.getRepayRelatedAccount();
@@ -310,7 +310,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                 }
 
                                 //借款额外数据文本框
-                                if (type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO)) {
+                                if (type.hasExtraData(AccountType.DATA_FLAG_LOAN)) {
                                     binding.loanExtraLayout.setVisibility(View.VISIBLE);
 
                                     ExtraLoanEntity loan = model.getLoan();
@@ -438,7 +438,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.exportAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.exportAccountInput.getText()).trim();
-                boolean isTransfer = accountExtraDataViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
+                boolean isTransfer = accountExtraDataViewModel.getAccountType().hasExtraData(AccountType.DATA_FLAG_TRANSFER);
                 if (isTransfer && input.isEmpty()) {
                     binding.exportAccountLayout.setError("转出账户不能为空");
                 }
@@ -451,7 +451,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.importAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.importAccountInput.getText()).trim();
-                boolean isTransfer = accountExtraDataViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
+                boolean isTransfer = accountExtraDataViewModel.getAccountType().hasExtraData(AccountType.DATA_FLAG_TRANSFER);
                 if (isTransfer && input.isEmpty()) {
                     binding.importAccountLayout.setError("转出账户不能为空");
                 }
@@ -494,7 +494,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 binding.loanTargetNameLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.loanTargetNameInput.getText()).trim();
-                boolean isLoan = accountExtraDataViewModel.getAccountType().shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
+                boolean isLoan = accountExtraDataViewModel.getAccountType().hasExtraData(AccountType.DATA_FLAG_LOAN);
                 if (isLoan && input.isEmpty()) {
                     binding.loanTargetNameLayout.setError("借款对象不能为空");
                 }
@@ -643,7 +643,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             //转账账户输入框
             VisibilityHelper.toggleViewExpansion(
                     binding.scrollLayout,
-                    type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER),
+                    type.hasExtraData(AccountType.DATA_FLAG_TRANSFER),
                     null,
                     binding.transferInputLayout
             );
@@ -651,7 +651,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             //还款信息输入框
             VisibilityHelper.toggleViewExpansion(
                     binding.scrollLayout,
-                    type.shouldShowEdittext(AccountType.DATA_FLAG_REPAY),
+                    type.hasExtraData(AccountType.DATA_FLAG_REPAY),
                     null,
                     binding.repayExtraLayout
             );
@@ -659,7 +659,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             //借款信息输入框
             VisibilityHelper.toggleViewExpansion(
                     binding.scrollLayout,
-                    type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO),
+                    type.hasExtraData(AccountType.DATA_FLAG_LOAN),
                     null,
                     binding.loanExtraLayout
             );
@@ -964,8 +964,8 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         //判断额外信息是否显示
         AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         AccountType type = accountExtraDataViewModel.getAccountType();
-        boolean isTransfer = type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
-        boolean isLoan = type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
+        boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
+        boolean isLoan = type.hasExtraData(AccountType.DATA_FLAG_LOAN);
 
         //判断输入内容有效性
         if (amount.isEmpty()) {
@@ -1001,10 +1001,10 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         AccountType type = viewModel.getAccountType();
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        if (type.getDataFlag() != 0) {
+        if (type.hasExtraData()) {
             //判断是否需要保存额外数据
-            boolean isTransfer = type.shouldShowEdittext(AccountType.DATA_FLAG_TRANSFER);
-            boolean isLoan = type.shouldShowEdittext(AccountType.DATA_FLAG_LOAN_INFO);
+            boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
+            boolean isLoan = type.hasExtraData(AccountType.DATA_FLAG_LOAN);
 
             //转账额外数据
             Completable transferTask, loanTask;
