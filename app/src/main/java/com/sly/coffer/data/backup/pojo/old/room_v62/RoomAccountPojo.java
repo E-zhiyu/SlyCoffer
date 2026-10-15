@@ -1,9 +1,9 @@
-package com.sly.coffer.data.backup.pojo.old;
+package com.sly.coffer.data.backup.pojo.old.room_v62;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
-public class OldAccountPojo {
+public class RoomAccountPojo {
     private double amount;
     private String date_time;
     private String remark;
@@ -11,7 +11,7 @@ public class OldAccountPojo {
     private long tag_no;
     private String type;
 
-    public OldAccountPojo() {
+    public RoomAccountPojo() {
     }
 
     public double getAmount() {

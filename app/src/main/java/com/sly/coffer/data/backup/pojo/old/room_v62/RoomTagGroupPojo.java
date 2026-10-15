@@ -1,13 +1,13 @@
-package com.sly.coffer.data.backup.pojo.old;
+package com.sly.coffer.data.backup.pojo.old.room_v62;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
-public class OldTagGroupPojo {
+public class RoomTagGroupPojo {
     private String group_name;
     private long group_no;
 
-    public OldTagGroupPojo() {
+    public RoomTagGroupPojo() {
     }
 
     public String getGroup_name() {

@@ -1,14 +1,14 @@
-package com.sly.coffer.data.backup.pojo.old;
+package com.sly.coffer.data.backup.pojo.old.room_v62;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
-public class OldAccountTransferPojo {
+public class RoomAccountTransferPojo {
     private String export_account;
     private String import_account;
     private long rno;
 
-    public OldAccountTransferPojo() {
+    public RoomAccountTransferPojo() {
     }
 
     public String getExport_account() {

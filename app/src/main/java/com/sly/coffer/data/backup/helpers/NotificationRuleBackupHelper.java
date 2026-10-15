@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.NotificationRuleDataMap;
-import com.sly.coffer.data.backup.maps.old.OldNotificationRuleDataMap;
+import com.sly.coffer.data.backup.maps.old.room_v62.RoomNotificationRuleDataMap;
 import com.sly.coffer.data.backup.pojo.NotificationRulePojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTagRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTransferPojo;
@@ -50,7 +50,7 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
     protected NotificationRuleDataMap convertOldData(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
-        OldNotificationRuleDataMap oldMap = mapper.readValue(json, OldNotificationRuleDataMap.class);
+        RoomNotificationRuleDataMap oldMap = mapper.readValue(json, RoomNotificationRuleDataMap.class);
 
         //通知规则
         List<NotificationRulePojo> notificationRulePojoList = oldMap.getRule_data().stream()

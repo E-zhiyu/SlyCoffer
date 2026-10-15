@@ -1,11 +1,11 @@
-package com.sly.coffer.data.backup.pojo.old;
+package com.sly.coffer.data.backup.pojo.old.room_v62;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
-public class OldBudgetPojo {
+public class RoomBudgetPojo {
     private long bno;
     private double initAmount;
     private double leftAmount;
@@ -14,7 +14,7 @@ public class OldBudgetPojo {
     private String startDate;
     private List<Long> tagNoList;
 
-    public OldBudgetPojo() {
+    public RoomBudgetPojo() {
     }
 
     public long getBno() {

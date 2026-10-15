@@ -1,14 +1,22 @@
-package com.sly.coffer.data.backup.pojo.old;
+package com.sly.coffer.data.backup.pojo.old.extra_v80;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
-public class OldNotificationRuleTransferPojo {
+public class ExtraNotificationRuleTransferPojo {
+    private long ruleId;
     private String exportAccount;
     private String importAccount;
-    private long ruleNo;
 
-    public OldNotificationRuleTransferPojo() {
+    public ExtraNotificationRuleTransferPojo() {
+    }
+
+    public long getRuleId() {
+        return ruleId;
+    }
+
+    public void setRuleId(long ruleId) {
+        this.ruleId = ruleId;
     }
 
     public String getExportAccount() {
@@ -25,13 +33,5 @@ public class OldNotificationRuleTransferPojo {
 
     public void setImportAccount(String importAccount) {
         this.importAccount = importAccount;
-    }
-
-    public long getRuleNo() {
-        return ruleNo;
-    }
-
-    public void setRuleNo(long ruleNo) {
-        this.ruleNo = ruleNo;
     }
 }

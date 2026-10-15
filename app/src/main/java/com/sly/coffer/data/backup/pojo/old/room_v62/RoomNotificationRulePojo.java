@@ -1,9 +1,9 @@
-package com.sly.coffer.data.backup.pojo.old;
+package com.sly.coffer.data.backup.pojo.old.room_v62;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
-public class OldNotificationRulePojo {
+public class RoomNotificationRulePojo {
     private String content;
     private String packageName;
     private String ruleName;
@@ -12,7 +12,7 @@ public class OldNotificationRulePojo {
     private String title;
     private String type;
 
-    public OldNotificationRulePojo() {
+    public RoomNotificationRulePojo() {
     }
 
     public String getContent() {

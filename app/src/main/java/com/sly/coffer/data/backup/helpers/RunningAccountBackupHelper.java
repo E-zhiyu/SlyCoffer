@@ -8,7 +8,7 @@ import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.RunningAccountDataMap;
-import com.sly.coffer.data.backup.maps.old.OldRunningAccountDataMap;
+import com.sly.coffer.data.backup.maps.old.room_v62.RoomRunningAccountDataMap;
 import com.sly.coffer.data.backup.pojo.AccountPojo;
 import com.sly.coffer.data.backup.pojo.AccountTagRefPojo;
 import com.sly.coffer.data.backup.pojo.AccountTransferPojo;
@@ -56,7 +56,7 @@ public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, 
     protected RunningAccountDataMap convertOldData(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
-        OldRunningAccountDataMap oldMap = mapper.readValue(json, OldRunningAccountDataMap.class);
+        RoomRunningAccountDataMap oldMap = mapper.readValue(json, RoomRunningAccountDataMap.class);
 
         //流水数据
         List<AccountPojo> accountPojoList = oldMap.getBasic_data().stream()

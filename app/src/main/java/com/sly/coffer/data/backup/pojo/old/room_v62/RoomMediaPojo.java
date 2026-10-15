@@ -1,14 +1,14 @@
-package com.sly.coffer.data.backup.pojo.old;
+package com.sly.coffer.data.backup.pojo.old.room_v62;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段\
-public class OldMediaPojo {
+public class RoomMediaPojo {
     private long pno;
     private long rno;
     private String uri;
 
-    public OldMediaPojo() {
+    public RoomMediaPojo() {
     }
 
     public long getPno() {

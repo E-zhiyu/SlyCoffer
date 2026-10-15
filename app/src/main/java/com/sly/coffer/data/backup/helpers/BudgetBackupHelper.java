@@ -7,10 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.BudgetDataMap;
-import com.sly.coffer.data.backup.maps.old.OldBudgetDataMap;
+import com.sly.coffer.data.backup.maps.old.room_v62.RoomBudgetDataMap;
 import com.sly.coffer.data.backup.pojo.BudgetPojo;
 import com.sly.coffer.data.backup.pojo.BudgetTagRefPojo;
-import com.sly.coffer.data.backup.pojo.old.OldBudgetPojo;
+import com.sly.coffer.data.backup.pojo.old.room_v62.RoomBudgetPojo;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
 import com.sly.coffer.ui.pages.budget.ResetFrequency;
@@ -54,7 +54,7 @@ public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDa
     protected BudgetDataMap convertOldData(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
-        OldBudgetDataMap oldMap = mapper.readValue(json, OldBudgetDataMap.class);
+        RoomBudgetDataMap oldMap = mapper.readValue(json, RoomBudgetDataMap.class);
 
         //预算
         List<BudgetPojo> budgetPojoList = oldMap.getBudget_data().stream()
@@ -77,7 +77,7 @@ public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDa
 
         //预算和标签的映射
         List<BudgetTagRefPojo> budgetTagRefPojoList = new ArrayList<>();
-        for (OldBudgetPojo old : oldMap.getBudget_data()) {
+        for (RoomBudgetPojo old : oldMap.getBudget_data()) {
             long budgetId = old.getBno();
             for (long tagId : old.getTagNoList()) {
                 BudgetTagRefPojo budgetTagRefPojo = new BudgetTagRefPojo();
