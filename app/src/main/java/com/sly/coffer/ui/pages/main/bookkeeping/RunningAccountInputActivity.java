@@ -303,6 +303,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                     binding.repayExtraLayout.setVisibility(View.VISIBLE);
 
                                     AccountEntity repayAccount = model.getRepayRelatedAccount();
+                                    accountExtraDataViewModel.updateRelatedLoan(repayAccount);
                                     if (account.getRepayAccountId() >= 0 && repayAccount != null) {
                                         binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
                                     }
