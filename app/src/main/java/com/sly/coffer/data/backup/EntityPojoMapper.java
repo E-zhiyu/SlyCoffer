@@ -111,10 +111,12 @@ public interface EntityPojoMapper {
 
     List<ExtraTransferPojo> toExtraTransferPojoList(List<ExtraTransferEntity> entityList);
 
+    @Mapping(target = "repayDate", source = "repayDate", qualifiedByName = "longToDate")
     ExtraLoanEntity toExtraLoanEntity(ExtraLoanPojo pojo);
 
     List<ExtraLoanEntity> toExtraLoanEntityList(List<ExtraLoanPojo> pojoList);
 
+    @Mapping(target = "repayDate", source = "repayDate", qualifiedByName = "dateToLong")
     ExtraLoanPojo toExtraLoanPojo(ExtraLoanEntity entity);
 
     List<ExtraLoanPojo> toExtraLoanPojoList(List<ExtraLoanEntity> entityList);
@@ -163,14 +165,6 @@ public interface EntityPojoMapper {
 
     List<NotificationRuleTagRefPojo> toNotificationRuleTagRefPojoList(List<NotificationRuleTagRefEntity> entityList);
 
-    NotificationRuleTransferEntity toNotificationRuleTransferEntity(NotificationRuleTransferPojo pojo);
-
-    List<NotificationRuleTransferEntity> toNotificationRuleTransferEntityList(List<NotificationRuleTransferPojo> pojoList);
-
-    NotificationRuleTransferPojo toNotificationRuleTransferPojo(NotificationRuleTransferEntity entity);
-
-    List<NotificationRuleTransferPojo> toNotificationRuleTransferPojoList(List<NotificationRuleTransferEntity> entityList);
-
     NotificationRuleGroupEntity toNotificationRuleGroupEntity(NotificationRuleGroupPojo pojo);
 
     List<NotificationRuleGroupEntity> toNotificationRuleGroupEntityList(List<NotificationRuleGroupPojo> pojoList);
@@ -218,14 +212,6 @@ public interface EntityPojoMapper {
     AccessibilityRuleTagRefPojo toAccessibilityRuleTagRefPojo(AccessibilityRuleTagRefEntity entity);
 
     List<AccessibilityRuleTagRefPojo> toAccessibilityRuleTagRefPojoList(List<AccessibilityRuleTagRefEntity> entityList);
-
-    AccessibilityRuleTransferEntity toAccessibilityRuleTransferEntity(AccessibilityRuleTransferPojo pojo);
-
-    List<AccessibilityRuleTransferEntity> toAccessibilityRuleTransferEntityList(List<AccessibilityRuleTransferPojo> pojoList);
-
-    AccessibilityRuleTransferPojo toAccessibilityRuleTransferPojo(AccessibilityRuleTransferEntity entity);
-
-    List<AccessibilityRuleTransferPojo> toAccessibilityRuleTransferPojoList(List<AccessibilityRuleTransferEntity> entityList);
 
     AccessibilityRuleKeywordGroupEntity toAccessibilityRuleKeywordGroupEntity(AccessibilityRuleKeywordGroupPojo pojo);
 
