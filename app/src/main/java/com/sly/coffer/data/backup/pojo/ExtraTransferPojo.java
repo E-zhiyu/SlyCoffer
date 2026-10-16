@@ -3,20 +3,20 @@ package com.sly.coffer.data.backup.pojo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
-public class AccountTransferPojo {
-    private long accountId;
+public class ExtraTransferPojo {
+    private long transferId;
     private String exportAccount;
     private String importAccount;
 
-    public AccountTransferPojo() {
+    public ExtraTransferPojo() {
     }
 
-    public long getAccountId() {
-        return accountId;
+    public long getTransferId() {
+        return transferId;
     }
 
-    public void setAccountId(long accountId) {
-        this.accountId = accountId;
+    public void setTransferId(long transferId) {
+        this.transferId = transferId;
     }
 
     public String getExportAccount() {

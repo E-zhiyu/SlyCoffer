@@ -18,7 +18,8 @@ import com.sly.coffer.data.backup.pojo.AccessibilityRuleTagRefPojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleTransferPojo;
 import com.sly.coffer.data.backup.pojo.AccountPojo;
 import com.sly.coffer.data.backup.pojo.AccountTagRefPojo;
-import com.sly.coffer.data.backup.pojo.AccountTransferPojo;
+import com.sly.coffer.data.backup.pojo.ExtraLoanPojo;
+import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 import com.sly.coffer.data.backup.pojo.BudgetPojo;
 import com.sly.coffer.data.backup.pojo.BudgetTagRefPojo;
 import com.sly.coffer.data.backup.pojo.MediaPojo;
@@ -35,9 +36,10 @@ import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
-import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
@@ -47,8 +49,11 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Dao
@@ -70,9 +75,19 @@ public interface DataBackupDao {
         List<AccountTagRefEntity> accountTagRefEntityList = readAccountTagRef();
         List<AccountTagRefPojo> accountTagRefPojoList = mapper.toAccountTagRefPojoList(accountTagRefEntityList);
 
-        //流水转账账户数据
-        List<AccountTransferEntity> accountTransferEntityList = readAccountTransfer();
-        List<AccountTransferPojo> accountTransferPojoList = mapper.toAccountTransferPojoList(accountTransferEntityList);
+        //转账账户数据
+        Set<Long> transferIdSet = accountEntityList.stream()
+                .map(AccountEntity::getTransferId)
+                .collect(Collectors.toSet());
+        List<ExtraTransferEntity> extraTransferEntityList = readExtraTransferById(transferIdSet);
+        List<ExtraTransferPojo> extraTransferPojoList = mapper.toExtraTransferPojoList(extraTransferEntityList);
+
+        //借款记录数据
+        Set<Long> loanIdSet = accountEntityList.stream()
+                .map(AccountEntity::getLoanId)
+                .collect(Collectors.toSet());
+        List<ExtraLoanEntity> extraLoanEntityList = readExtraLoanById(loanIdSet);
+        List<ExtraLoanPojo> extraLoanPojoList = mapper.toExtraLoanPojoList(extraLoanEntityList);
 
         //媒体数据
         List<MediaEntity> mediaEntityList = readMedia();
@@ -90,7 +105,8 @@ public interface DataBackupDao {
         RunningAccountDataMap map = new RunningAccountDataMap();
         map.setAccountList(accountPojoList);
         map.setAccountTagRefList(accountTagRefPojoList);
-        map.setAccountTransferList(accountTransferPojoList);
+        map.setExtraTransferList(extraTransferPojoList);
+        map.setExtraLoanList(extraLoanPojoList);
         map.setMediaList(mediaPojoList);
         map.setTagGroupList(tagGroupPojoList);
         map.setTagList(tagPojoList);
@@ -109,10 +125,15 @@ public interface DataBackupDao {
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
 
+        //清理旧的额外数据
+        List<Long> existedTransferId = getExistedAccountTransferId();
+        deleteExtraTransferById(existedTransferId);
+        List<Long> existedLoanId = getExistedAccountLoanId();
+        deleteExtraLoanById(existedLoanId);
+
         //清空旧数据
         clearRunningAccount();
         clearAccountTagRef();
-        clearAccountTransfer();
         clearMedia();
         clearTagGroup();
         clearTag();
@@ -132,19 +153,71 @@ public interface DataBackupDao {
         //流水记录数据
         List<AccountPojo> accountPojoList = data.getAccountList();
         if (accountPojoList != null && !accountPojoList.isEmpty()) {
-            writeRunningAccount(mapper.toAccountEntityList(accountPojoList));
+            //转账账户数据
+            List<AccountEntity> accountEntityList = mapper.toAccountEntityList(accountPojoList);
+            Map<Long, List<AccountEntity>> transferIdMap = accountEntityList.stream()
+                    .collect(Collectors.groupingBy(
+                            AccountEntity::getTransferId,
+                            HashMap::new,
+                            Collectors.toList()
+                    ));
+            List<ExtraTransferPojo> extraTransferPojoList = data.getExtraTransferList();
+            if (extraTransferPojoList != null && !extraTransferPojoList.isEmpty()) {
+                List<ExtraTransferEntity> extraTransferEntityList = mapper.toExtraTransferEntityList(extraTransferPojoList);
+                for (ExtraTransferEntity transfer : extraTransferEntityList) {
+                    long originTransferId = transfer.getTransferId();
+                    if (hasTransferIdConflict(originTransferId)) {
+                        transfer.setTransferId(0);  //设置为0以触发自增
+                        long newTransferId = writeExtraTransfer(transfer);
+                        List<AccountEntity> accountList = transferIdMap.get(originTransferId);
+                        if (accountList != null) {
+                            for (AccountEntity account : accountList) {
+                                account.setTransferId(newTransferId);
+                            }
+                        }
+                        transferIdMap.remove(originTransferId);
+                    } else {
+                        writeExtraTransfer(transfer);
+                    }
+                }
+            }
+
+            //借款记录数据
+            Map<Long, List<AccountEntity>> loanIdMap = accountEntityList.stream()
+                    .collect(Collectors.groupingBy(
+                            AccountEntity::getLoanId,
+                            HashMap::new,
+                            Collectors.toList()
+                    ));
+            List<ExtraLoanPojo> extraLoanPojoList = data.getExtraLoanList();
+            if (extraLoanPojoList != null && !extraLoanPojoList.isEmpty()) {
+                List<ExtraLoanEntity> extraLoanEntityList = mapper.toExtraLoanEntityList(extraLoanPojoList);
+                for (ExtraLoanEntity loan : extraLoanEntityList) {
+                    long originId = loan.getLoanId();
+                    if (hasLoanIdConflict(originId)) {
+                        loan.setLoanId(0);  //设置为0以触发自增
+                        long newId = writeExtraLoan(loan);
+                        List<AccountEntity> accountList = loanIdMap.get(originId);
+                        if (accountList != null) {
+                            for (AccountEntity account : accountList) {
+                                account.setLoanId(newId);
+                            }
+                        }
+                        loanIdMap.remove(originId);
+                    } else {
+                        writeExtraLoan(loan);
+                    }
+                }
+            }
+
+            //写入流水记录数据
+            writeRunningAccount(accountEntityList);
         }
 
         //流水标签数据
         List<AccountTagRefPojo> accountTagRefPojoList = data.getAccountTagRefList();
         if (accountTagRefPojoList != null && !accountTagRefPojoList.isEmpty()) {
             writeAccountTagRef(mapper.toAccountTagRefEntityList(accountTagRefPojoList));
-        }
-
-        //流水转账账户数据
-        List<AccountTransferPojo> accountTransferPojoList = data.getAccountTransferList();
-        if (accountTransferPojoList != null && !accountTransferPojoList.isEmpty()) {
-            writeAccountTransfer(mapper.toAccountTransferEntityList(accountTransferPojoList));
         }
 
         //媒体数据
@@ -448,26 +521,72 @@ public interface DataBackupDao {
     void writeAccountTagRef(List<AccountTagRefEntity> entityList);
 
     /**
-     * 读取流水记录的转账账户数据
+     * 根据编号读取转账账户数据
      *
+     * @param idSet 需要读取的转账账户数据的编号
      * @return 转账账户数据列表
      */
-    @Query("SELECT * FROM accounttransfers")
-    List<AccountTransferEntity> readAccountTransfer();
+    @Query("SELECT * FROM extraTransfer WHERE transferId IN (:idSet)")
+    List<ExtraTransferEntity> readExtraTransferById(Set<Long> idSet);
 
     /**
-     * 清空流水记录转账账户数据
-     */
-    @Query("DELETE FROM accountTransfers")
-    void clearAccountTransfer();
-
-    /**
-     * 写入流水记录转账账户数据
+     * 写入转账账户数据
      *
-     * @param entityList 转账账户数据
+     * @param entity 转账账户数据
+     * @return 插入后的主键
      */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    void writeAccountTransfer(List<AccountTransferEntity> entityList);
+    long writeExtraTransfer(ExtraTransferEntity entity);
+
+    /**
+     * 判断现有的表中是否有和指定主键值冲突的主键
+     *
+     * @param transferId 主键值
+     * @return 是否有主键冲突
+     */
+    @Query("SELECT EXISTS(SELECT 1 FROM extraTransfer WHERE transferId = :transferId)")
+    boolean hasTransferIdConflict(long transferId);
+
+    /**
+     * 通过转账账户编号删除转账账户数据
+     *
+     * @param idList 转账账户编号
+     */
+    @Query("DELETE FROM extratransfer WHERE transferId IN (:idList)")
+    void deleteExtraTransferById(List<Long> idList);
+
+    /**
+     * 通过编号读取借款记录数据
+     *
+     * @param idSet 借款记录编号集合
+     * @return 借款记录数据
+     */
+    List<ExtraLoanEntity> readExtraLoanById(Set<Long> idSet);
+
+    /**
+     * 通过借款记录编号删除借款记录
+     *
+     * @param idList 借款记录编号
+     */
+    @Query("DELETE FROM extraLoan WHERE loanId IN (:idList)")
+    void deleteExtraLoanById(List<Long> idList);
+
+    /**
+     * 判断是否有与指定主键冲突的主键值
+     *
+     * @param loanId 主键值
+     * @return 是否有主键冲突
+     */
+    @Query("SELECT EXISTS(SELECT 1 FROM extraLoan WHERE loanId = :loanId)")
+    boolean hasLoanIdConflict(long loanId);
+
+    /**
+     * 写入借款记录数据
+     *
+     * @param entity 待写入的借款记录数据
+     * @return 插入后的主键值
+     */
+    long writeExtraLoan(ExtraLoanEntity entity);
 
     /**
      * 读取媒体数据
@@ -784,4 +903,20 @@ public interface DataBackupDao {
      */
     @Query("SELECT tagId FROM tags")
     List<Long> getExistedTagId();
+
+    /**
+     * 获取现存的流水记录的转账账户编号
+     *
+     * @return 现存的流水记录的转账账户编号
+     */
+    @Query("SELECT transferId FROM accounts")
+    List<Long> getExistedAccountTransferId();
+
+    /**
+     * 获取现存的流水记录的借款记录编号
+     *
+     * @return 现存的流水记录的借款记录编号
+     */
+    @Query("SELECT loanId FROM accounts")
+    List<Long> getExistedAccountLoanId();
 }

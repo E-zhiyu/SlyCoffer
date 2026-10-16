@@ -8,7 +8,8 @@ import com.sly.coffer.data.backup.pojo.AccessibilityRuleTagRefPojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleTransferPojo;
 import com.sly.coffer.data.backup.pojo.AccountPojo;
 import com.sly.coffer.data.backup.pojo.AccountTagRefPojo;
-import com.sly.coffer.data.backup.pojo.AccountTransferPojo;
+import com.sly.coffer.data.backup.pojo.ExtraLoanPojo;
+import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 import com.sly.coffer.data.backup.pojo.BudgetPojo;
 import com.sly.coffer.data.backup.pojo.BudgetTagRefPojo;
 import com.sly.coffer.data.backup.pojo.MediaPojo;
@@ -30,6 +31,8 @@ import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
@@ -100,13 +103,21 @@ public interface EntityPojoMapper {
 
     List<AccountTagRefPojo> toAccountTagRefPojoList(List<AccountTagRefEntity> entityList);
 
-    AccountTransferEntity toAccountTransferEntity(AccountTransferPojo pojo);
+    ExtraTransferEntity toExtraTransferEntity(ExtraTransferPojo pojo);
 
-    List<AccountTransferEntity> toAccountTransferEntityList(List<AccountTransferPojo> pojoList);
+    List<ExtraTransferEntity> toExtraTransferEntityList(List<ExtraTransferPojo> pojoList);
 
-    AccountTransferPojo toAccountTransferPojo(AccountTransferEntity entity);
+    ExtraTransferPojo toExtraTransferPojo(ExtraTransferEntity entity);
 
-    List<AccountTransferPojo> toAccountTransferPojoList(List<AccountTransferEntity> entityList);
+    List<ExtraTransferPojo> toExtraTransferPojoList(List<ExtraTransferEntity> entityList);
+
+    ExtraLoanEntity toExtraLoanEntity(ExtraLoanPojo pojo);
+
+    List<ExtraLoanEntity> toExtraLoanEntityList(List<ExtraLoanPojo> pojoList);
+
+    ExtraLoanPojo toExtraLoanPojo(ExtraLoanEntity entity);
+
+    List<ExtraLoanPojo> toExtraLoanPojoList(List<ExtraLoanEntity> entityList);
 
     @Mapping(target = "startDate", source = "startDate", qualifiedByName = "longToDate")
     BudgetEntity toBudgetEntity(BudgetPojo pojo);

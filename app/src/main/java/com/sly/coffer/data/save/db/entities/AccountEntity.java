@@ -15,19 +15,22 @@ import java.time.LocalDateTime;
                         entity = ExtraTransferEntity.class,
                         parentColumns = "transferId",
                         childColumns = "transferId",
-                        onDelete = ForeignKey.SET_DEFAULT
+                        onDelete = ForeignKey.SET_DEFAULT,
+                        onUpdate = ForeignKey.CASCADE
                 ),
                 @ForeignKey(
                         entity = ExtraLoanEntity.class,
                         parentColumns = "loanId",
                         childColumns = "loanId",
-                        onDelete = ForeignKey.SET_DEFAULT
+                        onDelete = ForeignKey.SET_DEFAULT,
+                        onUpdate = ForeignKey.CASCADE
                 ),
                 @ForeignKey(
                         entity = AccountEntity.class,
                         parentColumns = "repayAccountId",
                         childColumns = "accountId",
-                        onDelete = ForeignKey.SET_DEFAULT
+                        onDelete = ForeignKey.SET_DEFAULT,
+                        onUpdate = ForeignKey.CASCADE
                 )
         },
         indices = {

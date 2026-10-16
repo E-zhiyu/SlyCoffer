@@ -11,7 +11,7 @@ import com.sly.coffer.data.backup.maps.RunningAccountDataMap;
 import com.sly.coffer.data.backup.maps.old.room_v62.RoomRunningAccountDataMap;
 import com.sly.coffer.data.backup.pojo.AccountPojo;
 import com.sly.coffer.data.backup.pojo.AccountTagRefPojo;
-import com.sly.coffer.data.backup.pojo.AccountTransferPojo;
+import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 import com.sly.coffer.data.backup.pojo.MediaPojo;
 import com.sly.coffer.data.backup.pojo.TagGroupPojo;
 import com.sly.coffer.data.backup.pojo.TagPojo;
@@ -87,10 +87,10 @@ public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, 
                 .collect(Collectors.toList());
 
         //流水记录的转账账户
-        List<AccountTransferPojo> accountTransferPojoList = oldMap.getTransfer_data().stream()
+        List<ExtraTransferPojo> extraTransferPojoList = oldMap.getTransfer_data().stream()
                 .map(old -> {
-                    AccountTransferPojo pojo = new AccountTransferPojo();
-                    pojo.setAccountId(old.getRno());
+                    ExtraTransferPojo pojo = new ExtraTransferPojo();
+                    pojo.setTransferId(old.getRno());
                     pojo.setExportAccount(old.getExport_account());
                     pojo.setImportAccount(old.getImport_account());
                     return pojo;
@@ -135,7 +135,7 @@ public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, 
         //实例化数据集合
         RunningAccountDataMap map = new RunningAccountDataMap();
         map.setAccountList(accountPojoList);
-        map.setAccountTransferList(accountTransferPojoList);
+        map.setExtraTransferList(extraTransferPojoList);
         map.setAccountTagRefList(accountTagRefPojoList);
         map.setMediaList(mediaPojoList);
         map.setTagGroupList(tagGroupPojoList);

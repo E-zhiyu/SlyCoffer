@@ -12,6 +12,7 @@ public class AccessibilityRulePojo {
     private String activityName;
     private long transferId = -1;
     private long loanId = -1;
+    private long repayAccountId = -1;
 
     public AccessibilityRulePojo() {
     }
@@ -78,5 +79,13 @@ public class AccessibilityRulePojo {
 
     public void setLoanId(long loanId) {
         this.loanId = loanId;
+    }
+
+    public long getRepayAccountId() {
+        return repayAccountId;
+    }
+
+    public void setRepayAccountId(long repayAccountId) {
+        this.repayAccountId = repayAccountId;
     }
 }

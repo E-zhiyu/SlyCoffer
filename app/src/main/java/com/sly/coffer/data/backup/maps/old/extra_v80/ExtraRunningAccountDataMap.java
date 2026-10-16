@@ -3,7 +3,7 @@ package com.sly.coffer.data.backup.maps.old.extra_v80;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sly.coffer.data.backup.pojo.AccountPojo;
 import com.sly.coffer.data.backup.pojo.AccountTagRefPojo;
-import com.sly.coffer.data.backup.pojo.AccountTransferPojo;
+import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 import com.sly.coffer.data.backup.pojo.MediaPojo;
 import com.sly.coffer.data.backup.pojo.TagGroupPojo;
 import com.sly.coffer.data.backup.pojo.TagPojo;
@@ -14,7 +14,7 @@ import java.util.List;
 public class ExtraRunningAccountDataMap {
     private List<AccountPojo> accountList;
     private List<AccountTagRefPojo> accountTagRefList;
-    private List<AccountTransferPojo> accountTransferList;
+    private List<ExtraTransferPojo> accountTransferList;
     private List<MediaPojo> mediaList;
     private List<TagGroupPojo> tagGroupList;
     private List<TagPojo> tagList;
@@ -38,11 +38,11 @@ public class ExtraRunningAccountDataMap {
         this.accountTagRefList = accountTagRefList;
     }
 
-    public List<AccountTransferPojo> getAccountTransferList() {
+    public List<ExtraTransferPojo> getAccountTransferList() {
         return accountTransferList;
     }
 
-    public void setAccountTransferList(List<AccountTransferPojo> accountTransferList) {
+    public void setAccountTransferList(List<ExtraTransferPojo> accountTransferList) {
         this.accountTransferList = accountTransferList;
     }
 
