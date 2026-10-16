@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleKeywordGroupPojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRulePojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleTagRefPojo;
-import com.sly.coffer.data.backup.pojo.AccessibilityRuleTransferPojo;
 import com.sly.coffer.data.backup.pojo.ExtraLoanPojo;
 import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 
