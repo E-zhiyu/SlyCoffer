@@ -1,40 +1,40 @@
 package com.sly.coffer.data.backup.maps.old.extra_v80;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.sly.coffer.data.backup.pojo.AccountPojo;
-import com.sly.coffer.data.backup.pojo.AccountTagRefPojo;
 import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
-import com.sly.coffer.data.backup.pojo.MediaPojo;
-import com.sly.coffer.data.backup.pojo.TagGroupPojo;
-import com.sly.coffer.data.backup.pojo.TagPojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraAccountPojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraAccountTagRefPojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraMediaPojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraTagGroupPojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraTagPojo;
 
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
 public class ExtraRunningAccountDataMap {
-    private List<AccountPojo> accountList;
-    private List<AccountTagRefPojo> accountTagRefList;
+    private List<ExtraAccountPojo> accountList;
+    private List<ExtraAccountTagRefPojo> accountTagRefList;
     private List<ExtraTransferPojo> accountTransferList;
-    private List<MediaPojo> mediaList;
-    private List<TagGroupPojo> tagGroupList;
-    private List<TagPojo> tagList;
+    private List<ExtraMediaPojo> mediaList;
+    private List<ExtraTagGroupPojo> tagGroupList;
+    private List<ExtraTagPojo> tagList;
 
     public ExtraRunningAccountDataMap() {
     }
 
-    public List<AccountPojo> getAccountList() {
+    public List<ExtraAccountPojo> getAccountList() {
         return accountList;
     }
 
-    public void setAccountList(List<AccountPojo> accountList) {
+    public void setAccountList(List<ExtraAccountPojo> accountList) {
         this.accountList = accountList;
     }
 
-    public List<AccountTagRefPojo> getAccountTagRefList() {
+    public List<ExtraAccountTagRefPojo> getAccountTagRefList() {
         return accountTagRefList;
     }
 
-    public void setAccountTagRefList(List<AccountTagRefPojo> accountTagRefList) {
+    public void setAccountTagRefList(List<ExtraAccountTagRefPojo> accountTagRefList) {
         this.accountTagRefList = accountTagRefList;
     }
 
@@ -46,27 +46,27 @@ public class ExtraRunningAccountDataMap {
         this.accountTransferList = accountTransferList;
     }
 
-    public List<MediaPojo> getMediaList() {
+    public List<ExtraMediaPojo> getMediaList() {
         return mediaList;
     }
 
-    public void setMediaList(List<MediaPojo> mediaList) {
+    public void setMediaList(List<ExtraMediaPojo> mediaList) {
         this.mediaList = mediaList;
     }
 
-    public List<TagGroupPojo> getTagGroupList() {
+    public List<ExtraTagGroupPojo> getTagGroupList() {
         return tagGroupList;
     }
 
-    public void setTagGroupList(List<TagGroupPojo> tagGroupList) {
+    public void setTagGroupList(List<ExtraTagGroupPojo> tagGroupList) {
         this.tagGroupList = tagGroupList;
     }
 
-    public List<TagPojo> getTagList() {
+    public List<ExtraTagPojo> getTagList() {
         return tagList;
     }
 
-    public void setTagList(List<TagPojo> tagList) {
+    public void setTagList(List<ExtraTagPojo> tagList) {
         this.tagList = tagList;
     }
 }

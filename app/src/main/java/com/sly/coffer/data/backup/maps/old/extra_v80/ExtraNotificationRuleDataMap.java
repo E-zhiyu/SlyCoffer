@@ -1,62 +1,62 @@
 package com.sly.coffer.data.backup.maps.old.extra_v80;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.sly.coffer.data.backup.pojo.NotificationRuleGroupPojo;
-import com.sly.coffer.data.backup.pojo.NotificationRuleGroupRefPojo;
-import com.sly.coffer.data.backup.pojo.NotificationRulePojo;
-import com.sly.coffer.data.backup.pojo.NotificationRuleTagRefPojo;
-import com.sly.coffer.data.backup.pojo.NotificationRuleTransferPojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraNotificationRuleGroupPojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraNotificationRuleGroupRefPojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraNotificationRulePojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraNotificationRuleTagRefPojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraNotificationRuleTransferPojo;
 
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
 public class ExtraNotificationRuleDataMap {
-    private List<NotificationRulePojo> notificationRuleList;
-    private List<NotificationRuleTagRefPojo> notificationRuleTagRefList;
-    private List<NotificationRuleTransferPojo> notificationRuleTransferList;
-    private List<NotificationRuleGroupPojo> notificationRuleGroupList;
-    private List<NotificationRuleGroupRefPojo> notificationRuleGroupRefList;
+    private List<ExtraNotificationRulePojo> notificationRuleList;
+    private List<ExtraNotificationRuleTagRefPojo> notificationRuleTagRefList;
+    private List<ExtraNotificationRuleTransferPojo> notificationRuleTransferList;
+    private List<ExtraNotificationRuleGroupPojo> notificationRuleGroupList;
+    private List<ExtraNotificationRuleGroupRefPojo> notificationRuleGroupRefList;
 
     public ExtraNotificationRuleDataMap() {
     }
 
-    public List<NotificationRulePojo> getNotificationRuleList() {
+    public List<ExtraNotificationRulePojo> getNotificationRuleList() {
         return notificationRuleList;
     }
 
-    public void setNotificationRuleList(List<NotificationRulePojo> notificationRuleList) {
+    public void setNotificationRuleList(List<ExtraNotificationRulePojo> notificationRuleList) {
         this.notificationRuleList = notificationRuleList;
     }
 
-    public List<NotificationRuleTagRefPojo> getNotificationRuleTagRefList() {
+    public List<ExtraNotificationRuleTagRefPojo> getNotificationRuleTagRefList() {
         return notificationRuleTagRefList;
     }
 
-    public void setNotificationRuleTagRefList(List<NotificationRuleTagRefPojo> notificationRuleTagRefList) {
+    public void setNotificationRuleTagRefList(List<ExtraNotificationRuleTagRefPojo> notificationRuleTagRefList) {
         this.notificationRuleTagRefList = notificationRuleTagRefList;
     }
 
-    public List<NotificationRuleTransferPojo> getNotificationRuleTransferList() {
+    public List<ExtraNotificationRuleTransferPojo> getNotificationRuleTransferList() {
         return notificationRuleTransferList;
     }
 
-    public void setNotificationRuleTransferList(List<NotificationRuleTransferPojo> notificationRuleTransferList) {
+    public void setNotificationRuleTransferList(List<ExtraNotificationRuleTransferPojo> notificationRuleTransferList) {
         this.notificationRuleTransferList = notificationRuleTransferList;
     }
 
-    public List<NotificationRuleGroupPojo> getNotificationRuleGroupList() {
+    public List<ExtraNotificationRuleGroupPojo> getNotificationRuleGroupList() {
         return notificationRuleGroupList;
     }
 
-    public void setNotificationRuleGroupList(List<NotificationRuleGroupPojo> notificationRuleGroupList) {
+    public void setNotificationRuleGroupList(List<ExtraNotificationRuleGroupPojo> notificationRuleGroupList) {
         this.notificationRuleGroupList = notificationRuleGroupList;
     }
 
-    public List<NotificationRuleGroupRefPojo> getNotificationRuleGroupRefList() {
+    public List<ExtraNotificationRuleGroupRefPojo> getNotificationRuleGroupRefList() {
         return notificationRuleGroupRefList;
     }
 
-    public void setNotificationRuleGroupRefList(List<NotificationRuleGroupRefPojo> notificationRuleGroupRefList) {
+    public void setNotificationRuleGroupRefList(List<ExtraNotificationRuleGroupRefPojo> notificationRuleGroupRefList) {
         this.notificationRuleGroupRefList = notificationRuleGroupRefList;
     }
 }
