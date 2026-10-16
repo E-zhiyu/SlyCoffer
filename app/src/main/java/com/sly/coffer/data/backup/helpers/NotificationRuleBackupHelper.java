@@ -71,6 +71,7 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
                 .collect(Collectors.toList());
 
         //通知规则转账账户
+        //TODO:重构旧数据升级逻辑
         List<NotificationRuleTransferPojo> notificationRuleTransferPojoList = oldMap.getRule_account().stream()
                 .map(old -> {
                     NotificationRuleTransferPojo pojo = new NotificationRuleTransferPojo();
@@ -95,7 +96,7 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
         //实例化数据集合
         NotificationRuleDataMap map = new NotificationRuleDataMap();
         map.setNotificationRuleList(notificationRulePojoList);
-        map.setNotificationRuleTransferList(notificationRuleTransferPojoList);
+        map.setExtraTransferList(notificationRuleTransferPojoList);
         map.setNotificationRuleTagRefList(notificationRuleTagRefPojoList);
         return map;
     }

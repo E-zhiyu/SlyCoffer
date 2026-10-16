@@ -27,7 +27,6 @@ import com.sly.coffer.data.backup.pojo.NotificationRuleGroupPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleGroupRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRulePojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTagRefPojo;
-import com.sly.coffer.data.backup.pojo.NotificationRuleTransferPojo;
 import com.sly.coffer.data.backup.pojo.TagGroupPojo;
 import com.sly.coffer.data.backup.pojo.TagPojo;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
@@ -45,7 +44,6 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 
@@ -262,8 +260,18 @@ public interface DataBackupDao {
         List<NotificationRuleTagRefPojo> notificationRuleTagRefPojoList = mapper.toNotificationRuleTagRefPojoList(notificationRuleTagRefEntityList);
 
         //转账账户数据
-        List<NotificationRuleTransferEntity> notificationRuleTransferEntityList = readNotificationRuleTransfer();
-        List<NotificationRuleTransferPojo> notificationRuleTransferPojoList = mapper.toNotificationRuleTransferPojoList(notificationRuleTransferEntityList);
+        Set<Long> transferIdSet = notificationRuleEntityList.stream()
+                .map(NotificationRuleEntity::getTransferId)
+                .collect(Collectors.toSet());
+        List<ExtraTransferEntity> extraTransferEntityList = readExtraTransferById(transferIdSet);
+        List<ExtraTransferPojo> extraTransferPojoList = mapper.toExtraTransferPojoList(extraTransferEntityList);
+
+        //借款记录数据
+        Set<Long> loanIdSet = notificationRuleEntityList.stream()
+                .map(NotificationRuleEntity::getLoanId)
+                .collect(Collectors.toSet());
+        List<ExtraLoanEntity> extraLoanEntityList = readExtraLoanById(loanIdSet);
+        List<ExtraLoanPojo> extraLoanPojoList = mapper.toExtraLoanPojoList(extraLoanEntityList);
 
         //分组数据
         List<NotificationRuleGroupEntity> notificationRuleGroupEntityList = readNotificationRuleGroup();
@@ -277,7 +285,8 @@ public interface DataBackupDao {
         NotificationRuleDataMap map = new NotificationRuleDataMap();
         map.setNotificationRuleList(notificationRulePojoList);
         map.setNotificationRuleTagRefList(notificationRuleTagRefPojoList);
-        map.setNotificationRuleTransferList(notificationRuleTransferPojoList);
+        map.setExtraTransferList(extraTransferPojoList);
+        map.setExtraLoanList(extraLoanPojoList);
         map.setNotificationRuleGroupList(notificationRuleGroupPojoList);
         map.setNotificationRuleGroupRefList(notificationRuleGroupRefPojoList);
 
@@ -295,17 +304,80 @@ public interface DataBackupDao {
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
 
+        //清空额外数据
+        List<Long> existedTransferIdList = getExistedNotificationRuleTransferId();
+        deleteExtraTransferById(existedTransferIdList);
+        List<Long> existedLoanIdList = getExistedNotificationRuleLoanId();
+        deleteExtraLoanById(existedLoanIdList);
+
         //清空旧数据
         clearNotificationRule();
         clearNotificationRuleTagRef();
-        clearNotificationRuleTransfer();
         clearNotificationRuleGroup();
         clearNotificationRuleGroupRef();
 
         //通知规则数据
         List<NotificationRulePojo> notificationRulePojoList = data.getNotificationRuleList();
         if (notificationRulePojoList != null && !notificationRulePojoList.isEmpty()) {
-            writeNotificationRule(mapper.toNotificationRuleEntityList(notificationRulePojoList));
+            //转账账户数据
+            List<NotificationRuleEntity> notificationRuleEntityList = mapper.toNotificationRuleEntityList(notificationRulePojoList);
+            Map<Long, List<NotificationRuleEntity>> transferIdMap = notificationRuleEntityList.stream()
+                    .collect(Collectors.groupingBy(
+                            NotificationRuleEntity::getTransferId,
+                            HashMap::new,
+                            Collectors.toList()
+                    ));
+            List<ExtraTransferPojo> extraTransferPojoList = data.getExtraTransferList();
+            if (extraTransferPojoList != null && !extraTransferPojoList.isEmpty()) {
+                List<ExtraTransferEntity> extraTransferEntityList = mapper.toExtraTransferEntityList(extraTransferPojoList);
+                for (ExtraTransferEntity transfer : extraTransferEntityList) {
+                    long originTransferId = transfer.getTransferId();
+                    if (hasTransferIdConflict(originTransferId)) {
+                        transfer.setTransferId(0);  //设置为0以触发自增
+                        long newTransferId = writeExtraTransfer(transfer);
+                        List<NotificationRuleEntity> accountList = transferIdMap.get(originTransferId);
+                        if (accountList != null) {
+                            for (NotificationRuleEntity rule : accountList) {
+                                rule.setTransferId(newTransferId);
+                            }
+                        }
+                        transferIdMap.remove(originTransferId);
+                    } else {
+                        writeExtraTransfer(transfer);
+                    }
+                }
+            }
+
+            //借款记录数据
+            Map<Long, List<NotificationRuleEntity>> loanIdMap = notificationRuleEntityList.stream()
+                    .collect(Collectors.groupingBy(
+                            NotificationRuleEntity::getLoanId,
+                            HashMap::new,
+                            Collectors.toList()
+                    ));
+            List<ExtraLoanPojo> extraLoanPojoList = data.getExtraLoanList();
+            if (extraLoanPojoList != null && !extraLoanPojoList.isEmpty()) {
+                List<ExtraLoanEntity> extraLoanEntityList = mapper.toExtraLoanEntityList(extraLoanPojoList);
+                for (ExtraLoanEntity loan : extraLoanEntityList) {
+                    long originId = loan.getLoanId();
+                    if (hasLoanIdConflict(originId)) {
+                        loan.setLoanId(0);  //设置为0以触发自增
+                        long newId = writeExtraLoan(loan);
+                        List<NotificationRuleEntity> accountList = loanIdMap.get(originId);
+                        if (accountList != null) {
+                            for (NotificationRuleEntity rule : accountList) {
+                                rule.setLoanId(newId);
+                            }
+                        }
+                        loanIdMap.remove(originId);
+                    } else {
+                        writeExtraLoan(loan);
+                    }
+                }
+            }
+
+            //写入通知规则数据
+            writeNotificationRule(notificationRuleEntityList);
         }
 
         //绑定的标签数据
@@ -316,12 +388,6 @@ public interface DataBackupDao {
                     .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
                     .collect(Collectors.toList());  //仅写入标签存在的映射
             writeNotificationRuleTagRef(mapper.toNotificationRuleTagRefEntityList(filteredTagRefPojoList));
-        }
-
-        //转账账户数据
-        List<NotificationRuleTransferPojo> notificationRuleTransferPojoList = data.getNotificationRuleTransferList();
-        if (notificationRuleTransferPojoList != null && !notificationRuleTransferPojoList.isEmpty()) {
-            writeNotificationRuleTransfer(mapper.toNotificationRuleTransferEntityList(notificationRuleTransferPojoList));
         }
 
         //分组数据
@@ -699,28 +765,6 @@ public interface DataBackupDao {
     void writeNotificationRuleTagRef(List<NotificationRuleTagRefEntity> entityList);
 
     /**
-     * 读取通知规则转账账户数据
-     *
-     * @return 转账账户数据列表
-     */
-    @Query("SELECT * FROM notificationRuleTransfers")
-    List<NotificationRuleTransferEntity> readNotificationRuleTransfer();
-
-    /**
-     * 清空通知规则转账账户数据
-     */
-    @Query("DELETE FROM notificationRuleTransfers")
-    void clearNotificationRuleTransfer();
-
-    /**
-     * 写入通知规则转账账户数据
-     *
-     * @param entityList 转账账户数据列表
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    void writeNotificationRuleTransfer(List<NotificationRuleTransferEntity> entityList);
-
-    /**
      * 读取通知规则分组
      *
      * @return 通知规则分组数据
@@ -919,4 +963,20 @@ public interface DataBackupDao {
      */
     @Query("SELECT loanId FROM accounts")
     List<Long> getExistedAccountLoanId();
+
+    /**
+     * 获取现存的通知规则的转账账户编号
+     *
+     * @return 现存的通知规则的转账账户编号
+     */
+    @Query("SELECT transferId FROM notificationRules")
+    List<Long> getExistedNotificationRuleTransferId();
+
+    /**
+     * 获取现存的通知规则的借款记录编号
+     *
+     * @return 获取现存的通知规则的借款记录编号
+     */
+    @Query("SELECT loanId FROM notificationRules")
+    List<Long> getExistedNotificationRuleLoanId();
 }
