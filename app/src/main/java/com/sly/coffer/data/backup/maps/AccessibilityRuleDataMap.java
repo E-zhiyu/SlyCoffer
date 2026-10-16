@@ -5,48 +5,59 @@ import com.sly.coffer.data.backup.pojo.AccessibilityRuleKeywordGroupPojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRulePojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleTagRefPojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleTransferPojo;
+import com.sly.coffer.data.backup.pojo.ExtraLoanPojo;
+import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
 public class AccessibilityRuleDataMap {
-    private List<AccessibilityRulePojo> rulePojoList;
-    private List<AccessibilityRuleTagRefPojo> tagRefPojoList;
-    private List<AccessibilityRuleTransferPojo> transferPojoList;
-    private List<AccessibilityRuleKeywordGroupPojo> keywordGroupPojoList;
+    private List<AccessibilityRulePojo> ruleList;
+    private List<AccessibilityRuleTagRefPojo> tagRefList;
+    private List<ExtraTransferPojo> extraTransferList;
+    private List<ExtraLoanPojo> extraLoanList;
+    private List<AccessibilityRuleKeywordGroupPojo> keywordGroupList;
 
     public AccessibilityRuleDataMap() {
     }
 
-    public List<AccessibilityRulePojo> getRulePojoList() {
-        return rulePojoList;
+    public List<AccessibilityRulePojo> getRuleList() {
+        return ruleList;
     }
 
-    public void setRulePojoList(List<AccessibilityRulePojo> rulePojoList) {
-        this.rulePojoList = rulePojoList;
+    public void setRuleList(List<AccessibilityRulePojo> ruleList) {
+        this.ruleList = ruleList;
     }
 
-    public List<AccessibilityRuleTagRefPojo> getTagRefPojoList() {
-        return tagRefPojoList;
+    public List<AccessibilityRuleTagRefPojo> getTagRefList() {
+        return tagRefList;
     }
 
-    public void setTagRefPojoList(List<AccessibilityRuleTagRefPojo> tagRefPojoList) {
-        this.tagRefPojoList = tagRefPojoList;
+    public void setTagRefList(List<AccessibilityRuleTagRefPojo> tagRefList) {
+        this.tagRefList = tagRefList;
     }
 
-    public List<AccessibilityRuleTransferPojo> getTransferPojoList() {
-        return transferPojoList;
+    public List<ExtraTransferPojo> getExtraTransferList() {
+        return extraTransferList;
     }
 
-    public void setTransferPojoList(List<AccessibilityRuleTransferPojo> transferPojoList) {
-        this.transferPojoList = transferPojoList;
+    public void setExtraTransferList(List<ExtraTransferPojo> extraTransferList) {
+        this.extraTransferList = extraTransferList;
     }
 
-    public List<AccessibilityRuleKeywordGroupPojo> getKeywordGroupPojoList() {
-        return keywordGroupPojoList;
+    public List<ExtraLoanPojo> getExtraLoanList() {
+        return extraLoanList;
     }
 
-    public void setKeywordGroupPojoList(List<AccessibilityRuleKeywordGroupPojo> keywordGroupPojoList) {
-        this.keywordGroupPojoList = keywordGroupPojoList;
+    public void setExtraLoanList(List<ExtraLoanPojo> extraLoanList) {
+        this.extraLoanList = extraLoanList;
+    }
+
+    public List<AccessibilityRuleKeywordGroupPojo> getKeywordGroupList() {
+        return keywordGroupList;
+    }
+
+    public void setKeywordGroupList(List<AccessibilityRuleKeywordGroupPojo> keywordGroupList) {
+        this.keywordGroupList = keywordGroupList;
     }
 }

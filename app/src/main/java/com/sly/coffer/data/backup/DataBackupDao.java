@@ -15,7 +15,6 @@ import com.sly.coffer.data.backup.maps.RunningAccountDataMap;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleKeywordGroupPojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRulePojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleTagRefPojo;
-import com.sly.coffer.data.backup.pojo.AccessibilityRuleTransferPojo;
 import com.sly.coffer.data.backup.pojo.AccountPojo;
 import com.sly.coffer.data.backup.pojo.AccountTagRefPojo;
 import com.sly.coffer.data.backup.pojo.ExtraLoanPojo;
@@ -32,7 +31,6 @@ import com.sly.coffer.data.backup.pojo.TagPojo;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
@@ -163,17 +161,17 @@ public interface DataBackupDao {
             if (extraTransferPojoList != null && !extraTransferPojoList.isEmpty()) {
                 List<ExtraTransferEntity> extraTransferEntityList = mapper.toExtraTransferEntityList(extraTransferPojoList);
                 for (ExtraTransferEntity transfer : extraTransferEntityList) {
-                    long originTransferId = transfer.getTransferId();
-                    if (hasTransferIdConflict(originTransferId)) {
+                    long originId = transfer.getTransferId();
+                    if (hasTransferIdConflict(originId)) {
                         transfer.setTransferId(0);  //设置为0以触发自增
-                        long newTransferId = writeExtraTransfer(transfer);
-                        List<AccountEntity> accountList = transferIdMap.get(originTransferId);
+                        long newId = writeExtraTransfer(transfer);
+                        List<AccountEntity> accountList = transferIdMap.get(originId);
                         if (accountList != null) {
                             for (AccountEntity account : accountList) {
-                                account.setTransferId(newTransferId);
+                                account.setTransferId(newId);
                             }
                         }
-                        transferIdMap.remove(originTransferId);
+                        transferIdMap.remove(originId);
                     } else {
                         writeExtraTransfer(transfer);
                     }
@@ -477,8 +475,18 @@ public interface DataBackupDao {
         List<AccessibilityRuleTagRefPojo> tagRefPojoList = mapper.toAccessibilityRuleTagRefPojoList(tagRefEntityList);
 
         //转账账户
-        List<AccessibilityRuleTransferEntity> transferEntityList = readAccessibilityRuleTransfer();
-        List<AccessibilityRuleTransferPojo> transferPojoList = mapper.toAccessibilityRuleTransferPojoList(transferEntityList);
+        Set<Long> transferIdSet = ruleEntityList.stream()
+                .map(AccessibilityRuleEntity::getTransferId)
+                .collect(Collectors.toSet());
+        List<ExtraTransferEntity> transferEntityList = readExtraTransferById(transferIdSet);
+        List<ExtraTransferPojo> transferPojoList = mapper.toExtraTransferPojoList(transferEntityList);
+
+        //借款记录
+        Set<Long> loanIdSet = ruleEntityList.stream()
+                .map(AccessibilityRuleEntity::getLoanId)
+                .collect(Collectors.toSet());
+        List<ExtraLoanEntity> extraLoanEntityList = readExtraLoanById(loanIdSet);
+        List<ExtraLoanPojo> extraLoanPojoList = mapper.toExtraLoanPojoList(extraLoanEntityList);
 
         //关键词组合
         List<AccessibilityRuleKeywordGroupEntity> keywordGroupEntityList = readAccessibilityRuleKeywordGroup();
@@ -486,10 +494,11 @@ public interface DataBackupDao {
 
         //实例化 Map
         AccessibilityRuleDataMap map = new AccessibilityRuleDataMap();
-        map.setRulePojoList(rulePojoList);
-        map.setTagRefPojoList(tagRefPojoList);
-        map.setTransferPojoList(transferPojoList);
-        map.setKeywordGroupPojoList(keywordGroupPojoList);
+        map.setRuleList(rulePojoList);
+        map.setTagRefList(tagRefPojoList);
+        map.setExtraTransferList(transferPojoList);
+        map.setExtraLoanList(extraLoanPojoList);
+        map.setKeywordGroupList(keywordGroupPojoList);
 
         return map;
     }
@@ -504,22 +513,84 @@ public interface DataBackupDao {
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
 
+        //清空旧额外数据
+        List<Long> existedTransferIdList = getExistedAccessibilityRuleTransferId();
+        deleteExtraTransferById(existedTransferIdList);
+        List<Long> existedLoanIdList = getExistedAccessibilityRuleLoanId();
+        deleteExtraLoanById(existedLoanIdList);
+
         //清空旧数据
         clearAccessibilityRule();
         clearAccessibilityRuleTagRef();
-        clearAccessibilityRuleTransfer();
         clearAccessibilityRuleKeywordGroup();
 
         //规则
-        List<AccessibilityRulePojo> rulePojoList = data.getRulePojoList();
+        List<AccessibilityRulePojo> rulePojoList = data.getRuleList();
         if (rulePojoList != null && !rulePojoList.isEmpty()) {
-            List<AccessibilityRuleEntity> ruleEntityList = mapper.toAccessibilityRuleEntityList(data.getRulePojoList());
+            //转账账户数据
+            List<AccessibilityRuleEntity> ruleEntityList = mapper.toAccessibilityRuleEntityList(data.getRuleList());
+            Map<Long, List<AccessibilityRuleEntity>> transferIdMap = ruleEntityList.stream()
+                    .collect(Collectors.groupingBy(
+                            AccessibilityRuleEntity::getTransferId,
+                            HashMap::new,
+                            Collectors.toList()
+                    ));
+            List<ExtraTransferPojo> extraTransferPojoList = data.getExtraTransferList();
+            if (extraTransferPojoList != null && !extraTransferPojoList.isEmpty()) {
+                List<ExtraTransferEntity> extraTransferEntityList = mapper.toExtraTransferEntityList(extraTransferPojoList);
+                for (ExtraTransferEntity transfer : extraTransferEntityList) {
+                    long originTransferId = transfer.getTransferId();
+                    if (hasTransferIdConflict(originTransferId)) {
+                        transfer.setTransferId(0);  //设置为0以触发自增
+                        long newTransferId = writeExtraTransfer(transfer);
+                        List<AccessibilityRuleEntity> accountList = transferIdMap.get(originTransferId);
+                        if (accountList != null) {
+                            for (AccessibilityRuleEntity rule : accountList) {
+                                rule.setTransferId(newTransferId);
+                            }
+                        }
+                        transferIdMap.remove(originTransferId);
+                    } else {
+                        writeExtraTransfer(transfer);
+                    }
+                }
+            }
+
+            //借款记录数据
+            Map<Long, List<AccessibilityRuleEntity>> loanIdMap = ruleEntityList.stream()
+                    .collect(Collectors.groupingBy(
+                            AccessibilityRuleEntity::getLoanId,
+                            HashMap::new,
+                            Collectors.toList()
+                    ));
+            List<ExtraLoanPojo> extraLoanPojoList = data.getExtraLoanList();
+            if (extraLoanPojoList != null && !extraLoanPojoList.isEmpty()) {
+                List<ExtraLoanEntity> extraLoanEntityList = mapper.toExtraLoanEntityList(extraLoanPojoList);
+                for (ExtraLoanEntity loan : extraLoanEntityList) {
+                    long originId = loan.getLoanId();
+                    if (hasLoanIdConflict(originId)) {
+                        loan.setLoanId(0);  //设置为0以触发自增
+                        long newId = writeExtraLoan(loan);
+                        List<AccessibilityRuleEntity> accountList = loanIdMap.get(originId);
+                        if (accountList != null) {
+                            for (AccessibilityRuleEntity rule : accountList) {
+                                rule.setLoanId(newId);
+                            }
+                        }
+                        loanIdMap.remove(originId);
+                    } else {
+                        writeExtraLoan(loan);
+                    }
+                }
+            }
+
+            //写入无障碍规则数据
             writeAccessibilityRule(ruleEntityList);
         }
 
         //标签映射
         List<Long> existedTagIdList = getExistedTagId();
-        List<AccessibilityRuleTagRefPojo> tagRefPojoList = data.getTagRefPojoList();
+        List<AccessibilityRuleTagRefPojo> tagRefPojoList = data.getTagRefList();
         if (tagRefPojoList != null && !tagRefPojoList.isEmpty()) {
             List<AccessibilityRuleTagRefPojo> filteredTagRefPojoList = tagRefPojoList.stream()
                     .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
@@ -527,15 +598,8 @@ public interface DataBackupDao {
             writeAccessibilityRuleTagRef(mapper.toAccessibilityRuleTagRefEntityList(filteredTagRefPojoList));
         }
 
-        //转账账户
-        List<AccessibilityRuleTransferPojo> transferPojoList = data.getTransferPojoList();
-        if (transferPojoList != null && !transferPojoList.isEmpty()) {
-            List<AccessibilityRuleTransferEntity> transferEntityList = mapper.toAccessibilityRuleTransferEntityList(transferPojoList);
-            writeAccessibilityRuleTransfer(transferEntityList);
-        }
-
         //关键词组合
-        List<AccessibilityRuleKeywordGroupPojo> keywordGroupPojoList = data.getKeywordGroupPojoList();
+        List<AccessibilityRuleKeywordGroupPojo> keywordGroupPojoList = data.getKeywordGroupList();
         if (keywordGroupPojoList != null && !keywordGroupPojoList.isEmpty()) {
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupEntityList = mapper.toAccessibilityRuleKeywordGroupEntityList(keywordGroupPojoList);
             writeAccessibilityRuleKeywordGroup(keywordGroupEntityList);
@@ -897,28 +961,6 @@ public interface DataBackupDao {
     void writeAccessibilityRuleTagRef(List<AccessibilityRuleTagRefEntity> entityList);
 
     /**
-     * 读取无障碍规则的转账账户
-     *
-     * @return 无障碍规则的转账账户
-     */
-    @Query("SELECT * FROM accessibilityRuleTransfers")
-    List<AccessibilityRuleTransferEntity> readAccessibilityRuleTransfer();
-
-    /**
-     * 清空无障碍规则的转账账户数据
-     */
-    @Query("DELETE FROM accessibilityRuleTransfers")
-    void clearAccessibilityRuleTransfer();
-
-    /**
-     * 写入无障碍规则的转账账户
-     *
-     * @param entityList 待写入的数据
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    void writeAccessibilityRuleTransfer(List<AccessibilityRuleTransferEntity> entityList);
-
-    /**
      * 读取无障碍规则的关键词组合
      *
      * @return 无障碍规则的关键词组合
@@ -979,4 +1021,20 @@ public interface DataBackupDao {
      */
     @Query("SELECT loanId FROM notificationRules")
     List<Long> getExistedNotificationRuleLoanId();
+
+    /**
+     * 获取现存的无障碍规则的转账账户编号
+     *
+     * @return 现存的无障碍规则的转账账户编号
+     */
+    @Query("SELECT transferId FROM accessibilityRules")
+    List<Long> getExistedAccessibilityRuleTransferId();
+
+    /**
+     * 获取现存的无障碍规则的借款记录编号
+     *
+     * @return 现存的无障碍规则的借款记录编号
+     */
+    @Query("SELECT loanId FROM accessibilityRules")
+    List<Long> getExistedAccessibilityRuleLoanId();
 }
