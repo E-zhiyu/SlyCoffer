@@ -8,12 +8,14 @@ import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.NotificationRuleDataMap;
 import com.sly.coffer.data.backup.maps.old.room_v62.RoomNotificationRuleDataMap;
+import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRulePojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTagRefPojo;
-import com.sly.coffer.data.backup.pojo.NotificationRuleTransferPojo;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb, NotificationRuleDataMap> {
@@ -70,12 +72,25 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
                 })
                 .collect(Collectors.toList());
 
-        //通知规则转账账户
-        //TODO:重构旧数据升级逻辑
-        List<NotificationRuleTransferPojo> notificationRuleTransferPojoList = oldMap.getRule_account().stream()
+        //转账账户
+        Map<Long, NotificationRulePojo> ruleIdMap = notificationRulePojoList.stream()
+                .collect(Collectors.toMap(
+                        NotificationRulePojo::getRuleId,
+                        Function.identity()
+                ));
+        List<ExtraTransferPojo> notificationRuleTransferPojoList = oldMap.getRule_account().stream()
                 .map(old -> {
-                    NotificationRuleTransferPojo pojo = new NotificationRuleTransferPojo();
-                    pojo.setRuleId(old.getRuleNo());
+                    long oldRuleNo = old.getRuleNo();
+
+                    //更新 NotificationRulePojo 的 transferId
+                    NotificationRulePojo rulePojo = ruleIdMap.get(oldRuleNo);
+                    if (rulePojo != null) {
+                        rulePojo.setTransferId(oldRuleNo);
+                    }
+
+                    //创建转账账户记录 Pojo 对象
+                    ExtraTransferPojo pojo = new ExtraTransferPojo();
+                    pojo.setTransferId(oldRuleNo);
                     pojo.setExportAccount(old.getExportAccount());
                     pojo.setImportAccount(old.getImportAccount());
                     return pojo;
