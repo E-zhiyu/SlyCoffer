@@ -89,9 +89,8 @@ public class DatabaseMigrations {
 
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase db) {
-            //关闭外键并开启事务
+            //关闭外键
             db.execSQL("PRAGMA foreign_keys = OFF");
-            db.execSQL("BEGIN TRANSACTION");
 
             //添加额外数据表
             db.execSQL("CREATE TABLE IF NOT EXISTS `extraTransfer` (`transferId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exportAccount` TEXT, `importAccount` TEXT)");
@@ -145,7 +144,7 @@ public class DatabaseMigrations {
                 try (Cursor idCursor = db.query("SELECT last_insert_rowid()")) {
                     idCursor.moveToFirst();
                     newTransferId = idCursor.getLong(0);
-                    db.execSQL("UPDATE notificationRulesNew SET transferId = ? WHERE accountId = ?",
+                    db.execSQL("UPDATE notificationRulesNew SET transferId = ? WHERE ruleId = ?",
                             new Object[]{newTransferId, oldId});
                 }
             }
@@ -167,7 +166,7 @@ public class DatabaseMigrations {
                 try (Cursor idCursor = db.query("SELECT last_insert_rowid()")) {
                     idCursor.moveToFirst();
                     newTransferId = idCursor.getLong(0);
-                    db.execSQL("UPDATE accessibilityRulesNew SET transferId = ? WHERE accountId = ?",
+                    db.execSQL("UPDATE accessibilityRulesNew SET transferId = ? WHERE ruleId = ?",
                             new Object[]{newTransferId, oldId});
                 }
             }
@@ -201,8 +200,7 @@ public class DatabaseMigrations {
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_accessibilityRules_loanId` ON `accessibilityRules` (`loanId`)");
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_accessibilityRules_repayAccountId` ON `accessibilityRules` (`repayAccountId`)");
 
-            //提交事务并重启外键
-            db.execSQL("COMMIT");
+            //重启外键
             db.execSQL("PRAGMA foreign_keys = ON");
         }
     };
