@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.BudgetDataMap;
+import com.sly.coffer.data.backup.maps.old.extra_v80.ExtraBudgetDataMap;
 import com.sly.coffer.data.backup.maps.old.room_v62.RoomBudgetDataMap;
 import com.sly.coffer.data.backup.pojo.BudgetPojo;
 import com.sly.coffer.data.backup.pojo.BudgetTagRefPojo;
@@ -96,6 +97,40 @@ public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDa
 
     @Override
     protected BudgetDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
-        return null;
+        //获取旧数据的集合
+        ObjectMapper mapper = new ObjectMapper();
+        ExtraBudgetDataMap oldMap = mapper.readValue(json, ExtraBudgetDataMap.class);
+
+        //预算数据
+        List<BudgetPojo> budgetList = oldMap.getBudgetList().stream()
+                .map(old -> {
+                    BudgetPojo pojo = new BudgetPojo();
+                    pojo.setBudgetId(old.getBudgetId());
+                    pojo.setName(old.getName());
+                    pojo.setInitAmount(old.getInitAmount());
+                    pojo.setBalance(old.getBalance());
+                    pojo.setStartDate(old.getStartDate());
+                    pojo.setResetFrequency(old.getResetFrequency());
+                    pojo.setLowBalanceRatio(old.getLowBalanceRatio());
+
+                    return pojo;
+                })
+                .collect(Collectors.toList());
+
+        //与标签的映射数据
+        List<BudgetTagRefPojo> tagRefList = oldMap.getBudgetTagRefList().stream()
+                .map(old -> {
+                    BudgetTagRefPojo pojo = new BudgetTagRefPojo();
+                    pojo.setBudgetId(old.getBudgetId());
+                    pojo.setTagId(old.getTagId());
+
+                    return pojo;
+                })
+                .collect(Collectors.toList());
+
+        BudgetDataMap map = new BudgetDataMap();
+        map.setBudgetList(budgetList);
+        map.setBudgetTagRefList(tagRefList);
+        return map;
     }
 }
