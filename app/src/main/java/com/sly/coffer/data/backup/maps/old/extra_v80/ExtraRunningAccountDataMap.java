@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraAccountPojo;
 import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraAccountTagRefPojo;
+import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraAccountTransferPojo;
 import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraMediaPojo;
 import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraTagGroupPojo;
 import com.sly.coffer.data.backup.pojo.old.extra_v80.ExtraTagPojo;
@@ -14,7 +15,7 @@ import java.util.List;
 public class ExtraRunningAccountDataMap {
     private List<ExtraAccountPojo> accountList;
     private List<ExtraAccountTagRefPojo> accountTagRefList;
-    private List<ExtraTransferPojo> accountTransferList;
+    private List<ExtraAccountTransferPojo> accountTransferList;
     private List<ExtraMediaPojo> mediaList;
     private List<ExtraTagGroupPojo> tagGroupList;
     private List<ExtraTagPojo> tagList;
@@ -38,11 +39,11 @@ public class ExtraRunningAccountDataMap {
         this.accountTagRefList = accountTagRefList;
     }
 
-    public List<ExtraTransferPojo> getAccountTransferList() {
+    public List<ExtraAccountTransferPojo> getAccountTransferList() {
         return accountTransferList;
     }
 
-    public void setAccountTransferList(List<ExtraTransferPojo> accountTransferList) {
+    public void setAccountTransferList(List<ExtraAccountTransferPojo> accountTransferList) {
         this.accountTransferList = accountTransferList;
     }
 
