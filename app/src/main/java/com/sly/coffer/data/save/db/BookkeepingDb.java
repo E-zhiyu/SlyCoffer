@@ -42,28 +42,24 @@ import java.util.List;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
-//TODO:记得删除 AccountTransferEntity、NotificationRuleTransferEntity、AccessibilityRuleTransferEntity
 @Database(
         entities = {
-                BudgetEntity.class,
-                BudgetTagRefEntity.class,
+                AccountEntity.class,
+                AccountTagRefEntity.class,
                 NotificationRuleEntity.class,
-//                NotificationRuleTransferEntity.class,
                 NotificationRuleTagRefEntity.class,
                 NotificationRuleGroupEntity.class,
                 NotificationRuleGroupRefEntity.class,
-                AccountEntity.class,
-//                AccountTransferEntity.class,
-                AccountTagRefEntity.class,
+                CapturedNotificationEntity.class,
                 ExtraTransferEntity.class,
                 ExtraLoanEntity.class,
                 MediaEntity.class,
                 TagEntity.class,
                 TagGroupEntity.class,
-                CapturedNotificationEntity.class,
+                BudgetEntity.class,
+                BudgetTagRefEntity.class,
                 AccessibilityRuleEntity.class,
                 AccessibilityRuleTagRefEntity.class,
-//                AccessibilityRuleTransferEntity.class,
                 AccessibilityRuleKeywordGroupEntity.class,
                 PickedPageEntity.class
         },

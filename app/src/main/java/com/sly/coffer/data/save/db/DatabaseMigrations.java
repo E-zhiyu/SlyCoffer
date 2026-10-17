@@ -1,5 +1,7 @@
 package com.sly.coffer.data.save.db;
 
+import android.database.Cursor;
+
 import androidx.annotation.NonNull;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
@@ -79,16 +81,129 @@ public class DatabaseMigrations {
         }
     };
 
-    //添加借款记录相关的数据实体
+    //添加额外数据表
+    //重建流水记录和两个自动记账规则表，用于添加外键约束
+    //删除旧版的转账账户表
+    //迁移旧版数据
     static final Migration MIGRATION_7_8 = new Migration(7, 8) {
+
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase db) {
-            //TODO:同步这里的数据库更新逻辑
-            //TODO:添加旧数据结构迁移逻辑
-            db.execSQL("CREATE TABLE IF NOT EXISTS `loans` (`accountId` INTEGER NOT NULL, `loanTargetName` TEXT, `interestPeriodType` INTEGER NOT NULL, `yearBasepoint` INTEGER NOT NULL, `allowCompoundInterest` INTEGER NOT NULL, `repayDate` INTEGER, PRIMARY KEY(`accountId`), FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )");
-            db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_accountId` ON `loans` (`accountId`)");
-            db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_loanTargetName` ON `loans` (`loanTargetName`)");
-            db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_repayDate` ON `loans` (`repayDate`)");
+            //关闭外键并开启事务
+            db.execSQL("PRAGMA foreign_keys = OFF");
+            db.execSQL("BEGIN TRANSACTION");
+
+            //添加额外数据表
+            db.execSQL("CREATE TABLE IF NOT EXISTS `extraTransfer` (`transferId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exportAccount` TEXT, `importAccount` TEXT)");
+            db.execSQL("CREATE TABLE IF NOT EXISTS `extraLoan` (`loanId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `loanTargetName` TEXT, `interestPeriodType` INTEGER NOT NULL, `yearBasepoint` INTEGER NOT NULL, `allowCompoundInterest` INTEGER NOT NULL, `repayDate` INTEGER)");
+
+            //创建带有外键约束的表
+            db.execSQL("CREATE TABLE IF NOT EXISTS `accountsNew` (`accountId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `amount` REAL NOT NULL, `remark` TEXT, `type` INTEGER NOT NULL, `dateTime` INTEGER, `autoTag` INTEGER NOT NULL DEFAULT 0, `transferId` INTEGER DEFAULT NULL, `loanId` INTEGER DEFAULT NULL, `repayAccountId` INTEGER DEFAULT NULL, FOREIGN KEY(`transferId`) REFERENCES `extraTransfer`(`transferId`) ON UPDATE CASCADE ON DELETE SET DEFAULT , FOREIGN KEY(`loanId`) REFERENCES `extraLoan`(`loanId`) ON UPDATE CASCADE ON DELETE SET DEFAULT , FOREIGN KEY(`repayAccountId`) REFERENCES `accounts`(`accountId`) ON UPDATE CASCADE ON DELETE SET DEFAULT )");
+            db.execSQL("CREATE TABLE IF NOT EXISTS `notificationRulesNew` (`ruleId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `type` INTEGER NOT NULL, `packageName` TEXT, `targetTitle` TEXT, `contentRegex` TEXT, `captureGroupPos` INTEGER NOT NULL DEFAULT 1, `enabled` INTEGER NOT NULL DEFAULT true, `transferId` INTEGER DEFAULT NULL, `loanId` INTEGER DEFAULT NULL, `repayAccountId` INTEGER DEFAULT NULL, FOREIGN KEY(`transferId`) REFERENCES `extraTransfer`(`transferId`) ON UPDATE CASCADE ON DELETE SET DEFAULT , FOREIGN KEY(`loanId`) REFERENCES `extraLoan`(`loanId`) ON UPDATE CASCADE ON DELETE SET DEFAULT , FOREIGN KEY(`repayAccountId`) REFERENCES `accounts`(`accountId`) ON UPDATE CASCADE ON DELETE SET DEFAULT )");
+            db.execSQL("CREATE TABLE IF NOT EXISTS `accessibilityRulesNew` (`ruleId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `type` INTEGER NOT NULL, `enabled` INTEGER NOT NULL DEFAULT true, `packageName` TEXT, `activityName` TEXT, `transferId` INTEGER DEFAULT NULL, `loanId` INTEGER DEFAULT NULL, `repayAccountId` INTEGER DEFAULT NULL, FOREIGN KEY(`transferId`) REFERENCES `extraTransfer`(`transferId`) ON UPDATE CASCADE ON DELETE SET DEFAULT , FOREIGN KEY(`loanId`) REFERENCES `extraLoan`(`loanId`) ON UPDATE CASCADE ON DELETE SET DEFAULT , FOREIGN KEY(`repayAccountId`) REFERENCES `accounts`(`accountId`) ON UPDATE CASCADE ON DELETE SET DEFAULT )");
+
+            //将需要重建的旧表数据迁移到新表（不包含转账账户等数据）
+            db.execSQL("INSERT INTO accountsNew (accountId, amount, remark, type, dateTime, autoTag) SELECT accountId, amount, remark, type, dateTime, autoTag FROM accounts");
+            db.execSQL("INSERT INTO notificationRulesNew (ruleId, name, type, packageName, targetTitle, contentRegex, captureGroupPos, enabled) SELECT ruleId, name, type, packageName, targetTitle, contentRegex, captureGroupPos, enabled FROM notificationRules");
+            db.execSQL("INSERT INTO accessibilityRulesNew (ruleId, name, type, enabled, packageName, activityName) SELECT ruleId, name, type, enabled, packageName, activityName FROM accessibilityRulesNew");
+
+            //迁移流水记录的转账账户数据
+            Cursor accountTransferCursor = db.query("SELECT accountId, exportAccount, importAccount FROM accountTransfers");
+            while (accountTransferCursor.moveToNext()) {
+                long oldId = accountTransferCursor.getLong(0);
+                String exportAccount = accountTransferCursor.getString(1);
+                String importAccount = accountTransferCursor.getString(2);
+
+                // 插入 extraTransfer
+                db.execSQL("INSERT INTO extraTransfer (exportAccount, importAccount) VALUES (?, ?)",
+                        new Object[]{exportAccount, importAccount});
+
+                // 取回新主键并更新
+                long newTransferId;
+                try (Cursor idCursor = db.query("SELECT last_insert_rowid()")) {
+                    idCursor.moveToFirst();
+                    newTransferId = idCursor.getLong(0);
+                    db.execSQL("UPDATE accountsNew SET transferId = ? WHERE accountId = ?",
+                            new Object[]{newTransferId, oldId});
+                }
+            }
+            accountTransferCursor.close();
+
+            //迁移通知规则的转账账户数据
+            Cursor notificationRuleTransferCursor = db.query("SELECT ruleId, exportAccount, importAccount FROM notificationRuleTransfers");
+            while (notificationRuleTransferCursor.moveToNext()) {
+                long oldId = notificationRuleTransferCursor.getLong(0);
+                String exportAccount = notificationRuleTransferCursor.getString(1);
+                String importAccount = notificationRuleTransferCursor.getString(2);
+
+                // 插入 extraTransfer
+                db.execSQL("INSERT INTO extraTransfer (exportAccount, importAccount) VALUES (?, ?)",
+                        new Object[]{exportAccount, importAccount});
+
+                // 取回新主键并更新
+                long newTransferId;
+                try (Cursor idCursor = db.query("SELECT last_insert_rowid()")) {
+                    idCursor.moveToFirst();
+                    newTransferId = idCursor.getLong(0);
+                    db.execSQL("UPDATE notificationRulesNew SET transferId = ? WHERE accountId = ?",
+                            new Object[]{newTransferId, oldId});
+                }
+            }
+            notificationRuleTransferCursor.close();
+
+            //迁移无障碍规则的转账账户数据
+            Cursor accessibilityRuleTransferCursor = db.query("SELECT ruleId, exportAccount, importAccount FROM accessibilityRuleTransfers");
+            while (accessibilityRuleTransferCursor.moveToNext()) {
+                long oldId = accessibilityRuleTransferCursor.getLong(0);
+                String exportAccount = accessibilityRuleTransferCursor.getString(1);
+                String importAccount = accessibilityRuleTransferCursor.getString(2);
+
+                // 插入 extraTransfer
+                db.execSQL("INSERT INTO extraTransfer (exportAccount, importAccount) VALUES (?, ?)",
+                        new Object[]{exportAccount, importAccount});
+
+                // 取回新主键并更新
+                long newTransferId;
+                try (Cursor idCursor = db.query("SELECT last_insert_rowid()")) {
+                    idCursor.moveToFirst();
+                    newTransferId = idCursor.getLong(0);
+                    db.execSQL("UPDATE accessibilityRulesNew SET transferId = ? WHERE accountId = ?",
+                            new Object[]{newTransferId, oldId});
+                }
+            }
+            accessibilityRuleTransferCursor.close();
+
+            //删除旧表
+            db.execSQL("DROP TABLE accountTransfers");
+            db.execSQL("DROP TABLE notificationRuleTransfers");
+            db.execSQL("DROP TABLE accessibilityRuleTransfers");
+            db.execSQL("DROP TABLE accounts");
+            db.execSQL("DROP TABLE notificationRules");
+            db.execSQL("DROP TABLE accessibilityRules");
+
+            //将新建的临时表改为旧表的名称，并重新创建索引
+            db.execSQL("ALTER TABLE accountsNew RENAME TO accounts");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accounts_accountId` ON `accounts` (`accountId`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accounts_remark` ON `accounts` (`remark`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accounts_type` ON `accounts` (`type`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accounts_dateTime` ON `accounts` (`dateTime`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accounts_transferId` ON `accounts` (`transferId`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accounts_loanId` ON `accounts` (`loanId`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accounts_repayAccountId` ON `accounts` (`repayAccountId`)");
+            db.execSQL("ALTER TABLE notificationRulesNew RENAME TO notificationRules");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_notificationRules_enabled` ON `notificationRules` (`enabled`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_notificationRules_transferId` ON `notificationRules` (`transferId`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_notificationRules_loanId` ON `notificationRules` (`loanId`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_notificationRules_repayAccountId` ON `notificationRules` (`repayAccountId`)");
+            db.execSQL("ALTER TABLE accessibilityRulesNew RENAME TO accessibilityRules");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accessibilityRules_enabled` ON `accessibilityRules` (`enabled`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accessibilityRules_transferId` ON `accessibilityRules` (`transferId`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accessibilityRules_loanId` ON `accessibilityRules` (`loanId`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_accessibilityRules_repayAccountId` ON `accessibilityRules` (`repayAccountId`)");
+
+            //提交事务并重启外键
+            db.execSQL("COMMIT");
+            db.execSQL("PRAGMA foreign_keys = ON");
         }
     };
 }
