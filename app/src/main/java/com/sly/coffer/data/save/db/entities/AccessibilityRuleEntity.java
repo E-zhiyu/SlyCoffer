@@ -25,8 +25,8 @@ import androidx.room.PrimaryKey;
                 ),
                 @ForeignKey(
                         entity = AccountEntity.class,
-                        parentColumns = "repayAccountId",
-                        childColumns = "accountId",
+                        parentColumns = "accountId",
+                        childColumns = "repayAccountId",
                         onDelete = ForeignKey.SET_DEFAULT,
                         onUpdate = ForeignKey.CASCADE
                 )
