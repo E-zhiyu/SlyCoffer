@@ -83,7 +83,7 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
      * @return 现有的数据集合
      * @throws JsonProcessingException JSON 反序列化出错时引发的异常
      */
-    //TODO:需要子类实现
+    //TODO:需要实现调用逻辑
     protected abstract M convertOldDataBeforeExtra(String json) throws JsonProcessingException;
 
     /**

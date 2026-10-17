@@ -152,6 +152,7 @@ public interface DataBackupDao {
             //转账账户数据
             List<AccountEntity> accountEntityList = mapper.toAccountEntityList(accountPojoList);
             Map<Long, List<AccountEntity>> transferIdMap = accountEntityList.stream()
+                    .filter(account -> account.getTransferId() != null)
                     .collect(Collectors.groupingBy(
                             AccountEntity::getTransferId,
                             HashMap::new,
@@ -180,6 +181,7 @@ public interface DataBackupDao {
 
             //借款记录数据
             Map<Long, List<AccountEntity>> loanIdMap = accountEntityList.stream()
+                    .filter(account -> account.getLoanId() != null)
                     .collect(Collectors.groupingBy(
                             AccountEntity::getLoanId,
                             HashMap::new,
@@ -320,6 +322,7 @@ public interface DataBackupDao {
             //转账账户数据
             List<NotificationRuleEntity> notificationRuleEntityList = mapper.toNotificationRuleEntityList(notificationRulePojoList);
             Map<Long, List<NotificationRuleEntity>> transferIdMap = notificationRuleEntityList.stream()
+                    .filter(rule -> rule.getTransferId() != null)
                     .collect(Collectors.groupingBy(
                             NotificationRuleEntity::getTransferId,
                             HashMap::new,
@@ -348,6 +351,7 @@ public interface DataBackupDao {
 
             //借款记录数据
             Map<Long, List<NotificationRuleEntity>> loanIdMap = notificationRuleEntityList.stream()
+                    .filter(rule -> rule.getLoanId() != null)
                     .collect(Collectors.groupingBy(
                             NotificationRuleEntity::getLoanId,
                             HashMap::new,
@@ -530,6 +534,7 @@ public interface DataBackupDao {
             //转账账户数据
             List<AccessibilityRuleEntity> ruleEntityList = mapper.toAccessibilityRuleEntityList(data.getRuleList());
             Map<Long, List<AccessibilityRuleEntity>> transferIdMap = ruleEntityList.stream()
+                    .filter(rule -> rule.getTransferId() != null)
                     .collect(Collectors.groupingBy(
                             AccessibilityRuleEntity::getTransferId,
                             HashMap::new,
@@ -558,6 +563,7 @@ public interface DataBackupDao {
 
             //借款记录数据
             Map<Long, List<AccessibilityRuleEntity>> loanIdMap = ruleEntityList.stream()
+                    .filter(rule -> rule.getLoanId() != null)
                     .collect(Collectors.groupingBy(
                             AccessibilityRuleEntity::getLoanId,
                             HashMap::new,
