@@ -517,8 +517,8 @@ public class AccessibilityAbService extends AccessibilityService {
         }
 
         //还款额外数据
-        long repayAccountId = rule.getRepayAccountId();
-        if (type.hasExtraData(AccountType.DATA_FLAG_REPAY) && repayAccountId >= 0) {
+        Long repayAccountId = rule.getRepayAccountId();
+        if (type.hasExtraData(AccountType.DATA_FLAG_REPAY) && repayAccountId != null) {
             bundle.putLong(KeyStrings.REPAY_ACCOUNT_ID.v(), repayAccountId);
         }
 
