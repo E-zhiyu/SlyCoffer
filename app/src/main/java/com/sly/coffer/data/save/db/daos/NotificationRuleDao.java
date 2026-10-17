@@ -8,7 +8,6 @@ import androidx.room.Query;
 import androidx.room.Transaction;
 import androidx.room.Update;
 
-import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.types.MoveDirectionType;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
@@ -16,7 +15,6 @@ import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
-import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.NotiBkRuleUnionModel;
 import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleAndGroupUnionModel;
@@ -124,14 +122,6 @@ public interface NotificationRuleDao {
     Long insertNotificationRule(NotificationRuleEntity rule);
 
     /**
-     * 插入通知规则的转账账户记录
-     *
-     * @param transfer 需要插入的数据
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    void insertNotificationTransfer(NotificationRuleTransferEntity transfer);
-
-    /**
      * 插入通知规则与标签的映射关系数据
      *
      * @param refList 需要插入的数据
@@ -160,25 +150,17 @@ public interface NotificationRuleDao {
      * 新增通知规则事务
      *
      * @param rule        新增的通知规则
-     * @param transfer    通知规则的转账账户数据
      * @param tagIdList   标签编号列表
      * @param groupIdList 规则分组编号列表
      */
     @Transaction
     default void addRule(
             NotificationRuleEntity rule,
-            NotificationRuleTransferEntity transfer,
             List<Long> tagIdList,
             List<Long> groupIdList
     ) {
         if (rule == null) return;
         long ruleId = insertNotificationRule(rule);
-
-        //转入转出账户
-        if (rule.getType() == AccountType.TRANSFER.ordinal()) {
-            transfer.setRuleId(ruleId);
-            insertNotificationTransfer(transfer);
-        }
 
         //标签
         List<NotificationRuleTagRefEntity> tagRefList = tagIdList.stream()
@@ -203,14 +185,6 @@ public interface NotificationRuleDao {
      */
     @Update
     void updateNotificationRule(NotificationRuleEntity rule);
-
-    /**
-     * 通过通知规则 ID 删除通知规则的转账账户数据
-     *
-     * @param ruleId 需要删除转账账户数据的通知规则 ID
-     */
-    @Query("DELETE FROM notificationruletransfers WHERE ruleId = :ruleId")
-    void deleteNotificationRuleTransferByRuleId(long ruleId);
 
     /**
      * 通过规则 ID 删除规则与标签的映射关系
@@ -242,14 +216,12 @@ public interface NotificationRuleDao {
      * 修改通知规则事务
      *
      * @param rule        修改后的通知规则
-     * @param transfer    修改后的转账账户数据
      * @param tagIdList   修改后的标签 ID 列表
      * @param groupIdList 规则分组编号列表
      */
     @Transaction
     default void modifyRule(
             NotificationRuleEntity rule,
-            NotificationRuleTransferEntity transfer,
             List<Long> tagIdList,
             List<Long> groupIdList
     ) {
@@ -268,14 +240,6 @@ public interface NotificationRuleDao {
 
         //更新数据
         updateNotificationRule(rule);
-
-        //转账账户数据
-        //TODO:删除这一块代码
-        deleteNotificationRuleTransferByRuleId(ruleId);
-        if (rule.getType() == AccountType.TRANSFER.ordinal()) {
-            transfer.setRuleId(ruleId);
-            insertNotificationTransfer(transfer);
-        }
 
         //标签
         deleteNotificationRuleTagRefByRuleId(ruleId);

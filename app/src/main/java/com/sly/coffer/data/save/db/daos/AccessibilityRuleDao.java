@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.daos;
 
+import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -8,11 +9,9 @@ import androidx.room.Query;
 import androidx.room.Transaction;
 import androidx.room.Update;
 
-import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
@@ -87,14 +86,6 @@ public interface AccessibilityRuleDao {
     long insertAccessibilityRule(AccessibilityRuleEntity rule);
 
     /**
-     * 插入无障碍规则的转账账户数据
-     *
-     * @param transfer 转账账户数据
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    void insertAccessibilityTransfer(AccessibilityRuleTransferEntity transfer);
-
-    /**
      * 插入无障碍规则的标签映射
      *
      * @param tagList 标签映射列表
@@ -114,24 +105,16 @@ public interface AccessibilityRuleDao {
      * 添加无障碍规则事务
      *
      * @param rule             新规则
-     * @param transfer         新规则对应的转账数据
      * @param keywordGroupList 关键词组合列表
      * @param tagIdList        新规则对应的标签编号列表
      */
     @Transaction
     default void addRule(
             AccessibilityRuleEntity rule,
-            AccessibilityRuleTransferEntity transfer,
-            List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
+            @NonNull List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
             List<Long> tagIdList
     ) {
         long ruleId = insertAccessibilityRule(rule);
-
-        //转账账户数据
-        if (rule.getType() == AccountType.TRANSFER.ordinal()) {
-            transfer.setRuleId(ruleId);
-            insertAccessibilityTransfer(transfer);
-        }
 
         //关键词组合
         for (AccessibilityRuleKeywordGroupEntity group : keywordGroupList) {
@@ -164,14 +147,6 @@ public interface AccessibilityRuleDao {
     void updateAccessibilityRule(AccessibilityRuleEntity rule);
 
     /**
-     * 通过规则编号删除转账账户数据
-     *
-     * @param ruleId 规则编号
-     */
-    @Query("DELETE FROM accessibilityRuleTransfers WHERE ruleId = :ruleId")
-    void deleteAccessibilityRuleTransferByRuleId(long ruleId);
-
-    /**
      * 通过规则编号删除标签映射
      *
      * @param ruleId 规则编号
@@ -191,14 +166,12 @@ public interface AccessibilityRuleDao {
      * 修改无障碍规则
      *
      * @param rule             修改后的无障碍规则
-     * @param transfer         转账账户
      * @param keywordGroupList 关键词组合列表
      * @param tagIdList        标签编号列表
      */
     @Transaction
     default void modifyRule(
             AccessibilityRuleEntity rule,
-            AccessibilityRuleTransferEntity transfer,
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
             List<Long> tagIdList
     ) {
@@ -217,14 +190,6 @@ public interface AccessibilityRuleDao {
 
         //更新规则
         updateAccessibilityRule(rule);
-
-        //转账账户
-        //TODO:删除这一块代码
-        deleteAccessibilityRuleTransferByRuleId(ruleId);
-        if (rule.getType() == AccountType.TRANSFER.ordinal()) {
-            transfer.setRuleId(ruleId);
-            insertAccessibilityTransfer(transfer);
-        }
 
         //关键词组合
         deleteKeywordGroupByRuleId(ruleId);

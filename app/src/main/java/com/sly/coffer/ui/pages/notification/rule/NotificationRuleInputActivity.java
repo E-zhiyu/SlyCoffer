@@ -623,10 +623,10 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                 contentRegexStr,
                 captureGroupPos
         );
-        NotificationRuleTransferEntity transfer = new NotificationRuleTransferEntity(exportAccount, importAccount);
+        //TODO:添加额外数据输入
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         if (initBundle == null) {
-            disposable.add(NotificationRuleService.addNewNotificationRule(rule, transfer, tagIdList, groupIdList, db)
+            disposable.add(NotificationRuleService.addNewNotificationRule(rule, tagIdList, groupIdList, db)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -640,7 +640,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
         } else {
             long ruleId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_ID.v());
             rule.setRuleId(ruleId);
-            disposable.add(NotificationRuleService.modifyNotificationRule(rule, transfer, tagIdList, groupIdList, db)
+            disposable.add(NotificationRuleService.modifyNotificationRule(rule, tagIdList, groupIdList, db)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(

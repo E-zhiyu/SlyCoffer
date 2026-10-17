@@ -519,7 +519,7 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         );
         NotificationRuleTransferEntity transfer = new NotificationRuleTransferEntity(importAccount, exportAccount);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        disposable.add(NotificationRuleService.addNewNotificationRule(rule, transfer, tagIdList, groupIdList, db)
+        disposable.add(NotificationRuleService.addNewNotificationRule(rule, tagIdList, groupIdList, db)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(

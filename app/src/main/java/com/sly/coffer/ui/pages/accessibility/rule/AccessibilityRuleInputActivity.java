@@ -22,7 +22,7 @@ import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
-import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccessibilityRuleUnionModel;
@@ -192,7 +192,6 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                                 //读取数据
                                 AccessibilityRuleUnionModel model = optional.get();
                                 AccessibilityRuleEntity rule = model.getRule();
-                                AccessibilityRuleTransferEntity transfer = model.getTransfer();
                                 List<TagEntity> tagList = model.getTagList();
                                 List<AccessibilityRuleKeywordGroupEntity> keywordGroupList = model.getKeywordGroupList();
 
@@ -212,10 +211,11 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                                     );
                                     viewModel.setPickResult(pickedPage);
                                 }
-                                if (viewModel.getType() == AccountType.TRANSFER) {
+                                if (viewModel.getType().hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
                                     binding.exportAccountLayout.setVisibility(View.VISIBLE);
                                     binding.importAccountLayout.setVisibility(View.VISIBLE);
 
+                                    ExtraTransferEntity transfer = model.getTransfer();
                                     if (transfer != null) {
                                         binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
                                         binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
@@ -511,11 +511,11 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                 packageName,
                 activityName
         );
-        AccessibilityRuleTransferEntity transfer = new AccessibilityRuleTransferEntity(exportAccount, importAccount);
         List<AccessibilityRuleKeywordGroupEntity> keywordGroupList = new ArrayList<>(keywordAdapter.getCurrentList());
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         if (initBundle == null) {
-            disposable.add(AccessibilityRuleService.addNewAccessibilityRule(rule, transfer, keywordGroupList, tagIdList, db)
+            //TODO:添加额外数据输入
+            disposable.add(AccessibilityRuleService.addNewAccessibilityRule(rule, keywordGroupList, tagIdList, db)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -529,7 +529,7 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
         } else {
             long ruleId = initBundle.getLong(KeyStrings.ACCESSIBILITY_RULE_ID.v());
             rule.setRuleId(ruleId);
-            disposable.add(AccessibilityRuleService.modifyAccessibilityRule(rule, transfer, keywordGroupList, tagIdList, db)
+            disposable.add(AccessibilityRuleService.modifyAccessibilityRule(rule, keywordGroupList, tagIdList, db)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
