@@ -691,6 +691,7 @@ public interface DataBackupDao {
      * @param idSet 借款记录编号集合
      * @return 借款记录数据
      */
+    @Query("SELECT * FROM extraLoan WHERE loanId IN (:idSet)")
     List<ExtraLoanEntity> readExtraLoanById(Set<Long> idSet);
 
     /**
@@ -716,6 +717,7 @@ public interface DataBackupDao {
      * @param entity 待写入的借款记录数据
      * @return 插入后的主键值
      */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     long writeExtraLoan(ExtraLoanEntity entity);
 
     /**
