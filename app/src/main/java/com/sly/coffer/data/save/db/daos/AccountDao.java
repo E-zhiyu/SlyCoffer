@@ -15,7 +15,6 @@ import androidx.sqlite.db.SupportSQLiteQuery;
 
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
-import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
@@ -29,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 
@@ -143,14 +141,6 @@ public interface AccountDao {
     Long insertAccount(AccountEntity account);
 
     /**
-     * 插入流水记录的转账账户数据
-     *
-     * @param entity 转账账户数据实体
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    void insertAccountTransfer(AccountTransferEntity entity);
-
-    /**
      * 插入新的流水记录与标签映射关系
      *
      * @param refList 映射关系列表
@@ -235,15 +225,6 @@ public interface AccountDao {
 
         return accountId;
     }
-
-    /**
-     * 插入流水记录转账数据
-     *
-     * @param transfer 流水记录转账数据
-     * @return 是否完成
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    Completable insertAccountTransferCompletable(AccountTransferEntity transfer);
 
     /**
      * 通过流水编号删除与标签的映射关系

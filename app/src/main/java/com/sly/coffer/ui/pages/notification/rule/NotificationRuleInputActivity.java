@@ -21,9 +21,9 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.sly.coffer.R;
 import com.sly.coffer.data.save.db.BookkeepingDb;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
-import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.NotificationRuleUnionModel;
 import com.sly.coffer.data.save.db.services.NotificationRuleService;
@@ -192,22 +192,23 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                 //解析数据
                                 NotificationRuleUnionModel model = optional.get();
                                 NotificationRuleEntity rule = model.getRule();
-                                NotificationRuleTransferEntity transfer = model.getTransfer();
                                 List<TagEntity> tagList = model.getTagList();
                                 List<NotificationRuleGroupEntity> groupList = model.getGroupList();
 
                                 //填充文本框
                                 binding.nameInput.setText(rule.getName());                      //名称
+                                //TODO:将 type 改为 ViewModel 中的属性
                                 type = AccountType.values()[rule.getType()];
                                 binding.typeInput.setText(type.getTitle());                     //种类
                                 binding.packageNameInput.setText(rule.getPackageName());        //包名
                                 binding.notificationTitleInput.setText(rule.getTargetTitle());  //标题
                                 binding.regexInput.setText(rule.getContentRegex());             //正则表达式
                                 binding.captureGroupPositionInput.setText(String.valueOf(rule.getCaptureGroupPos()));   //捕获组位置
-                                if (type == AccountType.TRANSFER) {
+                                if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
                                     binding.exportAccountLayout.setVisibility(View.VISIBLE);
                                     binding.importAccountLayout.setVisibility(View.VISIBLE);
 
+                                    ExtraTransferEntity transfer = model.getTransfer();
                                     if (transfer != null) {
                                         binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
                                         binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户

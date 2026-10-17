@@ -22,7 +22,6 @@ import com.sly.coffer.data.save.db.daos.TagDao;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
@@ -37,8 +36,6 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
-import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
-import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
 
 import java.util.List;
@@ -46,17 +43,18 @@ import java.util.List;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
+//TODO:记得删除 AccountTransferEntity、NotificationRuleTransferEntity、AccessibilityRuleTransferEntity
 @Database(
         entities = {
                 BudgetEntity.class,
                 BudgetTagRefEntity.class,
                 NotificationRuleEntity.class,
-                NotificationRuleTransferEntity.class,
+//                NotificationRuleTransferEntity.class,
                 NotificationRuleTagRefEntity.class,
                 NotificationRuleGroupEntity.class,
                 NotificationRuleGroupRefEntity.class,
                 AccountEntity.class,
-                AccountTransferEntity.class,    //TODO:记得删除 AccountTransferEntity、LoanEntity、NotificationRuleTransferEntity、AccessibilityRuleTransferEntity
+//                AccountTransferEntity.class,
                 AccountTagRefEntity.class,
                 ExtraTransferEntity.class,
                 ExtraLoanEntity.class,
@@ -66,7 +64,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
                 CapturedNotificationEntity.class,
                 AccessibilityRuleEntity.class,
                 AccessibilityRuleTagRefEntity.class,
-                AccessibilityRuleTransferEntity.class,
+//                AccessibilityRuleTransferEntity.class,
                 AccessibilityRuleKeywordGroupEntity.class,
                 PickedPageEntity.class
         },
