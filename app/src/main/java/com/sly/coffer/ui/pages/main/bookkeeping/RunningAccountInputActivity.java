@@ -292,7 +292,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                     binding.transferInputLayout.setVisibility(View.VISIBLE);
 
                                     ExtraTransferEntity transfer = model.getTransfer();
-                                    if (account.getTransferId() >= 0 && transfer != null) {
+                                    if (account.getTransferId() != null && transfer != null) {
                                         binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
                                         binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
                                     }
@@ -304,7 +304,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
                                     AccountEntity repayAccount = model.getRepayRelatedAccount();
                                     accountExtraDataViewModel.updateRelatedLoan(repayAccount);
-                                    if (account.getRepayAccountId() >= 0 && repayAccount != null) {
+                                    if (account.getRepayAccountId() != null && repayAccount != null) {
                                         binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
                                     }
                                 }
@@ -314,7 +314,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                                     binding.loanExtraLayout.setVisibility(View.VISIBLE);
 
                                     ExtraLoanEntity loan = model.getLoan();
-                                    if (account.getLoanId() >= 0 && loan != null) {
+                                    if (account.getLoanId() != null && loan != null) {
                                         binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
                                         InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
                                         binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
@@ -1102,7 +1102,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 dateTime,
                 AutoBookkeepingType.NONE.ordinal()
         );
-        account.setRepayAccountId(viewModel.getRelatedLoanAccountId()); //设置关联的借款记录的编号
+        account.setRepayAccountId(viewModel.getRepayAccountId()); //设置关联的借款记录的编号
         if (initBundle == null) {
             disposable.add(saveExtraDataFirstly(account)
                     .andThen(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, this))

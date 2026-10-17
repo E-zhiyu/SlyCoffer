@@ -53,9 +53,9 @@ public class AccountExtraDataViewModel extends ViewModel {
      *
      * @return 关联的借款记录的流水记录编号
      */
-    public long getRelatedLoanAccountId() {
+    public Long getRepayAccountId() {
         AccountEntity relatedLoanAccount = relatedLoanAccountLiveData.getValue();
-        return relatedLoanAccount == null ? -1 : relatedLoanAccount.getAccountId();
+        return relatedLoanAccount == null ? null : relatedLoanAccount.getAccountId();
     }
 
     public InterestPeriodType getInterestPeriodType() {
