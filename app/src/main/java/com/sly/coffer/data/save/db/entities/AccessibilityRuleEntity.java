@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.entities;
 
+import androidx.annotation.Nullable;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
@@ -47,12 +48,15 @@ public class AccessibilityRuleEntity {
     private boolean enabled;        //是否启用
     private String packageName;     //应用包名
     private String activityName;    //目标 Activity 的名称
-    @ColumnInfo(defaultValue = "-1")
-    private long transferId = -1;   //转账账户额外数据编号
-    @ColumnInfo(defaultValue = "-1")
-    private long loanId = -1;       //借款额外数据编号
-    @ColumnInfo(defaultValue = "-1")
-    private long repayAccountId = -1;   //作为还款记录时，把钱还给的那个借款记录的编号
+    @Nullable
+    @ColumnInfo(defaultValue = "NULL")
+    private Long transferId;        //转账账户额外数据编号
+    @Nullable
+    @ColumnInfo(defaultValue = "NULL")
+    private Long loanId;            //借款额外数据编号
+    @Nullable
+    @ColumnInfo(defaultValue = "NULL")
+    private Long repayAccountId;    //作为还款记录时，把钱还给的那个借款记录的编号
 
     public AccessibilityRuleEntity(String name, int type, String packageName, String activityName) {
         this.name = name;
@@ -110,27 +114,30 @@ public class AccessibilityRuleEntity {
         this.activityName = activityName;
     }
 
-    public long getTransferId() {
+    @Nullable
+    public Long getTransferId() {
         return transferId;
     }
 
-    public void setTransferId(long transferId) {
+    public void setTransferId(@Nullable Long transferId) {
         this.transferId = transferId;
     }
 
-    public long getLoanId() {
+    @Nullable
+    public Long getLoanId() {
         return loanId;
     }
 
-    public void setLoanId(long loanId) {
+    public void setLoanId(@Nullable Long loanId) {
         this.loanId = loanId;
     }
 
-    public long getRepayAccountId() {
+    @Nullable
+    public Long getRepayAccountId() {
         return repayAccountId;
     }
 
-    public void setRepayAccountId(long repayAccountId) {
+    public void setRepayAccountId(@Nullable Long repayAccountId) {
         this.repayAccountId = repayAccountId;
     }
 }

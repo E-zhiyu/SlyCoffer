@@ -60,7 +60,7 @@ public class AccountService {
         //生成基础 SQL 语句
         StringBuilder sql = new StringBuilder(
                 "SELECT accountId FROM accounts " +
-                        "WHERE 1=1"
+                        "WHERE accountId >= 0"
         );
         List<Object> args = new ArrayList<>();
 
