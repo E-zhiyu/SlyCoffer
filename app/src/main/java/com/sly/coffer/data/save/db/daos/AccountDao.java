@@ -125,10 +125,9 @@ public interface AccountDao {
      *
      * @return 包含所有转出和转入账户的列表
      */
-    @Query("SELECT exportAccount FROM extraTransfer WHERE exportAccount IS NOT NULL " +
+    @Query("SELECT DISTINCT exportAccount FROM extraTransfer WHERE exportAccount IS NOT NULL " +
             "UNION " +
-            "SELECT importAccount FROM extraTransfer WHERE importAccount IS NOT NULL " +
-            "ORDER BY 1 ASC")
+            "SELECT importAccount FROM extraTransfer WHERE importAccount IS NOT NULL ")
     Single<List<String>> getTransferAccountsSingle();
 
     /**
@@ -266,7 +265,7 @@ public interface AccountDao {
      * @return 该编号对应的流水记录
      */
     @Query("SELECT * FROM accounts WHERE accountId = :accountId")
-    Optional<AccountEntity> getAccountById(long accountId);
+    AccountEntity getAccountById(long accountId);
 
     /**
      * 通过流水记录编号获取流水记录
@@ -295,11 +294,18 @@ public interface AccountDao {
 
         //获取旧数据
         LocalDateTime oldDateTime;  //原来的日期和时间
-        Optional<AccountEntity> oldOptional = getAccountById(accountId);
-        if (oldOptional.isPresent()) {
-            AccountEntity oldAccount = oldOptional.get();
-            oldDateTime = oldAccount.getDateTime();
-            account.setAutoTag(oldAccount.getAutoTag());    //恢复自动记账标记
+        AccountEntity old = getAccountById(accountId);
+        if (old != null) {
+            oldDateTime = old.getDateTime();
+            account.setAutoTag(old.getAutoTag());    //恢复自动记账标记
+
+            //删除额外数据
+            if (old.getTransferId() != null) {
+                deleteExtraTransferById(old.getTransferId());
+            }
+            if (old.getLoanId() != null) {
+                deleteExtraLoanById(old.getLoanId());
+            }
         } else {
             oldDateTime = account.getDateTime();
         }
@@ -311,15 +317,8 @@ public interface AccountDao {
                 .collect(Collectors.toSet());
         oldMediaUriSet.removeAll(newMediaUriSet);
 
-        //删除额外数据
-        if (account.getTransferId() != null) {
-            deleteExtraTransferById(account.getTransferId());
-        }
-        if (account.getLoanId() != null) {
-            deleteExtraLoanById(account.getLoanId());
-        }
-
         //TODO:解决修改时抛出外键不存在的BUG
+
 
         //更新流水记录
         updateAccount(account);
@@ -419,7 +418,7 @@ public interface AccountDao {
      *
      * @return 借款对象名称列表
      */
-    @Query("SELECT loanTargetName FROM extraLoan WHERE loanTargetName IS NOT NULL")
+    @Query("SELECT DISTINCT loanTargetName FROM extraLoan WHERE loanTargetName IS NOT NULL")
     Single<List<String>> getLoanTargetNameSingle();
 
     /**
