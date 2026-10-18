@@ -170,8 +170,7 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
         );
         binding.recycler.setAdapter(adapter);
         CapturedNotificationViewModel viewModel = new ViewModelProvider(this).get(CapturedNotificationViewModel.class);
-        BookkeepingDb db = BookkeepingDb.getInstance(this);
-        disposable.add(viewModel.getCapturedNotificationFlowable(db)
+        disposable.add(viewModel.getCapturedNotificationFlowable(this)
                 .subscribe(
                         roleList -> {
                             VisibilityHelper.toggleVisibilityWithFade(binding.emptyText, roleList.isEmpty());

@@ -1,9 +1,10 @@
 package com.sly.coffer.ui.pages.notification.capture;
 
+import android.content.Context;
+
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.composite.ui.CapturedNotificationUiModel;
 import com.sly.coffer.data.save.db.services.CapturedNotificationService;
 
@@ -30,7 +31,7 @@ public class CapturedNotificationViewModel extends ViewModel {
      * @param db 数据库实例
      * @return 角色数据列表，包含分隔符
      */
-    public Flowable<List<CapturedNotificationUiModel>> getCapturedNotificationFlowable(BookkeepingDb db) {
+    public Flowable<List<CapturedNotificationUiModel>> getCapturedNotificationFlowable(Context db) {
         return searchKeywordProcessor
                 .debounce(50, TimeUnit.MILLISECONDS)
                 .switchMap(

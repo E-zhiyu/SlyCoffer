@@ -20,14 +20,12 @@ public class CapturedNotificationEntity {
     private String title;           //标题
     private String content;         //内容
     private String packageName;     //发送通知的应用的包名
-    private String appName;         //发送通知的应用名称
     private LocalDateTime time;     //捕获的时间
 
-    public CapturedNotificationEntity(String title, String content, String packageName, String appName, LocalDateTime time) {
+    public CapturedNotificationEntity(String title, String content, String packageName, LocalDateTime time) {
         this.title = title;
         this.content = content;
         this.packageName = packageName;
-        this.appName = appName;
         this.time = time;
     }
 
@@ -61,14 +59,6 @@ public class CapturedNotificationEntity {
 
     public void setPackageName(String packageName) {
         this.packageName = packageName;
-    }
-
-    public String getAppName() {
-        return appName;
-    }
-
-    public void setAppName(String appName) {
-        this.appName = appName;
     }
 
     public LocalDateTime getTime() {
