@@ -232,11 +232,15 @@ public interface NotificationRuleDao {
         NotificationRuleEntity old = getNotificationRuleById(ruleId);
         if (old != null) {
             rule.setEnabled(old.isEnabled());
-        }
 
-        //删除原来的额外数据
-        deleteExtraTransferById(rule.getTransferId());
-        deleteExtraLoanById(rule.getLoanId());
+            //删除原来的额外数据
+            if (old.getTransferId() != null) {
+                deleteExtraTransferById(old.getTransferId());
+            }
+            if (old.getLoanId() != null) {
+                deleteExtraLoanById(old.getLoanId());
+            }
+        }
 
         //更新数据
         updateNotificationRule(rule);

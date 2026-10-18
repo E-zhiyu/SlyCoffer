@@ -312,8 +312,14 @@ public interface AccountDao {
         oldMediaUriSet.removeAll(newMediaUriSet);
 
         //删除额外数据
-        deleteExtraTransferById(account.getTransferId());
-        deleteExtraLoanById(account.getLoanId());
+        if (account.getTransferId() != null) {
+            deleteExtraTransferById(account.getTransferId());
+        }
+        if (account.getLoanId() != null) {
+            deleteExtraLoanById(account.getLoanId());
+        }
+
+        //TODO:解决修改时抛出外键不存在的BUG
 
         //更新流水记录
         updateAccount(account);

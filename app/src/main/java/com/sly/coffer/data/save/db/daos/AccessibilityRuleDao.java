@@ -1,6 +1,5 @@
 package com.sly.coffer.data.save.db.daos;
 
-import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -111,16 +110,18 @@ public interface AccessibilityRuleDao {
     @Transaction
     default void addRule(
             AccessibilityRuleEntity rule,
-            @NonNull List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
+            List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
             List<Long> tagIdList
     ) {
         long ruleId = insertAccessibilityRule(rule);
 
         //关键词组合
-        for (AccessibilityRuleKeywordGroupEntity group : keywordGroupList) {
-            group.setRuleId(ruleId);
+        if (keywordGroupList != null) {
+            for (AccessibilityRuleKeywordGroupEntity group : keywordGroupList) {
+                group.setRuleId(ruleId);
+            }
+            insertKeywordGroup(keywordGroupList);
         }
-        insertKeywordGroup(keywordGroupList);
 
         //标签数据
         List<AccessibilityRuleTagRefEntity> tagRefList = tagIdList.stream()
@@ -182,21 +183,27 @@ public interface AccessibilityRuleDao {
         AccessibilityRuleEntity old = getAccessibilityRuleById(ruleId);
         if (old != null) {
             rule.setEnabled(old.isEnabled());
-        }
 
-        //删除原来的额外数据
-        deleteExtraTransferById(rule.getTransferId());
-        deleteExtraLoanById(rule.getLoanId());
+            //删除原来的额外数据
+            if (old.getTransferId() != null) {
+                deleteExtraTransferById(old.getTransferId());
+            }
+            if (old.getLoanId() != null) {
+                deleteExtraLoanById(old.getLoanId());
+            }
+        }
 
         //更新规则
         updateAccessibilityRule(rule);
 
         //关键词组合
         deleteKeywordGroupByRuleId(ruleId);
-        for (AccessibilityRuleKeywordGroupEntity group : keywordGroupList) {
-            group.setRuleId(ruleId);
+        if (keywordGroupList != null) {
+            for (AccessibilityRuleKeywordGroupEntity group : keywordGroupList) {
+                group.setRuleId(ruleId);
+            }
+            insertKeywordGroup(keywordGroupList);
         }
-        insertKeywordGroup(keywordGroupList);
 
         //标签数据
         deleteAccessibilityRuleTagRefByRuleId(ruleId);

@@ -291,13 +291,38 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                     R.layout.exposed_dropdown_popup_item,
                                     transferAccountList
                             );
-
                             binding.exportAccountInput.setAdapter(adapter);
                             binding.importAccountInput.setAdapter(adapter);
                         },
                         e -> ExceptionHelper.showExceptionDialog(this, e)
                 )
         );
+
+        //借款对象适配器
+        disposable.add(db.accountDao().getLoanTargetNameSingle()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                        loanTargetNameList -> {
+                            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                                    this,
+                                    R.layout.exposed_dropdown_popup_item,
+                                    loanTargetNameList
+                            );
+                            binding.loanTargetNameInput.setAdapter(adapter);
+                        },
+                        e -> ExceptionHelper.showExceptionDialog(this, e)
+                )
+        );
+
+        //结息周期自动填充适配器
+        List<String> interestPeriodTypeTitleList = Arrays.stream(InterestPeriodType.values())
+                .map(InterestPeriodType::getTitle)
+                .collect(Collectors.toList());
+        NoFilteringArrayAdapter<String> interestPeriodAdapter = new NoFilteringArrayAdapter<>(
+                this, interestPeriodTypeTitleList
+        );
+        binding.interestPeriodInput.setAdapter(interestPeriodAdapter);
 
         //转出账户
         binding.exportAccountInput.setOnFocusChangeListener((view, b) -> {
@@ -355,7 +380,6 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
             }
         });
 
-        //TODO:测试能否正确添加额外数据
         //借款对象
         binding.loanTargetNameInput.setOnFocusChangeListener((view, b) -> {
             if (b) {
@@ -698,7 +722,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                         exportAccount,
                         importAccount
                 );
-                transferTask = db.accountDao().insertExtraTransferSingle(transfer)
+                transferTask = db.notificationRuleDao().insertExtraTransferSingle(transfer)
                         .flatMapCompletable(transferId -> {
                             rule.setTransferId(transferId);
                             return Completable.complete();
@@ -739,7 +763,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                         allowCompoundInterest,
                         repayDate
                 );
-                loanTask = db.accountDao().insertExtraLoanSingle(loan)
+                loanTask = db.notificationRuleDao().insertExtraLoanSingle(loan)
                         .flatMapCompletable(loanId -> {
                             rule.setLoanId(loanId);
                             return Completable.complete();
