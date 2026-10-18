@@ -649,7 +649,10 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
         AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         AccountType type = viewModel.getAccountType();
         BookkeepingDb db = BookkeepingDb.getInstance(this);
+
         if (type.hasExtraData()) {
+            rule.setRepayAccountId(viewModel.getRepayAccountId());  //设置关联的借款记录的编号
+
             //判断是否需要保存额外数据
             boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
             boolean isLoan = type.hasExtraData(AccountType.DATA_FLAG_LOAN);
@@ -741,6 +744,7 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                 packageName,
                 activityName
         );
+        rule.setRepayAccountId(viewModel.getRepayAccountId());  //设置关联的借款记录的编号
         List<AccessibilityRuleKeywordGroupEntity> keywordGroupList = new ArrayList<>(keywordAdapter.getCurrentList());
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         if (initBundle == null) {

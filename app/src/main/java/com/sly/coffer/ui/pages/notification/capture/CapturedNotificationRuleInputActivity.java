@@ -592,7 +592,10 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         AccountType type = viewModel.getAccountType();
         BookkeepingDb db = BookkeepingDb.getInstance(this);
+
         if (type.hasExtraData()) {
+            rule.setRepayAccountId(viewModel.getRepayAccountId());  //设置关联的借款记录的编号
+
             //判断是否需要保存额外数据
             boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
             boolean isLoan = type.hasExtraData(AccountType.DATA_FLAG_LOAN);
