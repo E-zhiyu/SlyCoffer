@@ -439,36 +439,6 @@ public class AccessibilityAbService extends AccessibilityService {
             double amount,
             @NonNull AccessibilityRuleUnionModel model
     ) {
-//        //获取规则数据
-//        AccessibilityRuleEntity rule = model.getRule();
-//        String remark = rule.getName();                   //规则名称
-//        int type = rule.getType();                          //流水种类枚举序数
-//        long[] tagIds = model.getTagList().stream()
-//                .map(TagEntity::getTagId)
-//                .mapToLong(Long::longValue)
-//                .toArray();                                 //标签列表
-//        AccessibilityRuleTransferEntity transfer = model.getTransfer(); //转账账户数据
-//
-//        //生成流水记录数据包
-//        Bundle bundle = new Bundle();
-//        bundle.putLongArray(KeyStrings.TAG_ID.v(), tagIds);                         //标签 ID
-//        bundle.putLong(                                                             //日期和时间
-//                KeyStrings.RUNNING_DATETIME.v(),
-//                DateTimeConverter.fromLocalDateTime(LocalDateTime.now())
-//        );
-//        bundle.putInt(KeyStrings.RUNNING_TYPE.v(), type);                           //种类
-//        bundle.putDouble(KeyStrings.RUNNING_AMOUNT.v(), amount);                    //金额
-//        bundle.putString(KeyStrings.RUNNING_REMARK.v(), remark);                    //备注
-//        if (type == AccountType.TRANSFER.ordinal() && transfer != null) {
-//            String exportAccount = transfer.getExportAccount();
-//            String importAccount = transfer.getImportAccount();
-//            bundle.putString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v(), exportAccount); //转出账户
-//            bundle.putString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v(), importAccount); //转入账户
-//        }
-//        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TAG.v(), AutoBookkeepingType.ACCESSIBILITY.ordinal());   //自动记账种类
-//
-//        return bundle;
-
         //流水记录本体数据
         Bundle bundle = new Bundle();
         AccessibilityRuleEntity rule = model.getRule();

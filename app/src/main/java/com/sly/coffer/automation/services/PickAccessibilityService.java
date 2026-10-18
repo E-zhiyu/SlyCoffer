@@ -47,6 +47,9 @@ public class PickAccessibilityService extends AccessibilityService {
     protected void onServiceConnected() {
         super.onServiceConnected();
 
+        //将功能开关打开
+        AutoBookKeepingPreference.setPagePickStat(this, true);
+
         //注册监听器
         IntentFilter filter = new IntentFilter(BroadcastActions.ACTION_SHUT_DOWN_PAGE_PICK.toString());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -125,6 +128,10 @@ public class PickAccessibilityService extends AccessibilityService {
     public void onDestroy() {
         super.onDestroy();
         disposable.clear();
+
+        //注销监听器
+        unregisterReceiver(SHUT_DOWN_RECEIVER);
+        Log.d(LogTags.PICK_ACCESSIBILITY_SERVICE.n(), "注销监听器");
     }
 
     @Override
