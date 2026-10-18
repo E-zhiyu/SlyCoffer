@@ -24,6 +24,7 @@ import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.types.InterestPeriodType;
 import com.sly.coffer.data.save.db.BookkeepingDb;
+import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
@@ -213,14 +214,43 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                                 binding.notificationTitleInput.setText(rule.getTargetTitle());  //标题
                                 binding.regexInput.setText(rule.getContentRegex());             //正则表达式
                                 binding.captureGroupPositionInput.setText(String.valueOf(rule.getCaptureGroupPos()));   //捕获组位置
+
+                                //转账相关的文本框
                                 if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
-                                    binding.exportAccountLayout.setVisibility(View.VISIBLE);
-                                    binding.importAccountLayout.setVisibility(View.VISIBLE);
+                                    binding.transferInputLayout.setVisibility(View.VISIBLE);
 
                                     ExtraTransferEntity transfer = model.getTransfer();
-                                    if (transfer != null) {
+                                    if (rule.getTransferId() != null && transfer != null) {
                                         binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
                                         binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
+                                    }
+                                }
+
+                                //还款额外数据文本框
+                                if (type.hasExtraData(AccountType.DATA_FLAG_REPAY)) {
+                                    binding.repayExtraLayout.setVisibility(View.VISIBLE);
+
+                                    AccountEntity repayAccount = model.getRepayRelatedAccount();
+                                    accountExtraDataViewModel.updateRelatedLoan(repayAccount);
+                                    if (rule.getRepayAccountId() != null && repayAccount != null) {
+                                        binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
+                                    }
+                                }
+
+                                //借款额外数据文本框
+                                if (type.hasExtraData(AccountType.DATA_FLAG_LOAN)) {
+                                    binding.loanExtraLayout.setVisibility(View.VISIBLE);
+
+                                    ExtraLoanEntity loan = model.getLoan();
+                                    if (rule.getLoanId() != null && loan != null) {
+                                        binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
+                                        InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
+                                        binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
+                                        binding.annualInterestRateInput.setText(String.valueOf(loan.getYearBasepoint() / 100.0));   //年利率
+                                        if (loan.getRepayDate() != null) {
+                                            binding.repayDateInput.setText(loan.getRepayDate().format(CustomDateTimeFormatter.DATE));   //应还日期
+                                        }
+                                        binding.compoundInterestSwitch.setChecked(loan.isAllowCompoundInterest());  //允许复利
                                     }
                                 }
 

@@ -85,39 +85,167 @@
                     android:layout_height="wrap_content" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- 转出账户 -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/export_account_layout"
-                style="@style/DropdownMenuTextInputLayoutStyle"
+            <!-- 转账相关输入项 -->
+            <LinearLayout
+                android:id="@+id/transfer_input_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:visibility="gone"
-                app:helperText="@string/account_export_help">
+                android:orientation="vertical"
+                android:visibility="gone">
 
-                <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                    android:id="@+id/export_account_input"
-                    style="@style/EditableAutoCompleteTextViewStyle"
+                <!-- 转出账户 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/export_account_layout"
+                    style="@style/DropdownMenuTextInputLayoutStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/export_account" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    app:helperText="@string/account_export_help">
 
-            <!-- 转入账户 -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/import_account_layout"
-                style="@style/DropdownMenuTextInputLayoutStyle"
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/export_account_input"
+                        style="@style/EditableAutoCompleteTextViewStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/export_account" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- 转入账户 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/import_account_layout"
+                    style="@style/DropdownMenuTextInputLayoutStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:helperText="@string/account_import_help">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/import_account_input"
+                        style="@style/EditableAutoCompleteTextViewStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/import_account" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- 还款额外输入项 -->
+            <LinearLayout
+                android:id="@+id/repay_extra_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:visibility="gone"
-                app:helperText="@string/account_import_help">
+                android:orientation="vertical">
 
-                <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                    android:id="@+id/import_account_input"
-                    style="@style/EditableAutoCompleteTextViewStyle"
+                <!-- 关联的借款记录 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/related_loan_layout"
+                    style="@style/CommonTextInputLayoutStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/import_account" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    app:endIconMode="none"
+                    app:helperText="@string/account_related_loan_help">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/related_loan_input"
+                        style="@style/UneditableAutoCompleteTextViewStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/loan_record" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- 借款（入/出）额外输入项 -->
+            <LinearLayout
+                android:id="@+id/loan_extra_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- 借款对象 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/loan_target_name_layout"
+                    style="@style/DropdownMenuTextInputLayoutStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:helperText="@string/account_loan_target_help">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/loan_target_name_input"
+                        style="@style/EditableAutoCompleteTextViewStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/loan_target" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- 应还日期 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/repay_date_layout"
+                    style="@style/CommonTextInputLayoutStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:endIconMode="clear_text"
+                    app:helperText="@string/account_repay_date_help">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/repay_date_input"
+                        style="@style/UneditableAutoCompleteTextViewStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginBottom="5dp"
+                        android:hint="@string/repay_date" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- 结息周期 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/interest_period_layout"
+                    style="@style/DropdownMenuTextInputLayoutStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:helperText="@string/account_interest_period_help">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/interest_period_input"
+                        style="@style/UneditableAutoCompleteTextViewStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/interest_accrual_period" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- 年利率 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/annual_interest_rate_layout"
+                    style="@style/CommonTextInputLayoutStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:endIconCheckable="false"
+                    app:endIconDrawable="@drawable/outline_percent_24"
+                    app:endIconMode="custom"
+                    app:helperText="@string/account_annual_interest_rate_help">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/annual_interest_rate_input"
+                        style="@style/UserInputEditTextStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/annual_interest_rate"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/compound_interest_switch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="10dp"
+                    android:text="@string/allow_compound_interest"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+            </LinearLayout>
+
+            <com.google.android.material.divider.MaterialDivider
+                style="@style/Widget.Material3.MaterialDivider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp" />
 
             <!-- 金额视图标题 -->
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -285,9 +413,9 @@
             <!-- 标签列表 -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/tag_recycler"
+                style="@style/ChipRecyclerViewStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                style="@style/ChipRecyclerViewStyle"
                 android:visibility="gone"
                 app:layoutManager="com.google.android.flexbox.FlexboxLayoutManager" />
         </LinearLayout>

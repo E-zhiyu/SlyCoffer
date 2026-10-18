@@ -8,6 +8,7 @@ import androidx.room.Relation;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
+import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
@@ -16,21 +17,28 @@ import java.util.List;
 
 public class AccessibilityRuleUnionModel {
     @Embedded
-    private final AccessibilityRuleEntity rule; //规则本体数据
+    private final AccessibilityRuleEntity rule;         //规则本体数据
     @Nullable
     @Relation(
             entity = ExtraTransferEntity.class,
             parentColumn = "transferId",
             entityColumn = "transferId"
     )
-    private final ExtraTransferEntity transfer; //转账额外数据
+    private final ExtraTransferEntity transfer;         //转账额外数据
     @Nullable
     @Relation(
             entity = ExtraLoanEntity.class,
             parentColumn = "loanId",
             entityColumn = "loanId"
     )
-    private final ExtraLoanEntity loan;         //借款额外数据
+    private final ExtraLoanEntity loan;                 //借款额外数据
+    @Relation(
+            parentColumn = "repayAccountId",
+            entityColumn = "accountId",
+            entity = AccountEntity.class
+    )
+    @Nullable
+    private final AccountEntity repayRelatedAccount;    //还款额外数据，包含其关联的借款记录
     @Relation(
             parentColumn = "ruleId",
             entityColumn = "tagId",
@@ -44,10 +52,11 @@ public class AccessibilityRuleUnionModel {
     )
     private final List<AccessibilityRuleKeywordGroupEntity> keywordGroupList;   //关键词分组列表
 
-    public AccessibilityRuleUnionModel(AccessibilityRuleEntity rule, @Nullable ExtraTransferEntity transfer, @Nullable ExtraLoanEntity loan, List<TagEntity> tagList, List<AccessibilityRuleKeywordGroupEntity> keywordGroupList) {
+    public AccessibilityRuleUnionModel(AccessibilityRuleEntity rule, @Nullable ExtraTransferEntity transfer, @Nullable ExtraLoanEntity loan, @Nullable AccountEntity repayRelatedAccount, List<TagEntity> tagList, List<AccessibilityRuleKeywordGroupEntity> keywordGroupList) {
         this.rule = rule;
         this.transfer = transfer;
         this.loan = loan;
+        this.repayRelatedAccount = repayRelatedAccount;
         this.tagList = tagList;
         this.keywordGroupList = keywordGroupList;
     }
@@ -72,5 +81,10 @@ public class AccessibilityRuleUnionModel {
     @Nullable
     public ExtraLoanEntity getLoan() {
         return loan;
+    }
+
+    @Nullable
+    public AccountEntity getRepayRelatedAccount() {
+        return repayRelatedAccount;
     }
 }
