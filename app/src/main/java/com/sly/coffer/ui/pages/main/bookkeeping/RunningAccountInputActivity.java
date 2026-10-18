@@ -1004,7 +1004,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
         if (type.hasExtraData()) {
             account.setRepayAccountId(viewModel.getRepayAccountId());  //设置关联的借款记录的编号
-            //TODO:测试这些界面是否都能正常输入额外数据并读取
 
             //判断是否需要保存额外数据
             boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);

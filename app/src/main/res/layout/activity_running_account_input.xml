@@ -220,7 +220,6 @@
                     style="@style/CommonTextInputLayoutStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:endIconMode="clear_text"
                     app:helperText="@string/account_repay_date_help">
 
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
