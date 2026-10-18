@@ -35,6 +35,7 @@ import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.NotificationID;
 import com.sly.coffer.auxiliary.enums.PendingRequestCode;
+import com.sly.coffer.helpers.AppListHelper;
 import com.sly.coffer.helpers.NotificationHelper;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;
@@ -279,6 +280,7 @@ public class NotificationAbService extends NotificationListenerService {
     private void captureNotification(@NonNull StatusBarNotification sbn) {
         //获取通知数据
         String packageName = sbn.getPackageName();
+        String appName = AppListHelper.getAppNameByPackageName(packageName, this);
         Notification sbnNotification = sbn.getNotification();
         String title = sbnNotification.extras.getString(Notification.EXTRA_TITLE);
         String text = sbnNotification.extras.getString(Notification.EXTRA_TEXT);
@@ -290,7 +292,7 @@ public class NotificationAbService extends NotificationListenerService {
         if (!matcher.find()) return;
 
         //保存数据
-        CapturedNotificationEntity notification = new CapturedNotificationEntity(title, text, packageName, LocalDateTime.now());
+        CapturedNotificationEntity notification = new CapturedNotificationEntity(title, text, packageName, appName, LocalDateTime.now());
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         disposable.add(db.notificationRuleDao().insertCapturedNotification(notification)
                 .subscribeOn(Schedulers.io())
