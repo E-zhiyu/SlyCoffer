@@ -317,9 +317,6 @@ public interface AccountDao {
                 .collect(Collectors.toSet());
         oldMediaUriSet.removeAll(newMediaUriSet);
 
-        //TODO:解决修改时抛出外键不存在的BUG
-
-
         //更新流水记录
         updateAccount(account);
 
