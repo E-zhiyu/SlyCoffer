@@ -88,9 +88,7 @@ public class BudgetInputActivity extends AppCompatActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
-
         disposable.dispose();
-        binding = null;
     }
 
     /**

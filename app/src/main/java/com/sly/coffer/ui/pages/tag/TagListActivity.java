@@ -69,9 +69,6 @@ public class TagListActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        binding = null;
-
-        // 防止内存泄漏
         disposables.dispose();
     }
 

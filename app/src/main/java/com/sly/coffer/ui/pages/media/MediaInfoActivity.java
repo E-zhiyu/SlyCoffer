@@ -53,9 +53,7 @@ public class MediaInfoActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         disposable.dispose();
-        binding = null;
     }
 
     /**

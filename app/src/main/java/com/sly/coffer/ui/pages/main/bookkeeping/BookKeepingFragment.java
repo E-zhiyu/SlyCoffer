@@ -67,9 +67,9 @@ public class BookKeepingFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null;
 
         disposable.dispose();
+        binding = null;
 
         //清除SearchView的监听器，避免内存泄漏
         if (requireActivity() instanceof MainActivity) {

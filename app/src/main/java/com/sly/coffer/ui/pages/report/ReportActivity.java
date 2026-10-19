@@ -83,7 +83,6 @@ public class ReportActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
-        binding = null;
     }
 
     /**

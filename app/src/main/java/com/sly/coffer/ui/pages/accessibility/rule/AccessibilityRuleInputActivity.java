@@ -101,7 +101,6 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
-        binding = null;
     }
 
     /**

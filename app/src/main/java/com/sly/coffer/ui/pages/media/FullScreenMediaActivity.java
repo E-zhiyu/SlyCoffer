@@ -97,7 +97,6 @@ public class FullScreenMediaActivity extends AppCompatActivity {
         }
 
         disposable.dispose();
-        binding = null;
     }
 
     /**

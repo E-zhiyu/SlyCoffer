@@ -147,7 +147,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         super.onDestroy();
 
         disposable.dispose();
-        binding = null;
 
         //移除临时媒体目录中的文件
         FileHelper.clearMediaTempDir(this);

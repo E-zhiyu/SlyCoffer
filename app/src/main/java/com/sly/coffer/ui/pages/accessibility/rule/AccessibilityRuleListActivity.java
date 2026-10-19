@@ -59,7 +59,6 @@ public class AccessibilityRuleListActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
-        binding = null;
     }
 
     /**

@@ -87,9 +87,7 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         disposable.dispose();
-        binding = null;
     }
 
     /**
