@@ -29,6 +29,7 @@ import com.sly.coffer.automation.workers.backup.BackupWorker;
 import com.sly.coffer.automation.workers.backup.RestoreWorker;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.auxiliary.enums.ChannelInfo;
+import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.NotificationID;
 import com.sly.coffer.auxiliary.enums.RadiusStyle;
@@ -63,7 +64,6 @@ public class DataManageActivity extends AppCompatActivity {
     private final CompositeDisposable disposables = new CompositeDisposable();      //多线程任务列表
     private List<Boolean> exportChoiceStatList = null;                              //导出数据时的选项选择情况
     private ActivityResultLauncher<Intent> importDataLauncher, exportDataLauncher;  //活动启动器
-    private ActivityResultLauncher<Intent> importOldDataLauncher;                   //导入旧版数据的启动器
     private ActivityResultLauncher<Intent> backupDirSelectLauncher;                 //自动备份目录选择启动器
 
     @Override
@@ -118,21 +118,18 @@ public class DataManageActivity extends AppCompatActivity {
                         return;
                     }
 
-                    showImportChoiceDialog(data.getData(), false);
-                }
-        );
+                    //显示数据版本选择对话框
+                    String[] titles = Arrays.stream(ImportDataVersionType.values())
+                            .map(ImportDataVersionType::getTitle)
+                            .toArray(String[]::new);
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.select_data_version)
+                            .setItems(titles, (dialog, which) ->
+                                    showImportChoiceDialog(data.getData(), ImportDataVersionType.values()[which])
+                            )
+                            .setNegativeButton("取消", null)
+                            .show();
 
-        importOldDataLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    int resultCode = result.getResultCode();
-                    Intent data = result.getData();
-                    if (resultCode != Activity.RESULT_OK || data == null || data.getData() == null) {
-                        FileHelper.clearTempDataDir(this);
-                        return;
-                    }
-
-                    showImportChoiceDialog(data.getData(), true);
                 }
         );
 
@@ -184,7 +181,7 @@ public class DataManageActivity extends AppCompatActivity {
                 this,
                 binding.importDataOption,
                 R.string.import_data,
-                "长按可导入v1.9.0之前的数据",
+                "从外部文件导入数据",
                 R.drawable.outline_download_24,
                 RadiusStyle.BOTTOM
         );
@@ -192,13 +189,6 @@ public class DataManageActivity extends AppCompatActivity {
                 new String[]{"application/zip"},
                 importDataLauncher
         ));
-        importDataOption.setOnLongClickListener(view -> {
-            SAFHelper.openDocumentViaSAF(
-                    new String[]{"application/zip"},
-                    importOldDataLauncher
-            );
-            return true;
-        });
 
         //自动备份开关
         SettingSwitchView autoBackupSwitchOption = new SettingSwitchView(
@@ -447,10 +437,10 @@ public class DataManageActivity extends AppCompatActivity {
     /**
      * 扫描备份文件并显示多选对话框
      *
-     * @param uri       SAF 返回的 Uri 实例
-     * @param isOldData 是否是旧版数据
+     * @param uri         SAF 返回的 Uri 实例
+     * @param versionType 导入的数据的版本种类
      */
-    private void showImportChoiceDialog(Uri uri, boolean isOldData) {
+    private void showImportChoiceDialog(Uri uri, ImportDataVersionType versionType) {
         //显示扫描文件的进度条对话框
         AlertDialog progressDialog = new ProgressDialogBuilder(this, "扫描文件", "正在扫描文件……")
                 .setNegativeButton("取消", (dialogInterface, i) -> {
@@ -469,8 +459,7 @@ public class DataManageActivity extends AppCompatActivity {
                     //实例化选项列表
                     List<MultiChoiceDialogBuilder.ChoiceItem> itemList = Arrays.stream(BackupDataType.values())
                             .map(backupDataType -> {
-                                if (!isOldData && fileNameSet.contains(backupDataType.getFileName()) ||
-                                        isOldData && fileNameSet.contains(backupDataType.getOldFileName())) {
+                                if (fileNameSet.contains(backupDataType.getFileNameByVersionType(versionType))) {
                                     return new MultiChoiceDialogBuilder.ChoiceItem(
                                             true,
                                             backupDataType.getTitle(),

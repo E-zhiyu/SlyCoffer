@@ -6,6 +6,7 @@ import androidx.room.RoomDatabase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
 import com.sly.coffer.helpers.file.FileHelper;
 
 import java.io.File;
@@ -83,17 +84,16 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
      * @return 现有的数据集合
      * @throws JsonProcessingException JSON 反序列化出错时引发的异常
      */
-    //TODO:需要实现调用逻辑
     protected abstract M convertOldDataBeforeExtra(String json) throws JsonProcessingException;
 
     /**
      * 从临时文件中导入数据
      *
-     * @param file      临时文件对象
-     * @param isOldData 是否导入的是旧版数据（v1.9.0之前的版本）
+     * @param file        临时文件对象
+     * @param versionType 导入数据的版本种类
      * @return 是否完成
      */
-    public Completable importDataFromTempFile(Context context, File file, boolean isOldData) {
+    public Completable importDataFromTempFile(Context context, File file, ImportDataVersionType versionType) {
         return Completable.defer(() -> {
             try {
                 //读取文件内容
@@ -102,8 +102,10 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
                 //得到数据字典实例
                 ObjectMapper mapper = new ObjectMapper();
                 M dataMap;
-                if (isOldData) {
+                if (versionType == ImportDataVersionType.BEFORE_ROOM) {
                     dataMap = convertOldDataBeforeRoom(json);
+                } else if (versionType == ImportDataVersionType.BEFORE_EXTRA) {
+                    dataMap = convertOldDataBeforeExtra(json);
                 } else {
                     dataMap = mapper.readValue(json, mapClass);
                 }

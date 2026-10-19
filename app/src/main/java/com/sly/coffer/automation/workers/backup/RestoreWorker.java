@@ -9,6 +9,7 @@ import androidx.work.WorkerParameters;
 import androidx.work.rxjava3.RxWorker;
 
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
+import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.auxiliary.enums.unique.NotificationID;
@@ -39,7 +40,10 @@ public class RestoreWorker extends RxWorker {
         Data inputData = getInputData();
         String inputUriStr = inputData.getString(KeyStrings.BACKUP_TARGET.v());
         boolean[] choices = inputData.getBooleanArray(KeyStrings.BACKUP_CHOICES.v());
-        boolean isOldData = inputData.getBoolean(KeyStrings.RESTORE_IS_OLD_DATA.v(), false);
+        int importDataVersionTypeOrdinal = inputData.getInt(
+                KeyStrings.IMPORT_DATA_VERSION_TYPE.v(),
+                ImportDataVersionType.values().length - 1
+        );
 
         //判断输入参数是否为空
         if (inputUriStr == null) {
@@ -50,7 +54,7 @@ public class RestoreWorker extends RxWorker {
         //获取需要解压的文件名列表
         List<String> allowedFileNameList = Arrays.stream(BackupDataType.values())
                 .filter(type -> choices == null || choices[type.ordinal()])
-                .map(BackupDataType::getFileName)
+                .map(BackupDataType::getLatestVersionFileName)
                 .collect(Collectors.toList());
         boolean includeMedia = choices == null || choices[BackupDataType.RUNNING_ACCOUNT.ordinal()];
 
@@ -60,17 +64,13 @@ public class RestoreWorker extends RxWorker {
                 .flatMapObservable(Observable::fromIterable)
                 .flatMapCompletable(file -> {
                     //根据文件名判断数据类型
-                    BackupDataType type;
-                    if (isOldData) {
-                        type = BackupDataType.fromOldFileName(file.getName());
-                    } else {
-                        type = BackupDataType.fromFileName(file.getName());
-                    }
+                    ImportDataVersionType importDataVersionType = ImportDataVersionType.values()[importDataVersionTypeOrdinal];
+                    BackupDataType type = BackupDataType.fromFileName(file.getName(), importDataVersionType);
 
                     //使用对应的备份Helper导入数据
                     if (type != null) {
                         BackupHelperBase<?, ?> helper = type.createBackupHelper(context);
-                        return helper.importDataFromTempFile(context, file, isOldData);
+                        return helper.importDataFromTempFile(context, file, importDataVersionType);
                     } else {
                         return Completable.complete();
                     }
