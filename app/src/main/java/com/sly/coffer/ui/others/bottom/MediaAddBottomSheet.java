@@ -46,4 +46,10 @@ public class MediaAddBottomSheet extends BaseBottomSheetDialogFragment {
             dismiss();
         });
     }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
+    }
 }
