@@ -231,18 +231,6 @@ public class DateTimePickerHelper {
     }
 
     /**
-     * 将日期选择对话框的时间戳转换为时间（UTC时区)
-     *
-     * @param timeMilli 时间戳
-     * @return 该时间戳对应的时间
-     */
-    public static LocalDateTime getLocalDateTimeFromTimeMilli(long timeMilli) {
-        return Instant.ofEpochMilli(timeMilli)
-                .atZone(ZoneOffset.UTC)
-                .toLocalDateTime();
-    }
-
-    /**
      * 将{@link LocalDate}类型转换为 UTC 时间戳
      *
      * @param date 需要转换为时间戳{@link LocalDate}对象
