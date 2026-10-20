@@ -394,7 +394,6 @@ public class DataManageActivity extends AppCompatActivity {
                 .getWorkInfoByIdLiveData(uuid)
                 .observe(this, workInfo -> {
                     if (workInfo == null) return;
-                    //TODO:测试旧版数据导入逻辑
 
                     //判断 Worker 是否运行结束
                     if (workInfo.getState().isFinished()) {
@@ -479,7 +478,7 @@ public class DataManageActivity extends AppCompatActivity {
                     //显示多选对话框
                     new MultiChoiceDialogBuilder(this, "导入数据", itemList)
                             .setPositiveButton("确认", checkedStatList ->
-                                    importData(uri, checkedStatList)
+                                    importData(uri, checkedStatList, versionType)
                             )
                             .setNegativeButton("取消", null)
                             .show();
@@ -495,8 +494,9 @@ public class DataManageActivity extends AppCompatActivity {
      *
      * @param uri          备份文件的 Uri
      * @param checkedStats 用户选择的选项状态，选项的下标与{@link BackupDataType}的枚举序数一一对应
+     * @param versionType  导入数据的版本种类
      */
-    private void importData(Uri uri, @NonNull List<Boolean> checkedStats) {
+    private void importData(Uri uri, @NonNull List<Boolean> checkedStats, ImportDataVersionType versionType) {
         //构建传递给 Worker 的 Data
         boolean[] choices = new boolean[checkedStats.size()];
         for (int i = 0; i < checkedStats.size(); i++) {
@@ -505,6 +505,7 @@ public class DataManageActivity extends AppCompatActivity {
         Data data = new Data.Builder()
                 .putString(KeyStrings.BACKUP_TARGET.v(), uri.toString())
                 .putBooleanArray(KeyStrings.BACKUP_CHOICES.v(), choices)
+                .putInt(KeyStrings.IMPORT_DATA_VERSION_TYPE.v(), versionType.ordinal())
                 .build();
 
         //执行一次任务
