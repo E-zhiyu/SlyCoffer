@@ -45,7 +45,7 @@ public class AccessibilityRuleBackupHelper extends BackupHelperBase<BookkeepingD
 
     @Override
     protected String getTempDataFileName() {
-        return BackupDataType.ACCESSIBILITY_RULE.getFileName();
+        return BackupDataType.ACCESSIBILITY_RULE.getLatestVersionFileName();
     }
 
     @Override

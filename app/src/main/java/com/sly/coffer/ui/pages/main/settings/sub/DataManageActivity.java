@@ -394,6 +394,7 @@ public class DataManageActivity extends AppCompatActivity {
                 .getWorkInfoByIdLiveData(uuid)
                 .observe(this, workInfo -> {
                     if (workInfo == null) return;
+                    //TODO:测试旧版数据导入逻辑
 
                     //判断 Worker 是否运行结束
                     if (workInfo.getState().isFinished()) {

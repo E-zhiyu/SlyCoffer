@@ -48,7 +48,7 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
 
     @Override
     protected String getTempDataFileName() {
-        return BackupDataType.NOTIFICATION_RULE.getFileName();
+        return BackupDataType.NOTIFICATION_RULE.getLatestVersionFileName();
     }
 
     @Override

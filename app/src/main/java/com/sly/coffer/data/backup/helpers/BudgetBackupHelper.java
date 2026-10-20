@@ -48,7 +48,7 @@ public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDa
 
     @Override
     protected String getTempDataFileName() {
-        return BackupDataType.BUDGET.getFileName();
+        return BackupDataType.BUDGET.getLatestVersionFileName();
     }
 
     @Override

@@ -52,7 +52,7 @@ public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, 
 
     @Override
     protected String getTempDataFileName() {
-        return BackupDataType.RUNNING_ACCOUNT.getFileName();
+        return BackupDataType.RUNNING_ACCOUNT.getLatestVersionFileName();
     }
 
     @Override
