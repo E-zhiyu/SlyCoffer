@@ -406,7 +406,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         );
 
         //借款对象适配器
-        disposable.add(db.accountDao().getLoanTargetNameSingle()
+        disposable.add(db.extraDataDao().getLoanTargetNameSingle()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
@@ -1017,7 +1017,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                         exportAccount,
                         importAccount
                 );
-                transferTask = db.accountDao().insertExtraTransferSingle(transfer)
+                transferTask = db.extraDataDao().insertExtraTransferSingle(transfer)
                         .flatMapCompletable(transferId -> {
                             account.setTransferId(transferId);
                             return Completable.complete();
@@ -1058,7 +1058,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                         allowCompoundInterest,
                         repayDate
                 );
-                loanTask = db.accountDao().insertExtraLoanSingle(loan)
+                loanTask = db.extraDataDao().insertExtraLoanSingle(loan)
                         .flatMapCompletable(loanId -> {
                             account.setLoanId(loanId);
                             return Completable.complete();

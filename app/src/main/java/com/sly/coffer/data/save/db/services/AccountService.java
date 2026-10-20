@@ -266,9 +266,9 @@ public class AccountService {
             List<Long> tagIdList,
             Context context
     ) {
+        BookkeepingDb db = BookkeepingDb.getInstance(context);
         return Single.defer(() -> {
-            BookkeepingDb db = BookkeepingDb.getInstance(context);
-            Set<Uri> oldMediaUriSet = db.accountDao().modifyAccount(account, mediaEntityList, tagIdList);
+            Set<Uri> oldMediaUriSet = db.accountDao().modifyAccount(account, mediaEntityList, tagIdList, db.extraDataDao());
 
             //删除旧媒体文件
             if (oldMediaUriSet != null) {

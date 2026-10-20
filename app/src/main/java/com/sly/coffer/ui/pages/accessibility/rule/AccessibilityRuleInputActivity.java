@@ -337,7 +337,7 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
         );
 
         //借款对象适配器
-        disposable.add(db.accountDao().getLoanTargetNameSingle()
+        disposable.add(db.extraDataDao().getLoanTargetNameSingle()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
@@ -665,7 +665,7 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                         exportAccount,
                         importAccount
                 );
-                transferTask = db.accessibilityRuleDao().insertExtraTransferSingle(transfer)
+                transferTask = db.extraDataDao().insertExtraTransferSingle(transfer)
                         .flatMapCompletable(transferId -> {
                             rule.setTransferId(transferId);
                             return Completable.complete();
@@ -706,7 +706,7 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                         allowCompoundInterest,
                         repayDate
                 );
-                loanTask = db.accessibilityRuleDao().insertExtraLoanSingle(loan)
+                loanTask = db.extraDataDao().insertExtraLoanSingle(loan)
                         .flatMapCompletable(loanId -> {
                             rule.setLoanId(loanId);
                             return Completable.complete();
@@ -763,7 +763,7 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
             long ruleId = initBundle.getLong(KeyStrings.ACCESSIBILITY_RULE_ID.v());
             rule.setRuleId(ruleId);
             disposable.add(saveExtraDataFirstly(rule)
-                    .andThen(AccessibilityRuleService.addNewAccessibilityRule(rule, keywordGroupList, tagIdList, db))
+                    .andThen(AccessibilityRuleService.modifyAccessibilityRule(rule, keywordGroupList, tagIdList, db))
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(

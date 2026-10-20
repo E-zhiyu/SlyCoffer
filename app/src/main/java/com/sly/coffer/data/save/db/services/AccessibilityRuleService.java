@@ -60,7 +60,7 @@ public class AccessibilityRuleService {
             BookkeepingDb db
     ) {
         return Completable.defer(() -> {
-            db.accessibilityRuleDao().modifyRule(rule, keywordGroupList, tagIdList);
+            db.accessibilityRuleDao().modifyRule(rule, keywordGroupList, tagIdList, db.extraDataDao());
             return Completable.complete();
         });
     }

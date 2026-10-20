@@ -15,8 +15,6 @@ import androidx.sqlite.db.SupportSQLiteQuery;
 
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
-import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
-import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
 
@@ -282,12 +280,14 @@ public interface AccountDao {
      * @param account         修改后的流水数据
      * @param mediaEntityList 位于永久目录下的媒体文件实体列表，可能包含主键值为0的媒体实体
      * @param tagIdList       修改后的标签列表
+     * @param extraDataDao    额外数据操作接口
      */
     @Transaction
     default Set<Uri> modifyAccount(
             AccountEntity account,
             List<MediaEntity> mediaEntityList,
-            List<Long> tagIdList
+            List<Long> tagIdList,
+            ExtraDataDao extraDataDao
     ) {
         if (account == null) return null;
         long accountId = account.getAccountId();
@@ -301,10 +301,10 @@ public interface AccountDao {
 
             //删除额外数据
             if (old.getTransferId() != null) {
-                deleteExtraTransferById(old.getTransferId());
+                extraDataDao.deleteExtraTransferById(old.getTransferId());
             }
             if (old.getLoanId() != null) {
-                deleteExtraLoanById(old.getLoanId());
+                extraDataDao.deleteExtraLoanById(old.getLoanId());
             }
         } else {
             oldDateTime = account.getDateTime();
@@ -375,48 +375,6 @@ public interface AccountDao {
 
         return uriSet;
     }
-
-    /**
-     * 插入转账账户额外数据
-     *
-     * @param transfer 转账账户额外数据
-     * @return 新插入的数据的主键值
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    Single<Long> insertExtraTransferSingle(ExtraTransferEntity transfer);
-
-    /**
-     * 通过转账账户编号删除转账账户数据
-     *
-     * @param transferId 转账账户编号
-     */
-    @Query("DELETE FROM extraTransfer WHERE transferId = :transferId")
-    void deleteExtraTransferById(long transferId);
-
-    /**
-     * 插入借款额外数据
-     *
-     * @param loan 借款额外数据
-     * @return 插入的数据的主键值
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    Single<Long> insertExtraLoanSingle(ExtraLoanEntity loan);
-
-    /**
-     * 通过借款记录编号删除借款记录
-     *
-     * @param loanId 借款记录编号
-     */
-    @Query("DELETE FROM extraLoan WHERE loanId = :loanId")
-    void deleteExtraLoanById(long loanId);
-
-    /**
-     * 获取借款对象名称
-     *
-     * @return 借款对象名称列表
-     */
-    @Query("SELECT DISTINCT loanTargetName FROM extraLoan WHERE loanTargetName IS NOT NULL")
-    Single<List<String>> getLoanTargetNameSingle();
 
     /**
      * 获取带有借款记录的

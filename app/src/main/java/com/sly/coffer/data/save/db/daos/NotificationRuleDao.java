@@ -10,8 +10,6 @@ import androidx.room.Update;
 
 import com.sly.coffer.auxiliary.enums.types.MoveDirectionType;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
-import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
-import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
@@ -215,15 +213,17 @@ public interface NotificationRuleDao {
     /**
      * 修改通知规则事务
      *
-     * @param rule        修改后的通知规则
-     * @param tagIdList   修改后的标签 ID 列表
-     * @param groupIdList 规则分组编号列表
+     * @param rule         修改后的通知规则
+     * @param tagIdList    修改后的标签 ID 列表
+     * @param groupIdList  规则分组编号列表
+     * @param extraDataDao 额外数据操作接口
      */
     @Transaction
     default void modifyRule(
             NotificationRuleEntity rule,
             List<Long> tagIdList,
-            List<Long> groupIdList
+            List<Long> groupIdList,
+            ExtraDataDao extraDataDao
     ) {
         if (rule == null) return;
         long ruleId = rule.getRuleId();
@@ -235,10 +235,10 @@ public interface NotificationRuleDao {
 
             //删除原来的额外数据
             if (old.getTransferId() != null) {
-                deleteExtraTransferById(old.getTransferId());
+                extraDataDao.deleteExtraTransferById(old.getTransferId());
             }
             if (old.getLoanId() != null) {
-                deleteExtraLoanById(old.getLoanId());
+                extraDataDao.deleteExtraLoanById(old.getLoanId());
             }
         }
 
@@ -612,38 +612,4 @@ public interface NotificationRuleDao {
                 updateRuleGroupOrderById(groupId, target.getOrder() + 1);
         }
     }
-
-    /**
-     * 插入转账账户额外数据
-     *
-     * @param transfer 转账账户额外数据
-     * @return 新插入的数据的主键值
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    Single<Long> insertExtraTransferSingle(ExtraTransferEntity transfer);
-
-    /**
-     * 通过转账账户编号删除转账账户数据
-     *
-     * @param transferId 转账账户编号
-     */
-    @Query("DELETE FROM extraTransfer WHERE transferId = :transferId")
-    void deleteExtraTransferById(long transferId);
-
-    /**
-     * 插入借款额外数据
-     *
-     * @param loan 借款额外数据
-     * @return 插入的数据的主键值
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    Single<Long> insertExtraLoanSingle(ExtraLoanEntity loan);
-
-    /**
-     * 通过借款记录编号删除借款记录
-     *
-     * @param loanId 借款记录编号
-     */
-    @Query("DELETE FROM extraLoan WHERE loanId = :loanId")
-    void deleteExtraLoanById(long loanId);
 }

@@ -247,7 +247,7 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
                         exportAccount,
                         importAccount
                 );
-                transferTask = db.accountDao().insertExtraTransferSingle(transfer)
+                transferTask = db.extraDataDao().insertExtraTransferSingle(transfer)
                         .flatMapCompletable(transferId -> {
                             account.setTransferId(transferId);
                             return Completable.complete();
@@ -272,7 +272,7 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
                         allowCompoundInterest,
                         repayDate
                 );
-                loanTask = db.accountDao().insertExtraLoanSingle(loan)
+                loanTask = db.extraDataDao().insertExtraLoanSingle(loan)
                         .flatMapCompletable(loanId -> {
                             account.setLoanId(loanId);
                             return Completable.complete();

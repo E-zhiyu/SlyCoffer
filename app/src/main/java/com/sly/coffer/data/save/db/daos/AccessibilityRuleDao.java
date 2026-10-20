@@ -11,8 +11,6 @@ import androidx.room.Update;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
-import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccessibilityRuleUnionModel;
 
@@ -169,12 +167,14 @@ public interface AccessibilityRuleDao {
      * @param rule             修改后的无障碍规则
      * @param keywordGroupList 关键词组合列表
      * @param tagIdList        标签编号列表
+     * @param extraDataDao     额外数据操作接口
      */
     @Transaction
     default void modifyRule(
             AccessibilityRuleEntity rule,
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
-            List<Long> tagIdList
+            List<Long> tagIdList,
+            ExtraDataDao extraDataDao
     ) {
         if (rule == null) return;
         long ruleId = rule.getRuleId();
@@ -186,10 +186,10 @@ public interface AccessibilityRuleDao {
 
             //删除原来的额外数据
             if (old.getTransferId() != null) {
-                deleteExtraTransferById(old.getTransferId());
+                extraDataDao.deleteExtraTransferById(old.getTransferId());
             }
             if (old.getLoanId() != null) {
-                deleteExtraLoanById(old.getLoanId());
+                extraDataDao.deleteExtraLoanById(old.getLoanId());
             }
         }
 
@@ -334,38 +334,4 @@ public interface AccessibilityRuleDao {
      */
     @Query("SELECT * FROM pickedPages WHERE id = :id")
     Single<Optional<PickedPageEntity>> getPickedPageSingleById(long id);
-
-    /**
-     * 插入转账账户额外数据
-     *
-     * @param transfer 转账账户额外数据
-     * @return 新插入的数据的主键值
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    Single<Long> insertExtraTransferSingle(ExtraTransferEntity transfer);
-
-    /**
-     * 通过转账账户编号删除转账账户数据
-     *
-     * @param transferId 转账账户编号
-     */
-    @Query("DELETE FROM extraTransfer WHERE transferId = :transferId")
-    void deleteExtraTransferById(long transferId);
-
-    /**
-     * 插入借款额外数据
-     *
-     * @param loan 借款额外数据
-     * @return 插入的数据的主键值
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    Single<Long> insertExtraLoanSingle(ExtraLoanEntity loan);
-
-    /**
-     * 通过借款记录编号删除借款记录
-     *
-     * @param loanId 借款记录编号
-     */
-    @Query("DELETE FROM extraLoan WHERE loanId = :loanId")
-    void deleteExtraLoanById(long loanId);
 }
