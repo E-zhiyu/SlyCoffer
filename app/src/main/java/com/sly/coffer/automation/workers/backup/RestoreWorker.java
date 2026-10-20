@@ -68,6 +68,7 @@ public class RestoreWorker extends RxWorker {
         boolean includeMedia = choices[BackupDataType.RUNNING_ACCOUNT.ordinal()];
 
         //解压文件并写入数据
+        sendProgressNotification(context);  //发送通知
         Uri uri = Uri.parse(inputUriStr);
         List<Integer> resultFlagList = Arrays.stream(BackupDataType.values())
                 .map(type -> ImportResultType.MISSING.ordinal())
@@ -147,6 +148,30 @@ public class RestoreWorker extends RxWorker {
                 strBuilder.append("，“").append(dataType.getTitle()).append("”").append(resultType.getTitle());
             }
         }
-        return strBuilder;
+        return strBuilder.append("。");
+    }
+
+    /**
+     * 发送进度条通知
+     *
+     * @param context 上下文
+     */
+    private void sendProgressNotification(Context context) {
+        //构建通知
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, ChannelInfo.BACKUP_AND_RESTORE.getId())
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(context.getString(R.string.import_data))
+                .setContentText("正在导入数据……")
+                .setProgress(0, 0, true)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setCategory(NotificationCompat.CATEGORY_PROGRESS);
+
+        //发送通知
+        NotificationHelper.sendNotification(
+                NotificationID.BACKUP_AND_RESTORE.ordinal(),
+                builder,
+                context
+        );
     }
 }
