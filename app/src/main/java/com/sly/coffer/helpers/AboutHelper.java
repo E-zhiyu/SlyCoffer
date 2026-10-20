@@ -12,6 +12,10 @@ import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 public class AboutHelper {
     private static final String UPDATE_LOG_MD = "# v1.13.0\n" +
             "\n" +
+            "### 优化的内容\n" +
+            "\n" +
+            "- 导入数据时能够通过通知显示导入结果\n" +
+            "\n" +
             "### BUG修复\n" +
             "\n" +
             "- 修复无法正常打开界面拾取服务的BUG\n" +

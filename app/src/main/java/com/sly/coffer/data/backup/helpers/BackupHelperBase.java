@@ -90,9 +90,10 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
     /**
      * 从临时文件中导入数据
      *
+     * @param context 上下文
      * @param file        临时文件对象
      * @param versionType 导入数据的版本种类
-     * @return 是否完成
+     * @return 带有导入结果的{@link Single}对象
      */
     public Single<Integer> importDataFromTempFile(Context context, File file, ImportDataVersionType versionType) {
         return Single.defer(() -> {
