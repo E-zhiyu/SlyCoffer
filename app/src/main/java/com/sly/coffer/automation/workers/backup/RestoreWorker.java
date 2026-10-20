@@ -103,7 +103,7 @@ public class RestoreWorker extends RxWorker {
                 .doFinally(() -> {
                     String message;
                     if (resultFlagList.stream().allMatch(flag -> flag == ImportResultType.SUCCEED.ordinal())) {
-                        message = "所有数据均导入成功";
+                        message = "所有数据均导入成功。";
                     } else {
                         StringBuilder strBuilder = getStrBuilder(resultFlagList, choices);
 
