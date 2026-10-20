@@ -95,7 +95,19 @@ public class BackupWorker extends RxWorker {
                     Log.e(LogTags.BACKUP_WORKER.n(), "备份失败");
                     return Result.failure();
                 })
-                .doFinally(() -> NotificationHelper.cancelNotification(NotificationID.BACKUP_AND_RESTORE.ordinal(), context));
+                .doFinally(() -> {
+                    //发送通知
+                    String channelID = ChannelInfo.BACKUP_AND_RESTORE.getId();
+                    NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, channelID)
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setContentTitle(context.getString(R.string.export_data))
+                            .setContentText("数据备导出完成")
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .setCategory(NotificationCompat.CATEGORY_CALL)
+                            .setTimeoutAfter(5000)
+                            .setAutoCancel(true);
+                    NotificationHelper.sendNotification(NotificationID.BACKUP_AND_RESTORE.ordinal(), notificationBuilder, context);
+                });
     }
 
     /**

@@ -114,7 +114,7 @@ public class RestoreWorker extends RxWorker {
                     String channelID = ChannelInfo.BACKUP_AND_RESTORE.getId();
                     NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, channelID)
                             .setSmallIcon(R.mipmap.ic_launcher)
-                            .setContentTitle("数据导入")
+                            .setContentTitle(context.getString(R.string.import_data))
                             .setContentText(message)
                             .setPriority(NotificationCompat.PRIORITY_HIGH)
                             .setCategory(NotificationCompat.CATEGORY_CALL)
