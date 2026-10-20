@@ -8,6 +8,7 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Transaction;
 
+import com.sly.coffer.auxiliary.enums.types.ImportResultType;
 import com.sly.coffer.data.backup.maps.AccessibilityRuleDataMap;
 import com.sly.coffer.data.backup.maps.BudgetDataMap;
 import com.sly.coffer.data.backup.maps.NotificationRuleDataMap;
@@ -45,6 +46,7 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -113,13 +115,16 @@ public interface DataBackupDao {
     /**
      * 导入流水记录数据
      *
-     * @param data 流水记录数据集合
+     * @param context 上下文
+     * @param data    流水记录数据集合
+     * @return 数据导入的结果
      */
     @Transaction
-    default void importRunningAccountData(Context context, RunningAccountDataMap data) {
-        if (data == null) return;
+    default int importRunningAccountData(Context context, RunningAccountDataMap data) {
+        if (data == null) return ImportResultType.MISSING.ordinal();
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
+        List<Boolean> resultList = new ArrayList<>();
 
         //清理旧的额外数据
         List<Long> existedTransferId = getExistedAccountTransferId();
@@ -210,12 +215,18 @@ public interface DataBackupDao {
 
             //写入流水记录数据
             writeRunningAccount(accountEntityList);
+            resultList.add(true);
+        } else {
+            resultList.add(false);
         }
 
         //流水标签数据
         List<AccountTagRefPojo> accountTagRefPojoList = data.getAccountTagRefList();
         if (accountTagRefPojoList != null && !accountTagRefPojoList.isEmpty()) {
             writeAccountTagRef(mapper.toAccountTagRefEntityList(accountTagRefPojoList));
+            resultList.add(true);
+        } else {
+            resultList.add(false);
         }
 
         //媒体数据
@@ -239,6 +250,18 @@ public interface DataBackupDao {
                     .collect(Collectors.toList());
 
             writeMedia(mapper.toMediaEntityList(uriConvertedMediaPojoList));
+            resultList.add(true);
+        } else {
+            resultList.add(false);
+        }
+
+        //返回导入结果
+        if (!resultList.contains(false)) {
+            return ImportResultType.SUCCEED.ordinal();
+        } else if (!resultList.contains(true)) {
+            return ImportResultType.MISSING.ordinal();
+        } else {
+            return ImportResultType.PARTIALLY_SUCCEED.ordinal();
         }
     }
 
@@ -297,12 +320,14 @@ public interface DataBackupDao {
      * 导入通知规则数据
      *
      * @param data 通知规则数据集合
+     * @return 数据导入的结果
      */
     @Transaction
-    default void importNotificationRuleData(NotificationRuleDataMap data) {
-        if (data == null) return;
+    default int importNotificationRuleData(NotificationRuleDataMap data) {
+        if (data == null) return ImportResultType.MISSING.ordinal();
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
+        List<Boolean> resultList = new ArrayList<>();
 
         //清空额外数据
         List<Long> existedTransferIdList = getExistedNotificationRuleTransferId();
@@ -380,6 +405,9 @@ public interface DataBackupDao {
 
             //写入通知规则数据
             writeNotificationRule(notificationRuleEntityList);
+            resultList.add(true);
+        } else {
+            resultList.add(false);
         }
 
         //绑定的标签数据
@@ -390,18 +418,36 @@ public interface DataBackupDao {
                     .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
                     .collect(Collectors.toList());  //仅写入标签存在的映射
             writeNotificationRuleTagRef(mapper.toNotificationRuleTagRefEntityList(filteredTagRefPojoList));
+            resultList.add(true);
+        } else {
+            resultList.add(false);
         }
 
         //分组数据
         List<NotificationRuleGroupPojo> notificationRuleGroupPojoList = data.getNotificationRuleGroupList();
         if (notificationRuleGroupPojoList != null && !notificationRuleGroupPojoList.isEmpty()) {
             writeNotificationRuleGroup(mapper.toNotificationRuleGroupEntityList(notificationRuleGroupPojoList));
+            resultList.add(true);
+        } else {
+            resultList.add(false);
         }
 
         //规则与分组的映射
         List<NotificationRuleGroupRefPojo> notificationRuleGroupRefPojoList = data.getNotificationRuleGroupRefList();
         if (notificationRuleGroupRefPojoList != null && !notificationRuleGroupRefPojoList.isEmpty()) {
             writeNotificationRuleGroupRef(mapper.toNotificationRuleGroupRefEntityList(notificationRuleGroupRefPojoList));
+            resultList.add(true);
+        } else {
+            resultList.add(false);
+        }
+
+        //返回导入结果
+        if (!resultList.contains(false)) {
+            return ImportResultType.SUCCEED.ordinal();
+        } else if (!resultList.contains(true)) {
+            return ImportResultType.MISSING.ordinal();
+        } else {
+            return ImportResultType.PARTIALLY_SUCCEED.ordinal();
         }
     }
 
@@ -434,12 +480,14 @@ public interface DataBackupDao {
      * 导入预算数据
      *
      * @param data 预算数据集合
+     * @return 数据导入的结果
      */
     @Transaction
-    default void importBudgetData(BudgetDataMap data) {
-        if (data == null) return;
+    default int importBudgetData(BudgetDataMap data) {
+        if (data == null) return ImportResultType.MISSING.ordinal();
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
+        List<Boolean> resultList = new ArrayList<>();
 
         //清空旧数据
         clearBudget();
@@ -449,6 +497,9 @@ public interface DataBackupDao {
         List<BudgetPojo> budgetPojoList = data.getBudgetList();
         if (budgetPojoList != null && !budgetPojoList.isEmpty()) {
             writeBudget(mapper.toBudgetEntityList(budgetPojoList));
+            resultList.add(true);
+        } else {
+            resultList.add(false);
         }
 
         //预算标签数据
@@ -459,6 +510,18 @@ public interface DataBackupDao {
                     .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
                     .collect(Collectors.toList());  //仅写入存在的标签的映射
             writeBudgetTagRef(mapper.toBudgetTagRefEntityList(filteredBudgetTagRefPojoList));
+            resultList.add(true);
+        } else {
+            resultList.add(false);
+        }
+
+        //返回导入结果
+        if (!resultList.contains(false)) {
+            return ImportResultType.SUCCEED.ordinal();
+        } else if (!resultList.contains(true)) {
+            return ImportResultType.MISSING.ordinal();
+        } else {
+            return ImportResultType.PARTIALLY_SUCCEED.ordinal();
         }
     }
 
@@ -511,11 +574,13 @@ public interface DataBackupDao {
      * 导入无障碍规则数据
      *
      * @param data 包含无障碍规则数据的集合
+     * @return 数据导入的结果
      */
-    default void importAccessibilityRuleData(AccessibilityRuleDataMap data) {
-        if (data == null) return;
+    default int importAccessibilityRuleData(AccessibilityRuleDataMap data) {
+        if (data == null) return ImportResultType.MISSING.ordinal();
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
+        List<Boolean> resultList = new ArrayList<>();
 
         //清空旧额外数据
         List<Long> existedTransferIdList = getExistedAccessibilityRuleTransferId();
@@ -590,8 +655,11 @@ public interface DataBackupDao {
                 }
             }
 
-            //写入无障碍规则数据
+            //写入无障碍规则数据并修改标识符
             writeAccessibilityRule(ruleEntityList);
+            resultList.add(true);
+        } else {
+            resultList.add(false);
         }
 
         //标签映射
@@ -602,6 +670,9 @@ public interface DataBackupDao {
                     .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
                     .collect(Collectors.toList());  //仅写入存在的标签映射
             writeAccessibilityRuleTagRef(mapper.toAccessibilityRuleTagRefEntityList(filteredTagRefPojoList));
+            resultList.add(true);
+        } else {
+            resultList.add(false);
         }
 
         //关键词组合
@@ -609,6 +680,18 @@ public interface DataBackupDao {
         if (keywordGroupPojoList != null && !keywordGroupPojoList.isEmpty()) {
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupEntityList = mapper.toAccessibilityRuleKeywordGroupEntityList(keywordGroupPojoList);
             writeAccessibilityRuleKeywordGroup(keywordGroupEntityList);
+            resultList.add(true);
+        } else {
+            resultList.add(false);
+        }
+
+        //返回导入结果
+        if (!resultList.contains(false)) {
+            return ImportResultType.SUCCEED.ordinal();
+        } else if (!resultList.contains(true)) {
+            return ImportResultType.MISSING.ordinal();
+        } else {
+            return ImportResultType.PARTIALLY_SUCCEED.ordinal();
         }
     }
 

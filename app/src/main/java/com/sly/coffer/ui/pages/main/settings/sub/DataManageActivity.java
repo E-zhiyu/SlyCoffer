@@ -535,7 +535,7 @@ public class DataManageActivity extends AppCompatActivity {
                         String text;
                         switch (workInfo.getState()) {
                             case SUCCEEDED:
-                                text = "数据导入成功";
+                                text = "数据导入完成，请在通知中查看结果";
                                 break;
                             case CANCELLED:
                                 text = "数据导入已取消";

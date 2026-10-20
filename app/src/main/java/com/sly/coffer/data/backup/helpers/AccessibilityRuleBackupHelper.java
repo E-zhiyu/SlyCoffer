@@ -39,8 +39,8 @@ public class AccessibilityRuleBackupHelper extends BackupHelperBase<BookkeepingD
     }
 
     @Override
-    protected void saveDataInMapToDb(Context context, AccessibilityRuleDataMap map) {
-        db.dataBackupDao().importAccessibilityRuleData(map);
+    protected int saveDataInMapToDb(Context context, AccessibilityRuleDataMap map) {
+        return db.dataBackupDao().importAccessibilityRuleData(map);
     }
 
     @Override

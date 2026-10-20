@@ -42,8 +42,8 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
     }
 
     @Override
-    protected void saveDataInMapToDb(Context context, NotificationRuleDataMap map) {
-        db.dataBackupDao().importNotificationRuleData(map);
+    protected int saveDataInMapToDb(Context context, NotificationRuleDataMap map) {
+        return db.dataBackupDao().importNotificationRuleData(map);
     }
 
     @Override

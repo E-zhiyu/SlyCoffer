@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 
 import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * 数据帮助器基类
@@ -59,7 +60,7 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
      * @param context 上下文
      * @param map     数据集合
      */
-    protected abstract void saveDataInMapToDb(Context context, M map);
+    protected abstract int saveDataInMapToDb(Context context, M map);
 
     /**
      * 待继承的设置临时 JSON 文件名称的方法
@@ -93,8 +94,8 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
      * @param versionType 导入数据的版本种类
      * @return 是否完成
      */
-    public Completable importDataFromTempFile(Context context, File file, ImportDataVersionType versionType) {
-        return Completable.defer(() -> {
+    public Single<Integer> importDataFromTempFile(Context context, File file, ImportDataVersionType versionType) {
+        return Single.defer(() -> {
             try {
                 //读取文件内容
                 String json = FileHelper.readContent(file);
@@ -111,11 +112,11 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
                 }
 
                 //将对应的数据写入数据库
-                saveDataInMapToDb(context, dataMap);
+                int resultFlag = saveDataInMapToDb(context, dataMap);
 
-                return Completable.complete();
+                return Single.just(resultFlag);
             } catch (IOException e) {
-                return Completable.error(e);
+                return Single.error(e);
             }
         });
     }

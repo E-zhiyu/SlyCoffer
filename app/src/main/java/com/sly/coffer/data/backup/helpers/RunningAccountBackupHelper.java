@@ -46,8 +46,8 @@ public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, 
     }
 
     @Override
-    protected void saveDataInMapToDb(Context context, RunningAccountDataMap map) {
-        db.dataBackupDao().importRunningAccountData(context, map);
+    protected int saveDataInMapToDb(Context context, RunningAccountDataMap map) {
+        return db.dataBackupDao().importRunningAccountData(context, map);
     }
 
     @Override

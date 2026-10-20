@@ -42,8 +42,8 @@ public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDa
     }
 
     @Override
-    protected void saveDataInMapToDb(Context context, BudgetDataMap map) {
-        db.dataBackupDao().importBudgetData(map);
+    protected int saveDataInMapToDb(Context context, BudgetDataMap map) {
+        return db.dataBackupDao().importBudgetData(map);
     }
 
     @Override
