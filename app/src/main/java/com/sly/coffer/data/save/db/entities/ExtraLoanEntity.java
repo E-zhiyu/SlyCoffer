@@ -15,7 +15,7 @@ public class ExtraLoanEntity {
     private long loanId;                    //自增主键
     private String loanTargetName;          //借钱对象的名称
     private int interestPeriodType;         //结息周期种类
-    private int yearBasepoint;              //年利率基点
+    private int yearBasepoint;              //年利率基点（精确到百分比小数后两位，也就是利率=基点/10000）
     private boolean allowCompoundInterest;  //是否允许复利
     @Nullable
     private LocalDate repayDate;            //应还日期

@@ -20,10 +20,12 @@ import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.daos.AccountDao;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountLoanUnionModel;
 import com.sly.coffer.databinding.FragmentHomeBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
+import com.sly.coffer.helpers.compute.LoanHelper;
 import com.sly.coffer.ui.pages.accessibility.pick.PickedPageListActivity;
 import com.sly.coffer.ui.pages.accessibility.rule.AccessibilityRuleListActivity;
 import com.sly.coffer.ui.pages.budget.BudgetListActivity;
@@ -81,6 +83,7 @@ public class HomeFragment extends Fragment {
 
         initDateCard();
         initReportCard();
+        initLoanCard();
         initTagCard();
         initNotificationRuleCard();
         initBudgetCard();
@@ -209,6 +212,55 @@ public class HomeFragment extends Fragment {
                             binding.todayIncomeAndExpenseText.setText(R.string.not_applicable);
                             ExceptionHelper.showExceptionDialog(requireContext(), e);
                         }
+                )
+        );
+    }
+
+    /**
+     * 初始化借款卡片
+     */
+    private void initLoanCard() {
+        //设置卡片圆角
+        AppearanceHelper.setRadius(
+                requireContext(),
+                binding.loanCard,
+                AppearanceHelper.SMALL_CARD_RADIUS,
+                AppearanceHelper.SMALL_CARD_RADIUS,
+                AppearanceHelper.SMALL_CARD_RADIUS,
+                AppearanceHelper.SMALL_CARD_RADIUS
+        );
+
+        //设置点击监听
+        binding.loanCard.setOnClickListener(view -> {
+            //TODO:点击监听
+        });
+        AppearanceHelper.attachMorphAnimation(binding.loanCard);
+
+        BookkeepingDb db = BookkeepingDb.getInstance(requireContext());
+        disposable.add(db.extraDataDao().getAccountWithLoanFlowable()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        modelList -> {
+                            //待还款
+                            List<AccountLoanUnionModel> borrowedList = modelList.stream()
+                                    .filter(model ->
+                                            model.getAccount().getType() == AccountType.BORROW.ordinal()
+                                    )
+                                    .collect(Collectors.toList());
+                            double borrowed = LoanHelper.computeDebt(borrowedList);
+                            binding.borrowText.setText(TextHelper.abbreviate(borrowed));
+
+                            //待收债
+                            List<AccountLoanUnionModel> lentList = modelList.stream()
+                                    .filter(model ->
+                                            model.getAccount().getType() == AccountType.LEND.ordinal()
+                                    )
+                                    .collect(Collectors.toList());
+                            double lent = LoanHelper.computeDebt(lentList);
+                            binding.lendText.setText(TextHelper.abbreviate(lent));
+                        },
+                        e -> ExceptionHelper.showExceptionDialog(requireContext(), e)
                 )
         );
     }
