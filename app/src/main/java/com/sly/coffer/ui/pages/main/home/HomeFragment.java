@@ -3,6 +3,7 @@ package com.sly.coffer.ui.pages.main.home;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +12,7 @@ import androidx.fragment.app.Fragment;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.transition.ChangeBounds;
 import androidx.transition.TransitionManager;
 import androidx.transition.TransitionSet;
@@ -48,8 +50,8 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class HomeFragment extends Fragment {
-    private FragmentHomeBinding binding;                        //XML视图绑定引用
-    private final CompositeDisposable disposable = new CompositeDisposable();   //订阅列表
+    private FragmentHomeBinding binding;                        //绑定的 XML 布局
+    private final CompositeDisposable disposable = new CompositeDisposable();
     private final List<String> tipsList = new ArrayList<>();    //提示文本列表
 
     @Nullable
@@ -60,6 +62,7 @@ public class HomeFragment extends Fragment {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
 
         initViews();
+        observeLiveData();
 
         return binding.getRoot();
     }
@@ -191,21 +194,10 @@ public class HomeFragment extends Fragment {
                                 }
                             }
 
-
-                            //结余
-                            binding.todayBalanceText.setText(String.format(
-                                    Locale.getDefault(),
-                                    "%s",
-                                    TextHelper.abbreviate(balance)
-                            ));
-
-                            //收支
-                            binding.todayIncomeAndExpenseText.setText(String.format(
-                                    Locale.getDefault(),
-                                    "+%s/-%s",
-                                    TextHelper.abbreviate(income),
-                                    TextHelper.abbreviate(expense)
-                            ));
+                            //更新 ViewModel 中的数据
+                            HomePageViewModel viewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
+                            viewModel.updateBalance(balance);
+                            viewModel.updateExpenseIncome(new Pair<>(income, expense));
                         },
                         e -> {
                             binding.todayBalanceText.setText(R.string.not_applicable);
@@ -243,13 +235,14 @@ public class HomeFragment extends Fragment {
                 .subscribe(
                         modelList -> {
                             //待还款
+                            HomePageViewModel viewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
                             List<AccountLoanUnionModel> borrowedList = modelList.stream()
                                     .filter(model ->
                                             model.getAccount().getType() == AccountType.BORROW.ordinal()
                                     )
                                     .collect(Collectors.toList());
                             double borrowed = LoanHelper.computeDebt(borrowedList);
-                            binding.borrowText.setText(TextHelper.abbreviate(borrowed));
+                            viewModel.updateBorrowed(borrowed);
 
                             //待收债
                             List<AccountLoanUnionModel> lentList = modelList.stream()
@@ -258,7 +251,7 @@ public class HomeFragment extends Fragment {
                                     )
                                     .collect(Collectors.toList());
                             double lent = LoanHelper.computeDebt(lentList);
-                            binding.lendText.setText(TextHelper.abbreviate(lent));
+                            viewModel.updateLent(lent);
                         },
                         e -> ExceptionHelper.showExceptionDialog(requireContext(), e)
                 )
@@ -422,6 +415,38 @@ public class HomeFragment extends Fragment {
                         count -> binding.accessibilityRuleCountText.setText(String.valueOf(count)),
                         e -> ExceptionHelper.showExceptionDialog(requireContext(), e)
                 )
+        );
+    }
+
+    /**
+     * 观察 ViewModel 中的 LiveData
+     */
+    private void observeLiveData() {
+        //结余
+        HomePageViewModel homePageViewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
+        homePageViewModel.getReportBalanceLiveData().observe(getViewLifecycleOwner(), balance ->
+                binding.todayBalanceText.setText(TextHelper.abbreviate(balance))
+        );
+
+        //收入和支出
+        homePageViewModel.getReportExpenseIncomeLiveData().observe(getViewLifecycleOwner(), pair -> {
+            double income = pair.first;
+            double expense = pair.second;
+            binding.todayIncomeAndExpenseText.setText(String.format(
+                    "+%s/-%s",
+                    TextHelper.abbreviate(income),
+                    TextHelper.abbreviate(expense)
+            ));
+        });
+
+        //待还款
+        homePageViewModel.getLoanBorrowedLiveData().observe(getViewLifecycleOwner(), borrowed ->
+                binding.borrowText.setText(TextHelper.abbreviate(borrowed))
+        );
+
+        //待收债
+        homePageViewModel.getLoanLentLiveData().observe(getViewLifecycleOwner(), lent ->
+                binding.lendText.setText(TextHelper.abbreviate(lent))
         );
     }
 
