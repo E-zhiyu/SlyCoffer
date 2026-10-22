@@ -173,7 +173,12 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".ui.pages.common.account.AccountListActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.pages.debt.DebtListActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".ui.pages.main.MainActivity"
             android:exported="true">

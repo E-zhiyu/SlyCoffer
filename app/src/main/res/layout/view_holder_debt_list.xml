@@ -1,0 +1,79 @@
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_layout"
+    style="@style/MediumRadiusCardStyle"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="1dp"
+    android:layout_marginBottom="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="15dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="15dp"
+        android:paddingBottom="10dp">
+
+        <!-- 备注 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/remark_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/remark"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            app:layout_constraintHorizontal_bias="0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- 借款对象 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/loan_target_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLength="10"
+            android:maxLines="1"
+            android:text="@string/loan_target"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/remark_text" />
+
+        <!-- 种类 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/type_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/running_account_type"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/loan_target_text" />
+
+        <!-- 欠债数额 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/debt_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/loan_record"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textColor="?attr/colorOutline"
+            app:layout_constraintBottom_toTopOf="@id/repayment_count_text"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="packed" />
+
+        <!-- 包含的还款记录数量 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/repayment_count_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/infinity"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOutline"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/debt_text" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>
