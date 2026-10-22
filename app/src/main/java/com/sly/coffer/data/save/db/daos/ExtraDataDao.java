@@ -10,6 +10,7 @@ import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccountLoanUnionModel;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
@@ -66,6 +67,16 @@ public interface ExtraDataDao {
     @Query("SELECT * FROM accounts " +
             "WHERE loanId IN (SELECT loanId FROM extraLoan)")
     Flowable<List<AccountLoanUnionModel>> getAccountWithLoanFlowable();
+
+    /**
+     * 通过流水记录编号获取带有借款记录的流水记录
+     *
+     * @param id 流水记录编号
+     * @return 该编号对应的流水记录及其借款相关数据
+     */
+    @Query("SELECT * FROM accounts " +
+            "WHERE accountId = :id")
+    Flowable<Optional<AccountLoanUnionModel>> getAccountWithLoanFlowableById(long id);
 
     /**
      * 获取带有借款记录的流水记录，并按照时间降序排序

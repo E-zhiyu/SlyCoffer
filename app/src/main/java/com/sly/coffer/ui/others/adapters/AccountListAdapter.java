@@ -1,4 +1,4 @@
-package com.sly.coffer.ui.pages.main.bookkeeping;
+package com.sly.coffer.ui.others.adapters;
 
 import android.content.Context;
 import android.view.LayoutInflater;

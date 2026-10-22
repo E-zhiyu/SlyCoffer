@@ -24,7 +24,7 @@ import com.sly.coffer.databinding.ActivityAccountListBinding;
 import com.sly.coffer.databinding.ViewHolderSeparatorTextChipBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.ui.others.decoration.sticky.StickyHeaderItemDecoration;
-import com.sly.coffer.ui.pages.main.bookkeeping.AccountListAdapter;
+import com.sly.coffer.ui.others.adapters.AccountListAdapter;
 import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;
 
 import java.util.ArrayList;

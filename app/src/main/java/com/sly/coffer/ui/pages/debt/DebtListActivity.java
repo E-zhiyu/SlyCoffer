@@ -1,5 +1,6 @@
 package com.sly.coffer.ui.pages.debt;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
@@ -10,6 +11,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.preference.SearchHistoryPreference;
 import com.sly.coffer.databinding.ActivityDebtListBinding;
@@ -60,7 +62,12 @@ public class DebtListActivity extends AppCompatActivity {
         //设置适配器
         DebtListAdapter adapter = new DebtListAdapter(
                 (entity, anchor) -> {
-                    //TODO:点击监听
+                    Bundle bundle = new Bundle();
+                    bundle.putLong(KeyStrings.RUNNING_ID.v(), entity.getAccount().getAccountId());
+
+                    Intent intent = new Intent(this, DebtDetailActivity.class);
+                    intent.putExtras(bundle);
+                    startActivity(intent);
                 }
         );
         binding.recycler.setAdapter(adapter);

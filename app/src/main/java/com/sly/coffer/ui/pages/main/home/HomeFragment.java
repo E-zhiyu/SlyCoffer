@@ -257,7 +257,7 @@ public class HomeFragment extends Fragment {
 
             String detail = String.format(
                     Locale.getDefault(),
-                    "截至目前，与您相关的债务信息如下\n\n应还款\n\n### %.2f\n\n待收债\n\n### %.2f",
+                    "截至目前，与您相关的债务信息如下：\n\n应还款\n\n### %.2f\n\n待收债\n\n### %.2f",
                     borrowed, lent
             );
             new MarkdownDialogBuilder(requireContext(), "债务信息", detail)

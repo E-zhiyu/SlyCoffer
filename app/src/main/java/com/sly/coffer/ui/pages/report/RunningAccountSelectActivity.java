@@ -44,7 +44,7 @@ import com.sly.coffer.ui.others.decoration.sticky.StickyHeaderItemDecoration;
 import com.sly.coffer.ui.others.selections.account.AccountKeyProvider;
 import com.sly.coffer.ui.others.selections.account.AccountLookup;
 import com.sly.coffer.ui.others.viewmodel.AccountFilterViewModel;
-import com.sly.coffer.ui.pages.main.bookkeeping.AccountListAdapter;
+import com.sly.coffer.ui.others.adapters.AccountListAdapter;
 
 import java.time.LocalDate;
 import java.util.Arrays;
