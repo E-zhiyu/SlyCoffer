@@ -17,29 +17,28 @@
 
         <!-- 备注 -->
         <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/remark_text"
-            android:layout_width="wrap_content"
+            android:id="@+id/remark_target_text"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="@string/remark"
             android:textAppearance="?attr/textAppearanceTitleMedium"
+            app:layout_constraintEnd_toStartOf="@id/debt_text"
             app:layout_constraintHorizontal_bias="0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- 借款对象 -->
+        <!-- 应还日期 -->
         <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/loan_target_text"
+            android:id="@+id/repay_date_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLength="10"
-            android:maxLines="1"
-            android:text="@string/loan_target"
+            android:text="@string/repay_date"
             android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textColor="?attr/colorOutline"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/remark_text" />
+            app:layout_constraintTop_toBottomOf="@id/remark_target_text" />
 
         <!-- 种类 -->
         <com.google.android.material.textview.MaterialTextView
@@ -48,17 +47,17 @@
             android:layout_height="wrap_content"
             android:text="@string/running_account_type"
             android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOutline"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/loan_target_text" />
+            app:layout_constraintTop_toBottomOf="@id/repay_date_text" />
 
         <!-- 欠债数额 -->
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/debt_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/loan_record"
+            android:text="@string/debt_info"
             android:textAppearance="?attr/textAppearanceBodyLarge"
-            android:textColor="?attr/colorOutline"
             app:layout_constraintBottom_toTopOf="@id/repayment_count_text"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"

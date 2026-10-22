@@ -18,6 +18,7 @@ public class SearchHistoryPreference {
     public static final String KEY_APP_LIST = "app_list";               //应用列表搜索历史
     public static final String KEY_CAPTURED_NOTIFICATION = "captured_notification"; //捕获的通知
     public static final String KEY_PICKED_VIEW = "picked_view";         //拾取的视图
+    public static final String KEY_DEBT_INFO = "debt_info";             //债务信息
 
     /**
      * 读取搜索历史

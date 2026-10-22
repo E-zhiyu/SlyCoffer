@@ -268,6 +268,7 @@
     <string name="pending_debt_collection">待收债</string>
     <string name="debt_info">债务信息</string>
     <string name="no_debt_info">无债务信息</string>
+    <string name="debt_search_hint">搜索借款对象……</string>
 
     <string-array name="tips_array">
         <item>如果设置了自动备份目录，进行软件更新时会自动备份一次。</item>

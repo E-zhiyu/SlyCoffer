@@ -8,6 +8,7 @@ import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity(
         tableName = "accounts",
@@ -144,5 +145,17 @@ public class AccountEntity {
 
     public void setRepayAccountId(@Nullable Long repayAccountId) {
         this.repayAccountId = repayAccountId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        AccountEntity account = (AccountEntity) o;
+        return Double.compare(amount, account.amount) == 0 && Objects.equals(dateTime, account.dateTime);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(amount, dateTime);
     }
 }

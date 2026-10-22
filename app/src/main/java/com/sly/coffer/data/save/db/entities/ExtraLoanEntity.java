@@ -6,6 +6,7 @@ import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 @Entity(
         tableName = "extraLoan"
@@ -88,5 +89,17 @@ public class ExtraLoanEntity {
 
     public void setRepayDate(@Nullable LocalDate repayDate) {
         this.repayDate = repayDate;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        ExtraLoanEntity loan = (ExtraLoanEntity) o;
+        return interestPeriodType == loan.interestPeriodType && yearBasepoint == loan.yearBasepoint && allowCompoundInterest == loan.allowCompoundInterest;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(interestPeriodType, yearBasepoint, allowCompoundInterest);
     }
 }

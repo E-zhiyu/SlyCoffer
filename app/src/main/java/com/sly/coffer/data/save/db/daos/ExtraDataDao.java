@@ -66,4 +66,17 @@ public interface ExtraDataDao {
     @Query("SELECT * FROM accounts " +
             "WHERE loanId IN (SELECT loanId FROM extraLoan)")
     Flowable<List<AccountLoanUnionModel>> getAccountWithLoanFlowable();
+
+    /**
+     * 获取带有借款记录的流水记录，并按照时间降序排序
+     *
+     * @param keyword 搜索关键词
+     * @return 带有借款记录的流水记录
+     */
+    @Query("SELECT * FROM accounts a " +
+            "WHERE a.loanId IN (SELECT loanId FROM extraLoan) AND EXISTS(" +
+            "   SELECT 1 FROM extraLoan e WHERE e.loanId = a.loanId AND e.loanTargetName LIKE '%' || :keyword || '%'" +
+            ") " +
+            "ORDER BY a.dateTime DESC")
+    Flowable<List<AccountLoanUnionModel>> getAccountWithLoanFlowable(String keyword);
 }
