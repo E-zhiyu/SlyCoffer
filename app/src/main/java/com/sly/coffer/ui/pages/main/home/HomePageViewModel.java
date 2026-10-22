@@ -1,7 +1,6 @@
 package com.sly.coffer.ui.pages.main.home;
 
-import android.util.Pair;
-
+import androidx.core.util.Pair;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 

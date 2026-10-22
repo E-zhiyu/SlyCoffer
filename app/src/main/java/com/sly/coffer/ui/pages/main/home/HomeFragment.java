@@ -3,11 +3,12 @@ package com.sly.coffer.ui.pages.main.home;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Pair;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.core.util.Pair;
 import androidx.fragment.app.Fragment;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -179,10 +180,10 @@ public class HomeFragment extends Fragment {
 
             String detail = String.format(
                     Locale.getDefault(),
-                    "今日消费情况如下：\n\n支出\n\n### %.2f\n\n收入\n\n### %.2f\n\n结余\n\n### %.2f",
+                    "今日消费情况如下：\n\n支出 **%.2f**元  \n收入 **%.2f**元  \n结余 **%.2f**元  \n",
                     expense, income, balance
             );
-            new MarkdownDialogBuilder(requireContext(), "今日报表", detail)
+            new MarkdownDialogBuilder(requireContext(), getString(R.string.report), detail)
                     .setNegativeButton("关闭", null)
                     .show();
 
@@ -257,7 +258,7 @@ public class HomeFragment extends Fragment {
 
             String detail = String.format(
                     Locale.getDefault(),
-                    "截至目前，与您相关的债务信息如下：\n\n应还款\n\n### %.2f\n\n待收债\n\n### %.2f",
+                    "截至目前，与您相关的债务信息如下：\n\n应还款 **%.2f**元  \n待收债 **%.2f**元  \n",
                     borrowed, lent
             );
             new MarkdownDialogBuilder(requireContext(), "债务信息", detail)

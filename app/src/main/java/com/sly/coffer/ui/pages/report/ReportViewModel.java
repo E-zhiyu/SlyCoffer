@@ -25,8 +25,9 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.BehaviorProcessor;
 
 public class ReportViewModel extends ViewModel {
+    private final MutableLiveData<Pair<Double, Double>> reportExpenseIncomeLiveData = new MutableLiveData<>();
     private final MutableLiveData<DateRangeType> rangeTypeLiveData = new MutableLiveData<>(DateRangeType.MONTH);
-    private final MutableLiveData<Pair<LocalDate, LocalDate>> dateRangeLiveData;
+    private final MutableLiveData<Pair<LocalDate, LocalDate>> dateRangeLiveData;            //报表数据的日期范围
     private final BehaviorProcessor<DateRangeType> rangeTypeProcessor =
             BehaviorProcessor.createDefault(DateRangeType.MONTH);                           //用户通过下拉框选择的日期范围种类
     private final BehaviorProcessor<Pair<LocalDate, LocalDate>> selectedDateRangeProcessor; //用户通过日期选择对话框选择的日期范围
@@ -44,6 +45,14 @@ public class ReportViewModel extends ViewModel {
 
         selectedDateRangeProcessor = BehaviorProcessor.createDefault(defaultDateRangePair);  //用户选择的日期范围
         dateRangeLiveData = new MutableLiveData<>(new Pair<>(defaultStart, defaultEnd));
+    }
+
+    public MutableLiveData<Pair<Double, Double>> getReportExpenseIncomeLiveData() {
+        return reportExpenseIncomeLiveData;
+    }
+
+    public void updateExpenseIncome(Pair<Double, Double> pair) {
+        reportExpenseIncomeLiveData.setValue(pair);
     }
 
     public MutableLiveData<DateRangeType> getRangeTypeLiveData() {
