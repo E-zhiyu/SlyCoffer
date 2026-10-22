@@ -28,6 +28,7 @@ import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.compute.LoanHelper;
+import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.accessibility.pick.PickedPageListActivity;
 import com.sly.coffer.ui.pages.accessibility.rule.AccessibilityRuleListActivity;
 import com.sly.coffer.ui.pages.budget.BudgetListActivity;
@@ -167,6 +168,25 @@ public class HomeFragment extends Fragment {
             Intent skip2Report = new Intent(requireContext(), ReportActivity.class);
             startActivity(skip2Report);
         });
+        binding.reportCard.setOnLongClickListener(view -> {
+            HomePageViewModel viewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
+            double balance = viewModel.getReportBalanceLiveData().getValue() == null ?
+                    0 : viewModel.getReportBalanceLiveData().getValue();
+            Pair<Double, Double> incomeAndExpense = viewModel.getReportExpenseIncomeLiveData().getValue();
+            double income = incomeAndExpense == null ? 0 : incomeAndExpense.first;
+            double expense = incomeAndExpense == null ? 0 : incomeAndExpense.second;
+
+            String detail = String.format(
+                    Locale.getDefault(),
+                    "今日消费情况如下：\n\n支出\n\n### %.2f\n\n收入\n\n### %.2f\n\n结余\n\n### %.2f",
+                    expense, income, balance
+            );
+            new MarkdownDialogBuilder(requireContext(), "今日报表", detail)
+                    .setNegativeButton("关闭", null)
+                    .show();
+
+            return true;
+        });
         AppearanceHelper.attachMorphAnimation(binding.reportCard);
 
         BookkeepingDb db = BookkeepingDb.getInstance(requireContext());
@@ -215,7 +235,7 @@ public class HomeFragment extends Fragment {
         //设置卡片圆角
         AppearanceHelper.setRadius(
                 requireContext(),
-                binding.loanCard,
+                binding.debtCard,
                 AppearanceHelper.SMALL_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS,
@@ -223,10 +243,28 @@ public class HomeFragment extends Fragment {
         );
 
         //设置点击监听
-        binding.loanCard.setOnClickListener(view -> {
+        binding.debtCard.setOnClickListener(view -> {
             //TODO:点击监听
         });
-        AppearanceHelper.attachMorphAnimation(binding.loanCard);
+        binding.debtCard.setOnLongClickListener(view -> {
+            HomePageViewModel viewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
+            double borrowed = viewModel.getLoanBorrowedLiveData().getValue() == null ?
+                    0 : viewModel.getLoanBorrowedLiveData().getValue();
+            double lent = viewModel.getLoanLentLiveData().getValue() == null ?
+                    0 : viewModel.getLoanLentLiveData().getValue();
+
+            String detail = String.format(
+                    Locale.getDefault(),
+                    "截至目前，与您相关的债务信息如下\n\n应还款\n\n### %.2f\n\n待收债\n\n### %.2f",
+                    borrowed, lent
+            );
+            new MarkdownDialogBuilder(requireContext(), "债务信息", detail)
+                    .setNegativeButton("取消", null)
+                    .show();
+
+            return true;
+        });
+        AppearanceHelper.attachMorphAnimation(binding.debtCard);
 
         BookkeepingDb db = BookkeepingDb.getInstance(requireContext());
         disposable.add(db.extraDataDao().getAccountWithLoanFlowable()
