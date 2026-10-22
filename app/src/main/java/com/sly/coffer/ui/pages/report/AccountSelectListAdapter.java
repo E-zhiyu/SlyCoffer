@@ -277,9 +277,9 @@ public class AccountSelectListAdapter extends ListAdapter<AccountUiModel, Recycl
             String autoBookkeepingType;
             int autoTag = account.getAutoTag();
             if (autoTag == AutoBookkeepingType.NOTIFICATION.ordinal()) {
-                autoBookkeepingType = "通知记账·";
+                autoBookkeepingType = "通知记账 · ";
             } else if (autoTag == AutoBookkeepingType.ACCESSIBILITY.ordinal()) {
-                autoBookkeepingType = "无障碍记账·";
+                autoBookkeepingType = "无障碍记账 · ";
             } else {
                 autoBookkeepingType = "";
             }
@@ -289,7 +289,7 @@ public class AccountSelectListAdapter extends ListAdapter<AccountUiModel, Recycl
             itemHolder.binding.remarkText.setText(remark.isEmpty() ? "<无备注>" : remark);
             String typeTimeAutoTag = String.format(
                     Locale.getDefault(),
-                    "%s%s·%s",
+                    "%s%s · %s",
                     autoBookkeepingType, type, datetime
             );
             itemHolder.binding.typeTimeAutoTagText.setText(typeTimeAutoTag);

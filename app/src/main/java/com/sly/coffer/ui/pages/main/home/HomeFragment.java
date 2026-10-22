@@ -27,11 +27,12 @@ import com.sly.coffer.databinding.FragmentHomeBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
-import com.sly.coffer.helpers.compute.LoanHelper;
+import com.sly.coffer.helpers.compute.DebtHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.accessibility.pick.PickedPageListActivity;
 import com.sly.coffer.ui.pages.accessibility.rule.AccessibilityRuleListActivity;
 import com.sly.coffer.ui.pages.budget.BudgetListActivity;
+import com.sly.coffer.ui.pages.debt.DebtListActivity;
 import com.sly.coffer.ui.pages.notification.rule.NotificationRuleListActivity;
 import com.sly.coffer.ui.pages.report.ReportActivity;
 import com.sly.coffer.ui.pages.tag.TagListActivity;
@@ -244,7 +245,8 @@ public class HomeFragment extends Fragment {
 
         //设置点击监听
         binding.debtCard.setOnClickListener(view -> {
-            //TODO:点击监听
+            Intent intent = new Intent(requireContext(), DebtListActivity.class);
+            startActivity(intent);
         });
         binding.debtCard.setOnLongClickListener(view -> {
             HomePageViewModel viewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
@@ -279,7 +281,7 @@ public class HomeFragment extends Fragment {
                                             model.getAccount().getType() == AccountType.BORROW.ordinal()
                                     )
                                     .collect(Collectors.toList());
-                            double borrowed = LoanHelper.computeDebt(borrowedList);
+                            double borrowed = DebtHelper.computeDebt(borrowedList);
                             viewModel.updateBorrowed(borrowed);
 
                             //待收债
@@ -288,7 +290,7 @@ public class HomeFragment extends Fragment {
                                             model.getAccount().getType() == AccountType.LEND.ordinal()
                                     )
                                     .collect(Collectors.toList());
-                            double lent = LoanHelper.computeDebt(lentList);
+                            double lent = DebtHelper.computeDebt(lentList);
                             viewModel.updateLent(lent);
                         },
                         e -> ExceptionHelper.showExceptionDialog(requireContext(), e)

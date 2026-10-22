@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class LoanHelper {
+public class DebtHelper {
     /**
      * 计算欠款
      *

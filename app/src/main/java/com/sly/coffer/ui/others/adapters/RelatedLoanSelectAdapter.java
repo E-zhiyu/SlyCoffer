@@ -82,7 +82,7 @@ public class RelatedLoanSelectAdapter extends ListAdapter<AccountEntity, Related
 
         String remark = account.getRemark();
         String dateTimeStr = account.getDateTime().format(CustomDateTimeFormatter.DATE_TIME);
-        String display = remark.isEmpty()? "流水记录·" + dateTimeStr : remark;
+        String display = remark.isEmpty()? "流水记录 · " + dateTimeStr : remark;
         holder.binding.chip.setText(display);
     }
 }
