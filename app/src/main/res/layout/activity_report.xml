@@ -213,6 +213,14 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- 提示文本 -->
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/TipTextViewStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="@string/income_expense_card_click_tip" />
+
             <!-- 收入来源卡片 -->
             <LinearLayout
                 android:id="@+id/income_source_layout"

@@ -89,7 +89,7 @@ public class HomeFragment extends Fragment {
 
         initDateCard();
         initReportCard();
-        initLoanCard();
+        initDebtCard();
         initTagCard();
         initNotificationRuleCard();
         initBudgetCard();
@@ -233,15 +233,15 @@ public class HomeFragment extends Fragment {
     /**
      * 初始化借款卡片
      */
-    private void initLoanCard() {
+    private void initDebtCard() {
         //设置卡片圆角
         AppearanceHelper.setRadius(
                 requireContext(),
                 binding.debtCard,
                 AppearanceHelper.SMALL_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS,
-                AppearanceHelper.SMALL_CARD_RADIUS,
-                AppearanceHelper.SMALL_CARD_RADIUS
+                AppearanceHelper.MEDIUM_CARD_RADIUS,
+                AppearanceHelper.MEDIUM_CARD_RADIUS
         );
 
         //设置点击监听
@@ -307,7 +307,7 @@ public class HomeFragment extends Fragment {
         AppearanceHelper.setRadius(
                 requireContext(),
                 binding.tagCard,
-                AppearanceHelper.SMALL_CARD_RADIUS,
+                AppearanceHelper.MEDIUM_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS
@@ -372,7 +372,7 @@ public class HomeFragment extends Fragment {
                 requireContext(),
                 binding.budgetCard,
                 AppearanceHelper.SMALL_CARD_RADIUS,
-                AppearanceHelper.SMALL_CARD_RADIUS,
+                AppearanceHelper.MEDIUM_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS
         );
