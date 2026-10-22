@@ -141,13 +141,13 @@ public class DebtDetailActivity extends AppCompatActivity {
             if (debt == null) {
                 debtStr = "<无法计算>";
             } else {
-                debtStr = String.format(Locale.getDefault(), "%.2f", debt);
+                debtStr = String.format(Locale.getDefault(), "%.2f元", debt);
             }
 
             LocalDate repayDate = model.getLoan().getRepayDate();
             String info = String.format(
                     Locale.getDefault(),
-                    "截至目前，借款信息如下：\n\n应还日期\n\n### %s\n\n剩余欠款\n\n### %s\n\n> 注：本APP计算得到的欠款不一定准确，请以实际约定为准。",
+                    "截至目前，借款信息如下：\n\n应还日期 **%s**  \n剩余欠款 **%s**\n\n> 本APP计算的数据不一定准确，请以实际约定为准。",
                     repayDate != null ? repayDate.format(CustomDateTimeFormatter.DATE) : "未约定应还日期",
                     debtStr
             );
