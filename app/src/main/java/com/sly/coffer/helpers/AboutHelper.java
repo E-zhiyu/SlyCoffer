@@ -19,6 +19,7 @@ public class AboutHelper {
             "### BUG修复\n" +
             "\n" +
             "- 修复无法正常打开界面拾取服务的BUG\n" +
+            "- 修复新增预算界面标题错误的BUG\n" +
             "\n" +
             "# v1.12.8\n" +
             "\n" +
