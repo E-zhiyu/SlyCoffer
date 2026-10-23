@@ -132,7 +132,7 @@ public class RepaymentAccountListAdapter extends ListAdapter<AccountEntity, Repa
         }
 
         //初始化文本视图
-        holder.binding.amountText.setText(TextHelper.abbreviate(amount));
+        holder.binding.amountText.setText(TextHelper.abbreviate(amount, TextHelper.THRESHOLD_MILLION));
         holder.binding.remarkText.setText(remark.isEmpty() ? "<无备注>" : remark);
         String typeTimeAutoTag = String.format(
                 Locale.getDefault(),

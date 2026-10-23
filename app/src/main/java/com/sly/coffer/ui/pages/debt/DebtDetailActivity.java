@@ -203,7 +203,7 @@ public class DebtDetailActivity extends AppCompatActivity {
                 if (debt == null) {
                     remainingDebtStr = "<无法计算>";
                 } else {
-                    remainingDebtStr = debt == 0 ? "已还清" : TextHelper.abbreviate(debt);
+                    remainingDebtStr = debt == 0 ? "已还清" : TextHelper.abbreviate(debt, TextHelper.THRESHOLD_MILLION);
                 }
                 binding.remainingDebtText.setText(remainingDebtStr);
             } else {
@@ -230,7 +230,7 @@ public class DebtDetailActivity extends AppCompatActivity {
                 }
 
                 //初始化文本视图
-                binding.amountText.setText(TextHelper.abbreviate(amount));
+                binding.amountText.setText(TextHelper.abbreviate(amount,10000));
                 binding.remarkText.setText(remark.isEmpty() ? "<无备注>" : remark);
                 String typeTimeAutoTag = String.format(
                         Locale.getDefault(),

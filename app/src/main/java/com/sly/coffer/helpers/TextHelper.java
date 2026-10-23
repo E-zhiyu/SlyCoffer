@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.text.Text;
@@ -16,12 +17,14 @@ import org.jetbrains.annotations.Contract;
 
 import java.text.DecimalFormat;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.Stack;
 
 public class TextHelper {
-    //英文数字缩写体系（1000进制）
-    private static final String[] ENGLISH_SUFFIXES = {
+    public static final int THRESHOLD_MILLION = 100000;
+    //数字缩写体系（1000进制）
+    private static final String[] SUFFIXES = {
             "", "K", "M", "B", "T"  // Thousand, Million, Billion, Trillion
     };
     //正则表达式中需要转义的字符
@@ -186,15 +189,33 @@ public class TextHelper {
     }
 
     /**
-     * 自动缩写数字（可配置语言和精度）
+     * 缩写数字
      *
-     * @param value 要转换的Double值
+     * @param value 要缩写的数值
      * @return 缩写后的字符串
      */
     @NonNull
-    public static String abbreviate(double value) {
-        if (Double.isNaN(value) || Double.isInfinite(value)) {
+    public static String abbreviate(@Nullable Double value) {
+        return abbreviate(value, 0);
+    }
+
+    /**
+     * 缩写数字
+     *
+     * @param value          要缩写的数值
+     * @param largeThreshold 当 value 的绝对值大于等于该值时才进行缩写
+     * @return 缩写后的字符串
+     */
+    @NonNull
+    public static String abbreviate(@Nullable Double value, int largeThreshold) {
+        //有效值判断
+        if (value == null || Double.isNaN(value) || Double.isInfinite(value)) {
             return String.valueOf(value);
+        }
+
+        //阈值判断
+        if (Math.abs(value) < largeThreshold) {
+            return String.format(Locale.getDefault(), "%.2f", value);
         }
 
         // 处理负数
@@ -207,29 +228,38 @@ public class TextHelper {
         int index = 0;
         double scaledValue = absValue;
 
-        while (scaledValue >= divisor && index < ENGLISH_SUFFIXES.length - 1) {
+        while (scaledValue >= divisor && index < SUFFIXES.length - 1) {
             scaledValue /= divisor;
             index++;
         }
 
-        // 格式化数字
-        String suffix = ENGLISH_SUFFIXES[index];
+        String suffix = SUFFIXES[index];
         String formatted;
-        int decimalPlaces = absValue < 0.1 && absValue > 0 ? 2 : 1;
-        if (suffix.isEmpty()) {
-            // 没有后缀（数值 < 1000 或 < 10000）：强制显示 .0
-            String pattern = "0." + "0".repeat(decimalPlaces);
-            DecimalFormat df = new DecimalFormat(pattern);
-            formatted = df.format(scaledValue);
+
+        // 如果后缀已用尽，但数值仍然非常大，则使用科学计数法
+        final int TOO_LARGE_THRESHOLD = 100000; //后缀用尽后判断数值仍特别大的阈值
+        if (index == SUFFIXES.length - 1 && scaledValue >= TOO_LARGE_THRESHOLD) {
+            // 科学计数法，保留 1 位小数，例如 4.0E100
+            DecimalFormat sciFormat = new DecimalFormat("0.0E0");
+            formatted = sciFormat.format(scaledValue);
+            // 科学计数法格式化可能产生 "4.0E100" 这样的结果，符合要求
         } else {
-            // 有后缀：使用普通格式（# 表示可选，不强制显示小数）
-            String pattern = "#0." + "#".repeat(decimalPlaces);
-            DecimalFormat df = new DecimalFormat(pattern);
-            formatted = df.format(scaledValue);
+            int decimalPlaces = absValue < 0.1 && absValue > 0 ? 2 : 1;
+            if (suffix.isEmpty()) {
+                // 没有后缀（数值 < 1000）：强制显示小数
+                String pattern = "0." + "0".repeat(decimalPlaces);
+                DecimalFormat df = new DecimalFormat(pattern);
+                formatted = df.format(scaledValue);
+            } else {
+                // 有后缀：使用普通格式（# 表示可选，不强制显示小数）
+                String pattern = "#0." + "#".repeat(decimalPlaces);
+                DecimalFormat df = new DecimalFormat(pattern);
+                formatted = df.format(scaledValue);
+            }
         }
 
         // 组装结果
-        return (negative ? "-" : "") + formatted + ENGLISH_SUFFIXES[index];
+        return (negative ? "-" : "") + formatted + suffix;
     }
 
     /**

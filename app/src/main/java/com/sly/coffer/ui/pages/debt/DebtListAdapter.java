@@ -17,11 +17,13 @@ import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccountLoanUnionModel;
 import com.sly.coffer.databinding.ViewHolderDebtListBinding;
+import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.compute.DebtHelper;
 
 import java.time.LocalDate;
 import java.util.Locale;
+import java.util.Objects;
 
 public class DebtListAdapter extends ListAdapter<AccountLoanUnionModel, DebtListAdapter.ItemViewHolder> {
     private static final DiffUtil.ItemCallback<AccountLoanUnionModel> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
@@ -155,7 +157,7 @@ public class DebtListAdapter extends ListAdapter<AccountLoanUnionModel, DebtList
                     Locale.getDefault(),
                     "%s%s",
                     type == AccountType.BORROW ? "待还款" : "待收债",
-                    debt
+                    TextHelper.abbreviate(debt, TextHelper.THRESHOLD_MILLION)
             );
         }
         holder.binding.debtText.setText(debtStr);                           //债务金额

@@ -369,13 +369,13 @@ public class ReportActivity extends AppCompatActivity {
             binding.balanceText.setText(String.format(
                     Locale.getDefault(),
                     "%s",
-                    TextHelper.abbreviate(balance)
+                    TextHelper.abbreviate(balance, TextHelper.THRESHOLD_MILLION)
             ));
             binding.incomeAndExpenseText.setText(String.format(
                     Locale.getDefault(),
                     "+%s/-%s",
-                    TextHelper.abbreviate(income),
-                    TextHelper.abbreviate(expense)
+                    TextHelper.abbreviate(income, TextHelper.THRESHOLD_MILLION),
+                    TextHelper.abbreviate(expense, TextHelper.THRESHOLD_MILLION)
             ));
         });
     }
