@@ -41,7 +41,8 @@ public class DebtListAdapter extends ListAdapter<AccountLoanUnionModel, DebtList
                     oldAccount.getType() == newAccount.getType() &&
                     oldLoan != null && oldLoan.equals(newLoan) &&
                     oldLoan.getLoanTargetName().equals(newLoan.getLoanTargetName()) &&
-                    oldItem.getRepaymentList().equals(newItem.getRepaymentList());
+                    oldItem.getRepaymentList().equals(newItem.getRepaymentList()) &&
+                    Objects.equals(oldLoan.getRepayDate(), newLoan.getRepayDate());
         }
     };
     private final AdapterOnClickListener<AccountLoanUnionModel> clickListener;
