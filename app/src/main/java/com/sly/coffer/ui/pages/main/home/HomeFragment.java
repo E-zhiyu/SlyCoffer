@@ -466,7 +466,7 @@ public class HomeFragment extends Fragment {
         //结余
         HomePageViewModel homePageViewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
         homePageViewModel.getReportBalanceLiveData().observe(getViewLifecycleOwner(), balance ->
-                binding.todayBalanceText.setText(TextHelper.abbreviate(balance))
+                binding.todayBalanceText.setText(TextHelper.abbreviate(balance, 10000))
         );
 
         //收入和支出
@@ -482,12 +482,12 @@ public class HomeFragment extends Fragment {
 
         //待还款
         homePageViewModel.getLoanBorrowedLiveData().observe(getViewLifecycleOwner(), borrowed ->
-                binding.borrowText.setText(TextHelper.abbreviate(borrowed))
+                binding.borrowText.setText(TextHelper.abbreviate(borrowed, 10000))
         );
 
         //待收债
         homePageViewModel.getLoanLentLiveData().observe(getViewLifecycleOwner(), lent ->
-                binding.lendText.setText(TextHelper.abbreviate(lent))
+                binding.lendText.setText(TextHelper.abbreviate(lent, 10000))
         );
     }
 

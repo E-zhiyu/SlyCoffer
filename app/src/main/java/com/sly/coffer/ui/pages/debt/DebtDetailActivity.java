@@ -203,7 +203,7 @@ public class DebtDetailActivity extends AppCompatActivity {
                 if (debt == null) {
                     remainingDebtStr = "<无法计算>";
                 } else {
-                    remainingDebtStr = debt == 0 ? "已还清" : TextHelper.abbreviate(debt, TextHelper.THRESHOLD_MILLION);
+                    remainingDebtStr = debt == 0 ? "已还清" : TextHelper.abbreviate(debt, 10000);
                 }
                 binding.remainingDebtText.setText(remainingDebtStr);
             } else {
