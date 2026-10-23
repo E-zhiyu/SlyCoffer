@@ -194,7 +194,7 @@ public class DebtDetailActivity extends AppCompatActivity {
             //债务信息
             if (loan != null) {
                 String repayDate = loan.getRepayDate() != null ?
-                        loan.getRepayDate().format(CustomDateTimeFormatter.LOCAL_DATE) :
+                        loan.getRepayDate().format(CustomDateTimeFormatter.DATE) :
                         "未指定";
                 binding.repayDateText.setText(repayDate);
 
