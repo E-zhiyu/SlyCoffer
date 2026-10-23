@@ -20,6 +20,7 @@
             android:id="@+id/remark_target_text"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="@string/remark"
@@ -32,11 +33,14 @@
         <!-- 应还日期 -->
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/repay_date_text"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:ellipsize="end"
             android:text="@string/repay_date"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="?attr/colorOutline"
+            app:layout_constraintEnd_toStartOf="@id/debt_text"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/remark_target_text" />
 
