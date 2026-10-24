@@ -12,6 +12,11 @@ import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 public class AboutHelper {
     private static final String UPDATE_LOG_MD = "# v1.13.0\n" +
             "\n" +
+            "### 新增内容\n" +
+            "\n" +
+            "- 新增债务管理功能\n" +
+            "- 主页的报表卡片能够长按查看具体数字，报表界面的金额卡片能够点击查看具体数字\n" +
+            "\n" +
             "### 优化的内容\n" +
             "\n" +
             "- 导入数据时能够通过通知显示导入结果\n" +
