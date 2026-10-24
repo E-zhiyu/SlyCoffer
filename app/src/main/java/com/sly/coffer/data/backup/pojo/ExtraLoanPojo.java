@@ -9,7 +9,7 @@ public class ExtraLoanPojo {
     private int yearBasepoint;              //年利率基点
     private boolean allowCompoundInterest;  //是否允许复利
     @Nullable
-    private Long repayDate = -1L;           //应还日期
+    private Long repayDate;                 //应还日期
 
     public ExtraLoanPojo() {
     }

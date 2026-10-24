@@ -133,7 +133,8 @@ public class RestoreWorker extends RxWorker {
     @NonNull
     private static StringBuilder getStrBuilder(@NonNull List<Integer> resultFlagList, boolean[] choices) {
         StringBuilder strBuilder;
-        if (resultFlagList.contains(ImportResultType.SUCCEED.ordinal())) {
+        if (resultFlagList.contains(ImportResultType.SUCCEED.ordinal()) ||
+                resultFlagList.contains(ImportResultType.PARTIALLY_SUCCEED.ordinal())) {
             strBuilder = new StringBuilder("部分数据导入成功");
         } else {
             strBuilder = new StringBuilder("所有数据均导入失败");

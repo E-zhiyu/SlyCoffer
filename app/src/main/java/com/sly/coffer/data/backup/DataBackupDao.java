@@ -47,6 +47,7 @@ import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -214,6 +215,8 @@ public interface DataBackupDao {
             }
 
             //写入流水记录数据
+            accountEntityList.sort(Comparator.comparing(AccountEntity::getRepayAccountId,
+                    Comparator.nullsFirst(Comparator.naturalOrder())));
             writeRunningAccount(accountEntityList);
             resultList.add(true);
         } else {
@@ -530,6 +533,7 @@ public interface DataBackupDao {
      *
      * @return 包含无障碍规则数据的集合
      */
+    @Transaction
     default AccessibilityRuleDataMap exportAccessibilityRuleData() {
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
 
@@ -576,6 +580,7 @@ public interface DataBackupDao {
      * @param data 包含无障碍规则数据的集合
      * @return 数据导入的结果
      */
+    @Transaction
     default int importAccessibilityRuleData(AccessibilityRuleDataMap data) {
         if (data == null) return ImportResultType.MISSING.ordinal();
 
