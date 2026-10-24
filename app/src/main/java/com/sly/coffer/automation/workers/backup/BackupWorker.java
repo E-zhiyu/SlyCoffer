@@ -101,7 +101,7 @@ public class BackupWorker extends RxWorker {
                     NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, channelID)
                             .setSmallIcon(R.mipmap.ic_launcher)
                             .setContentTitle(context.getString(R.string.export_data))
-                            .setContentText("数据备导出完成")
+                            .setContentText("数据导出完成")
                             .setPriority(NotificationCompat.PRIORITY_HIGH)
                             .setCategory(NotificationCompat.CATEGORY_CALL)
                             .setTimeoutAfter(5000)
