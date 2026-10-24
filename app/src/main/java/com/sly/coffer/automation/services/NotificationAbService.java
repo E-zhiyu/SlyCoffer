@@ -38,6 +38,7 @@ import com.sly.coffer.auxiliary.enums.PendingRequestCode;
 import com.sly.coffer.helpers.AppListHelper;
 import com.sly.coffer.helpers.NotificationHelper;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
+import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;
 import com.sly.coffer.ui.pages.notification.rule.NotificationRuleListActivity;
 
@@ -566,8 +567,8 @@ public class NotificationAbService extends NotificationListenerService {
         String channelID = ChannelInfo.AUTO_BOOKKEEPING.getId();
         String content = String.format(
                 Locale.getDefault(),
-                "“%s”产生了一条%s记录，金额为%.2f，请展开通知确认是否入账。",
-                ruleName, AccountType.values()[rule.getType()].getTitle(), amount
+                "“%s”产生了一条%s记录，金额为%s，请展开通知确认是否入账。",
+                ruleName, AccountType.values()[rule.getType()].getTitle(), TextHelper.abbreviate(amount, TextHelper.THRESHOLD_MILLION)
         );
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelID)
                 .setSmallIcon(R.mipmap.ic_launcher)
@@ -694,8 +695,8 @@ public class NotificationAbService extends NotificationListenerService {
                             //创建通知构建器
                             String content = String.format(
                                     Locale.getDefault(),
-                                    "“%s”生成的%s记录已自动入账，金额为%.2f，点击查看详情。",
-                                    ruleName, AccountType.values()[rule.getType()].getTitle(), amount
+                                    "“%s”生成的%s记录已自动入账，金额为%s，点击查看详情。",
+                                    ruleName, AccountType.values()[rule.getType()].getTitle(), TextHelper.abbreviate(amount, TextHelper.THRESHOLD_MILLION)
                             );
                             String channelID = ChannelInfo.AUTO_BOOKKEEPING.getId();
                             PendingIntent accountModifyPendingIntent = getAccountDetailPendingIntent(accountId);
