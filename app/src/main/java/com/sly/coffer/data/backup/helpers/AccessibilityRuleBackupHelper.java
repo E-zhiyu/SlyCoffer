@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sly.coffer.auxiliary.classes.ImportResult;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.AccessibilityRuleDataMap;
 import com.sly.coffer.data.backup.maps.old.extra_v80.ExtraAccessibilityRuleDataMap;
@@ -39,7 +40,7 @@ public class AccessibilityRuleBackupHelper extends BackupHelperBase<BookkeepingD
     }
 
     @Override
-    protected int saveDataInMapToDb(Context context, AccessibilityRuleDataMap map) {
+    protected ImportResult saveDataInMapToDb(Context context, AccessibilityRuleDataMap map) {
         return db.dataBackupDao().importAccessibilityRuleData(map);
     }
 

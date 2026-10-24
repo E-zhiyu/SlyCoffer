@@ -61,12 +61,12 @@ public interface EntityPojoMapper {
     }
 
     @Named("longToDate")
-    default LocalDate longToDate(long timeMillis) {
+    default LocalDate longToDate(Long timeMillis) {
         return DateTimeConverter.toLocalDate(timeMillis);
     }
 
     @Named("dateToLong")
-    default long dateToLong(LocalDate date) {
+    default Long dateToLong(LocalDate date) {
         return DateTimeConverter.fromLocalDate(date);
     }
 

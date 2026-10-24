@@ -6,6 +6,7 @@ import androidx.room.RoomDatabase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sly.coffer.auxiliary.classes.ImportResult;
 import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
 import com.sly.coffer.helpers.file.FileHelper;
 
@@ -60,7 +61,7 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
      * @param context 上下文
      * @param map     数据集合
      */
-    protected abstract int saveDataInMapToDb(Context context, M map);
+    protected abstract ImportResult saveDataInMapToDb(Context context, M map);
 
     /**
      * 待继承的设置临时 JSON 文件名称的方法
@@ -95,7 +96,7 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
      * @param versionType 导入数据的版本种类
      * @return 带有导入结果的{@link Single}对象
      */
-    public Single<Integer> importDataFromTempFile(Context context, File file, ImportDataVersionType versionType) {
+    public Single<ImportResult> importDataFromTempFile(Context context, File file, ImportDataVersionType versionType) {
         return Single.defer(() -> {
             try {
                 //读取文件内容
@@ -113,9 +114,8 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
                 }
 
                 //将对应的数据写入数据库
-                int resultFlag = saveDataInMapToDb(context, dataMap);
-
-                return Single.just(resultFlag);
+                ImportResult result = saveDataInMapToDb(context, dataMap);
+                return Single.just(result);
             } catch (IOException e) {
                 return Single.error(e);
             }

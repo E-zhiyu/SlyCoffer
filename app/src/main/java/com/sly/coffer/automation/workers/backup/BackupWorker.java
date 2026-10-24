@@ -92,7 +92,7 @@ public class BackupWorker extends RxWorker {
                 .subscribeOn(Schedulers.io())
                 .toSingleDefault(Result.success())
                 .onErrorReturn(e -> {
-                    Log.e(LogTags.BACKUP_WORKER.n(), "备份失败");
+                    Log.e(LogTags.BACKUP_WORKER.n(), "备份失败\n" + e.getMessage());
                     return Result.failure();
                 })
                 .doFinally(() -> {

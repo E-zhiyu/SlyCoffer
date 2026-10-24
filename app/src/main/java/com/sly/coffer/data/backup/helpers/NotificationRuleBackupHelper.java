@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sly.coffer.auxiliary.classes.ImportResult;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.NotificationRuleDataMap;
@@ -42,7 +43,7 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
     }
 
     @Override
-    protected int saveDataInMapToDb(Context context, NotificationRuleDataMap map) {
+    protected ImportResult saveDataInMapToDb(Context context, NotificationRuleDataMap map) {
         return db.dataBackupDao().importNotificationRuleData(map);
     }
 
