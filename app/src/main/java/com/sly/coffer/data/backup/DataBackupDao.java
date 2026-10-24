@@ -8,7 +8,7 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Transaction;
 
-import com.sly.coffer.auxiliary.enums.types.ImportResultType;
+import com.sly.coffer.auxiliary.classes.ImportResult;
 import com.sly.coffer.data.backup.maps.AccessibilityRuleDataMap;
 import com.sly.coffer.data.backup.maps.BudgetDataMap;
 import com.sly.coffer.data.backup.maps.NotificationRuleDataMap;
@@ -121,11 +121,11 @@ public interface DataBackupDao {
      * @return 数据导入的结果
      */
     @Transaction
-    default int importRunningAccountData(Context context, RunningAccountDataMap data) {
-        if (data == null) return ImportResultType.MISSING.ordinal();
+    default ImportResult importRunningAccountData(Context context, RunningAccountDataMap data) {
+        if (data == null) return ImportResult.missed();
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
-        List<Boolean> resultList = new ArrayList<>();
+        List<Throwable> exceptionList = new ArrayList<>();
 
         //清理旧的额外数据
         List<Long> existedTransferId = getExistedAccountTransferId();
@@ -141,130 +141,139 @@ public interface DataBackupDao {
         clearTag();
 
         //标签分组数据
-        List<TagGroupPojo> tagGroupPojoList = data.getTagGroupList();
-        if (tagGroupPojoList != null && !tagGroupPojoList.isEmpty()) {
-            writeTagGroup(mapper.toTagGroupEntityList(tagGroupPojoList));
+        try {
+            List<TagGroupPojo> tagGroupPojoList = data.getTagGroupList();
+            if (tagGroupPojoList != null && !tagGroupPojoList.isEmpty()) {
+                writeTagGroup(mapper.toTagGroupEntityList(tagGroupPojoList));
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //标签数据
-        List<TagPojo> tagPojoList = data.getTagList();
-        if (tagPojoList != null && !tagPojoList.isEmpty()) {
-            writeTag(mapper.toTagEntityList(tagPojoList));
+        try {
+            List<TagPojo> tagPojoList = data.getTagList();
+            if (tagPojoList != null && !tagPojoList.isEmpty()) {
+                writeTag(mapper.toTagEntityList(tagPojoList));
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //流水记录数据
-        List<AccountPojo> accountPojoList = data.getAccountList();
-        if (accountPojoList != null && !accountPojoList.isEmpty()) {
-            //转账账户数据
-            List<AccountEntity> accountEntityList = mapper.toAccountEntityList(accountPojoList);
-            Map<Long, List<AccountEntity>> transferIdMap = accountEntityList.stream()
-                    .filter(account -> account.getTransferId() != null)
-                    .collect(Collectors.groupingBy(
-                            AccountEntity::getTransferId,
-                            HashMap::new,
-                            Collectors.toList()
-                    ));
-            List<ExtraTransferPojo> extraTransferPojoList = data.getExtraTransferList();
-            if (extraTransferPojoList != null && !extraTransferPojoList.isEmpty()) {
-                List<ExtraTransferEntity> extraTransferEntityList = mapper.toExtraTransferEntityList(extraTransferPojoList);
-                for (ExtraTransferEntity transfer : extraTransferEntityList) {
-                    long originId = transfer.getTransferId();
-                    if (hasTransferIdConflict(originId)) {
-                        transfer.setTransferId(0);  //设置为0以触发自增
-                        long newId = writeExtraTransfer(transfer);
-                        List<AccountEntity> accountList = transferIdMap.get(originId);
-                        if (accountList != null) {
-                            for (AccountEntity account : accountList) {
-                                account.setTransferId(newId);
+        try {
+            List<AccountPojo> accountPojoList = data.getAccountList();
+            if (accountPojoList != null && !accountPojoList.isEmpty()) {
+                //转账账户数据
+                List<AccountEntity> accountEntityList = mapper.toAccountEntityList(accountPojoList);
+                Map<Long, List<AccountEntity>> transferIdMap = accountEntityList.stream()
+                        .filter(account -> account.getTransferId() != null)
+                        .collect(Collectors.groupingBy(
+                                AccountEntity::getTransferId,
+                                HashMap::new,
+                                Collectors.toList()
+                        ));
+                List<ExtraTransferPojo> extraTransferPojoList = data.getExtraTransferList();
+                if (extraTransferPojoList != null && !extraTransferPojoList.isEmpty()) {
+                    List<ExtraTransferEntity> extraTransferEntityList = mapper.toExtraTransferEntityList(extraTransferPojoList);
+                    for (ExtraTransferEntity transfer : extraTransferEntityList) {
+                        long originId = transfer.getTransferId();
+                        if (hasTransferIdConflict(originId)) {
+                            transfer.setTransferId(0);  //设置为0以触发自增
+                            long newId = writeExtraTransfer(transfer);
+                            List<AccountEntity> accountList = transferIdMap.get(originId);
+                            if (accountList != null) {
+                                for (AccountEntity account : accountList) {
+                                    account.setTransferId(newId);
+                                }
                             }
+                            transferIdMap.remove(originId);
+                        } else {
+                            writeExtraTransfer(transfer);
                         }
-                        transferIdMap.remove(originId);
-                    } else {
-                        writeExtraTransfer(transfer);
                     }
                 }
-            }
 
-            //借款记录数据
-            Map<Long, List<AccountEntity>> loanIdMap = accountEntityList.stream()
-                    .filter(account -> account.getLoanId() != null)
-                    .collect(Collectors.groupingBy(
-                            AccountEntity::getLoanId,
-                            HashMap::new,
-                            Collectors.toList()
-                    ));
-            List<ExtraLoanPojo> extraLoanPojoList = data.getExtraLoanList();
-            if (extraLoanPojoList != null && !extraLoanPojoList.isEmpty()) {
-                List<ExtraLoanEntity> extraLoanEntityList = mapper.toExtraLoanEntityList(extraLoanPojoList);
-                for (ExtraLoanEntity loan : extraLoanEntityList) {
-                    long originId = loan.getLoanId();
-                    if (hasLoanIdConflict(originId)) {
-                        loan.setLoanId(0);  //设置为0以触发自增
-                        long newId = writeExtraLoan(loan);
-                        List<AccountEntity> accountList = loanIdMap.get(originId);
-                        if (accountList != null) {
-                            for (AccountEntity account : accountList) {
-                                account.setLoanId(newId);
+                //借款记录数据
+                Map<Long, List<AccountEntity>> loanIdMap = accountEntityList.stream()
+                        .filter(account -> account.getLoanId() != null)
+                        .collect(Collectors.groupingBy(
+                                AccountEntity::getLoanId,
+                                HashMap::new,
+                                Collectors.toList()
+                        ));
+                List<ExtraLoanPojo> extraLoanPojoList = data.getExtraLoanList();
+                if (extraLoanPojoList != null && !extraLoanPojoList.isEmpty()) {
+                    List<ExtraLoanEntity> extraLoanEntityList = mapper.toExtraLoanEntityList(extraLoanPojoList);
+                    for (ExtraLoanEntity loan : extraLoanEntityList) {
+                        long originId = loan.getLoanId();
+                        if (hasLoanIdConflict(originId)) {
+                            loan.setLoanId(0);  //设置为0以触发自增
+                            long newId = writeExtraLoan(loan);
+                            List<AccountEntity> accountList = loanIdMap.get(originId);
+                            if (accountList != null) {
+                                for (AccountEntity account : accountList) {
+                                    account.setLoanId(newId);
+                                }
                             }
+                            loanIdMap.remove(originId);
+                        } else {
+                            writeExtraLoan(loan);
                         }
-                        loanIdMap.remove(originId);
-                    } else {
-                        writeExtraLoan(loan);
                     }
                 }
-            }
 
-            //写入流水记录数据
-            accountEntityList.sort(Comparator.comparing(AccountEntity::getRepayAccountId,
-                    Comparator.nullsFirst(Comparator.naturalOrder())));
-            writeRunningAccount(accountEntityList);
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+                //写入流水记录数据
+                accountEntityList.sort(Comparator.comparing(AccountEntity::getRepayAccountId,
+                        Comparator.nullsFirst(Comparator.naturalOrder())));
+                writeRunningAccount(accountEntityList);
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //流水标签数据
-        List<AccountTagRefPojo> accountTagRefPojoList = data.getAccountTagRefList();
-        if (accountTagRefPojoList != null && !accountTagRefPojoList.isEmpty()) {
-            writeAccountTagRef(mapper.toAccountTagRefEntityList(accountTagRefPojoList));
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+        try {
+            List<AccountTagRefPojo> accountTagRefPojoList = data.getAccountTagRefList();
+            if (accountTagRefPojoList != null && !accountTagRefPojoList.isEmpty()) {
+                writeAccountTagRef(mapper.toAccountTagRefEntityList(accountTagRefPojoList));
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //媒体数据
-        List<MediaPojo> mediaPojoList = data.getMediaList();
-        if (mediaPojoList != null && !mediaPojoList.isEmpty()) {
-            //替换 Uri 中的包名
-            String replacement = String.format(
-                    Locale.getDefault(),
-                    "Android/data/%s/files/",
-                    context.getPackageName()
-            );
-            List<MediaPojo> uriConvertedMediaPojoList = mediaPojoList.stream()
-                    .peek(media -> {
-                        String uriStr = media.getFileUri();
-                        String currentPackageNameUri = uriStr.replaceAll(
-                                "Android/data/([^/]+)/files/",
-                                replacement
-                        );
-                        media.setFileUri(currentPackageNameUri);
-                    })
-                    .collect(Collectors.toList());
+        try {
+            List<MediaPojo> mediaPojoList = data.getMediaList();
+            if (mediaPojoList != null && !mediaPojoList.isEmpty()) {
+                //替换 Uri 中的包名
+                String replacement = String.format(
+                        Locale.getDefault(),
+                        "Android/data/%s/files/",
+                        context.getPackageName()
+                );
+                List<MediaPojo> uriConvertedMediaPojoList = mediaPojoList.stream()
+                        .peek(media -> {
+                            String uriStr = media.getFileUri();
+                            String currentPackageNameUri = uriStr.replaceAll(
+                                    "Android/data/([^/]+)/files/",
+                                    replacement
+                            );
+                            media.setFileUri(currentPackageNameUri);
+                        })
+                        .collect(Collectors.toList());
 
-            writeMedia(mapper.toMediaEntityList(uriConvertedMediaPojoList));
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+                writeMedia(mapper.toMediaEntityList(uriConvertedMediaPojoList));
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //返回导入结果
-        if (!resultList.contains(false)) {
-            return ImportResultType.SUCCEED.ordinal();
-        } else if (!resultList.contains(true)) {
-            return ImportResultType.MISSING.ordinal();
+        if (exceptionList.isEmpty()) {
+            return ImportResult.success();
         } else {
-            return ImportResultType.PARTIALLY_SUCCEED.ordinal();
+            return ImportResult.partlySuccess(exceptionList);
         }
     }
 
@@ -326,11 +335,11 @@ public interface DataBackupDao {
      * @return 数据导入的结果
      */
     @Transaction
-    default int importNotificationRuleData(NotificationRuleDataMap data) {
-        if (data == null) return ImportResultType.MISSING.ordinal();
+    default ImportResult importNotificationRuleData(NotificationRuleDataMap data) {
+        if (data == null) return ImportResult.missed();
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
-        List<Boolean> resultList = new ArrayList<>();
+        List<Throwable> exceptionList = new ArrayList<>();
 
         //清空额外数据
         List<Long> existedTransferIdList = getExistedNotificationRuleTransferId();
@@ -345,112 +354,114 @@ public interface DataBackupDao {
         clearNotificationRuleGroupRef();
 
         //通知规则数据
-        List<NotificationRulePojo> notificationRulePojoList = data.getNotificationRuleList();
-        if (notificationRulePojoList != null && !notificationRulePojoList.isEmpty()) {
-            //转账账户数据
-            List<NotificationRuleEntity> notificationRuleEntityList = mapper.toNotificationRuleEntityList(notificationRulePojoList);
-            Map<Long, List<NotificationRuleEntity>> transferIdMap = notificationRuleEntityList.stream()
-                    .filter(rule -> rule.getTransferId() != null)
-                    .collect(Collectors.groupingBy(
-                            NotificationRuleEntity::getTransferId,
-                            HashMap::new,
-                            Collectors.toList()
-                    ));
-            List<ExtraTransferPojo> extraTransferPojoList = data.getExtraTransferList();
-            if (extraTransferPojoList != null && !extraTransferPojoList.isEmpty()) {
-                List<ExtraTransferEntity> extraTransferEntityList = mapper.toExtraTransferEntityList(extraTransferPojoList);
-                for (ExtraTransferEntity transfer : extraTransferEntityList) {
-                    long originTransferId = transfer.getTransferId();
-                    if (hasTransferIdConflict(originTransferId)) {
-                        transfer.setTransferId(0);  //设置为0以触发自增
-                        long newTransferId = writeExtraTransfer(transfer);
-                        List<NotificationRuleEntity> accountList = transferIdMap.get(originTransferId);
-                        if (accountList != null) {
-                            for (NotificationRuleEntity rule : accountList) {
-                                rule.setTransferId(newTransferId);
+        try {
+            List<NotificationRulePojo> notificationRulePojoList = data.getNotificationRuleList();
+            if (notificationRulePojoList != null && !notificationRulePojoList.isEmpty()) {
+                //转账账户数据
+                List<NotificationRuleEntity> notificationRuleEntityList = mapper.toNotificationRuleEntityList(notificationRulePojoList);
+                Map<Long, List<NotificationRuleEntity>> transferIdMap = notificationRuleEntityList.stream()
+                        .filter(rule -> rule.getTransferId() != null)
+                        .collect(Collectors.groupingBy(
+                                NotificationRuleEntity::getTransferId,
+                                HashMap::new,
+                                Collectors.toList()
+                        ));
+                List<ExtraTransferPojo> extraTransferPojoList = data.getExtraTransferList();
+                if (extraTransferPojoList != null && !extraTransferPojoList.isEmpty()) {
+                    List<ExtraTransferEntity> extraTransferEntityList = mapper.toExtraTransferEntityList(extraTransferPojoList);
+                    for (ExtraTransferEntity transfer : extraTransferEntityList) {
+                        long originTransferId = transfer.getTransferId();
+                        if (hasTransferIdConflict(originTransferId)) {
+                            transfer.setTransferId(0);  //设置为0以触发自增
+                            long newTransferId = writeExtraTransfer(transfer);
+                            List<NotificationRuleEntity> accountList = transferIdMap.get(originTransferId);
+                            if (accountList != null) {
+                                for (NotificationRuleEntity rule : accountList) {
+                                    rule.setTransferId(newTransferId);
+                                }
                             }
+                            transferIdMap.remove(originTransferId);
+                        } else {
+                            writeExtraTransfer(transfer);
                         }
-                        transferIdMap.remove(originTransferId);
-                    } else {
-                        writeExtraTransfer(transfer);
                     }
                 }
-            }
 
-            //借款记录数据
-            Map<Long, List<NotificationRuleEntity>> loanIdMap = notificationRuleEntityList.stream()
-                    .filter(rule -> rule.getLoanId() != null)
-                    .collect(Collectors.groupingBy(
-                            NotificationRuleEntity::getLoanId,
-                            HashMap::new,
-                            Collectors.toList()
-                    ));
-            List<ExtraLoanPojo> extraLoanPojoList = data.getExtraLoanList();
-            if (extraLoanPojoList != null && !extraLoanPojoList.isEmpty()) {
-                List<ExtraLoanEntity> extraLoanEntityList = mapper.toExtraLoanEntityList(extraLoanPojoList);
-                for (ExtraLoanEntity loan : extraLoanEntityList) {
-                    long originId = loan.getLoanId();
-                    if (hasLoanIdConflict(originId)) {
-                        loan.setLoanId(0);  //设置为0以触发自增
-                        long newId = writeExtraLoan(loan);
-                        List<NotificationRuleEntity> accountList = loanIdMap.get(originId);
-                        if (accountList != null) {
-                            for (NotificationRuleEntity rule : accountList) {
-                                rule.setLoanId(newId);
+                //借款记录数据
+                Map<Long, List<NotificationRuleEntity>> loanIdMap = notificationRuleEntityList.stream()
+                        .filter(rule -> rule.getLoanId() != null)
+                        .collect(Collectors.groupingBy(
+                                NotificationRuleEntity::getLoanId,
+                                HashMap::new,
+                                Collectors.toList()
+                        ));
+                List<ExtraLoanPojo> extraLoanPojoList = data.getExtraLoanList();
+                if (extraLoanPojoList != null && !extraLoanPojoList.isEmpty()) {
+                    List<ExtraLoanEntity> extraLoanEntityList = mapper.toExtraLoanEntityList(extraLoanPojoList);
+                    for (ExtraLoanEntity loan : extraLoanEntityList) {
+                        long originId = loan.getLoanId();
+                        if (hasLoanIdConflict(originId)) {
+                            loan.setLoanId(0);  //设置为0以触发自增
+                            long newId = writeExtraLoan(loan);
+                            List<NotificationRuleEntity> accountList = loanIdMap.get(originId);
+                            if (accountList != null) {
+                                for (NotificationRuleEntity rule : accountList) {
+                                    rule.setLoanId(newId);
+                                }
                             }
+                            loanIdMap.remove(originId);
+                        } else {
+                            writeExtraLoan(loan);
                         }
-                        loanIdMap.remove(originId);
-                    } else {
-                        writeExtraLoan(loan);
                     }
                 }
-            }
 
-            //写入通知规则数据
-            writeNotificationRule(notificationRuleEntityList);
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+                //写入通知规则数据
+                writeNotificationRule(notificationRuleEntityList);
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //绑定的标签数据
-        List<Long> existedTagIdList = getExistedTagId();
-        List<NotificationRuleTagRefPojo> notificationRuleTagRefPojoList = data.getNotificationRuleTagRefList();
-        if (notificationRuleTagRefPojoList != null && !notificationRuleTagRefPojoList.isEmpty()) {
-            List<NotificationRuleTagRefPojo> filteredTagRefPojoList = notificationRuleTagRefPojoList.stream()
-                    .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
-                    .collect(Collectors.toList());  //仅写入标签存在的映射
-            writeNotificationRuleTagRef(mapper.toNotificationRuleTagRefEntityList(filteredTagRefPojoList));
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+        try {
+            List<Long> existedTagIdList = getExistedTagId();
+            List<NotificationRuleTagRefPojo> notificationRuleTagRefPojoList = data.getNotificationRuleTagRefList();
+            if (notificationRuleTagRefPojoList != null && !notificationRuleTagRefPojoList.isEmpty()) {
+                List<NotificationRuleTagRefPojo> filteredTagRefPojoList = notificationRuleTagRefPojoList.stream()
+                        .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
+                        .collect(Collectors.toList());  //仅写入标签存在的映射
+                writeNotificationRuleTagRef(mapper.toNotificationRuleTagRefEntityList(filteredTagRefPojoList));
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //分组数据
-        List<NotificationRuleGroupPojo> notificationRuleGroupPojoList = data.getNotificationRuleGroupList();
-        if (notificationRuleGroupPojoList != null && !notificationRuleGroupPojoList.isEmpty()) {
-            writeNotificationRuleGroup(mapper.toNotificationRuleGroupEntityList(notificationRuleGroupPojoList));
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+        try {
+            List<NotificationRuleGroupPojo> notificationRuleGroupPojoList = data.getNotificationRuleGroupList();
+            if (notificationRuleGroupPojoList != null && !notificationRuleGroupPojoList.isEmpty()) {
+                writeNotificationRuleGroup(mapper.toNotificationRuleGroupEntityList(notificationRuleGroupPojoList));
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //规则与分组的映射
-        List<NotificationRuleGroupRefPojo> notificationRuleGroupRefPojoList = data.getNotificationRuleGroupRefList();
-        if (notificationRuleGroupRefPojoList != null && !notificationRuleGroupRefPojoList.isEmpty()) {
-            writeNotificationRuleGroupRef(mapper.toNotificationRuleGroupRefEntityList(notificationRuleGroupRefPojoList));
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+        try {
+            List<NotificationRuleGroupRefPojo> notificationRuleGroupRefPojoList = data.getNotificationRuleGroupRefList();
+            if (notificationRuleGroupRefPojoList != null && !notificationRuleGroupRefPojoList.isEmpty()) {
+                writeNotificationRuleGroupRef(mapper.toNotificationRuleGroupRefEntityList(notificationRuleGroupRefPojoList));
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //返回导入结果
-        if (!resultList.contains(false)) {
-            return ImportResultType.SUCCEED.ordinal();
-        } else if (!resultList.contains(true)) {
-            return ImportResultType.MISSING.ordinal();
+        if (exceptionList.isEmpty()) {
+            return ImportResult.success();
         } else {
-            return ImportResultType.PARTIALLY_SUCCEED.ordinal();
+            return ImportResult.partlySuccess(exceptionList);
         }
     }
 
@@ -486,45 +497,45 @@ public interface DataBackupDao {
      * @return 数据导入的结果
      */
     @Transaction
-    default int importBudgetData(BudgetDataMap data) {
-        if (data == null) return ImportResultType.MISSING.ordinal();
+    default ImportResult importBudgetData(BudgetDataMap data) {
+        if (data == null) return ImportResult.missed();
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
-        List<Boolean> resultList = new ArrayList<>();
+        List<Throwable> exceptionList = new ArrayList<>();
 
         //清空旧数据
         clearBudget();
         clearBudgetTagRef();
 
         //预算数据
-        List<BudgetPojo> budgetPojoList = data.getBudgetList();
-        if (budgetPojoList != null && !budgetPojoList.isEmpty()) {
-            writeBudget(mapper.toBudgetEntityList(budgetPojoList));
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+        try {
+            List<BudgetPojo> budgetPojoList = data.getBudgetList();
+            if (budgetPojoList != null && !budgetPojoList.isEmpty()) {
+                writeBudget(mapper.toBudgetEntityList(budgetPojoList));
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //预算标签数据
-        List<Long> existedTagIdList = getExistedTagId();
-        List<BudgetTagRefPojo> budgetTagRefPojoList = data.getBudgetTagRefList();
-        if (budgetTagRefPojoList != null && !budgetTagRefPojoList.isEmpty()) {
-            List<BudgetTagRefPojo> filteredBudgetTagRefPojoList = budgetTagRefPojoList.stream()
-                    .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
-                    .collect(Collectors.toList());  //仅写入存在的标签的映射
-            writeBudgetTagRef(mapper.toBudgetTagRefEntityList(filteredBudgetTagRefPojoList));
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+        try {
+            List<Long> existedTagIdList = getExistedTagId();
+            List<BudgetTagRefPojo> budgetTagRefPojoList = data.getBudgetTagRefList();
+            if (budgetTagRefPojoList != null && !budgetTagRefPojoList.isEmpty()) {
+                List<BudgetTagRefPojo> filteredBudgetTagRefPojoList = budgetTagRefPojoList.stream()
+                        .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
+                        .collect(Collectors.toList());  //仅写入存在的标签的映射
+                writeBudgetTagRef(mapper.toBudgetTagRefEntityList(filteredBudgetTagRefPojoList));
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //返回导入结果
-        if (!resultList.contains(false)) {
-            return ImportResultType.SUCCEED.ordinal();
-        } else if (!resultList.contains(true)) {
-            return ImportResultType.MISSING.ordinal();
+        if (exceptionList.isEmpty()) {
+            return ImportResult.success();
         } else {
-            return ImportResultType.PARTIALLY_SUCCEED.ordinal();
+            return ImportResult.partlySuccess(exceptionList);
         }
     }
 
@@ -581,11 +592,11 @@ public interface DataBackupDao {
      * @return 数据导入的结果
      */
     @Transaction
-    default int importAccessibilityRuleData(AccessibilityRuleDataMap data) {
-        if (data == null) return ImportResultType.MISSING.ordinal();
+    default ImportResult importAccessibilityRuleData(AccessibilityRuleDataMap data) {
+        if (data == null) return ImportResult.missed();
 
         EntityPojoMapper mapper = EntityPojoMapper.INSTANCE;
-        List<Boolean> resultList = new ArrayList<>();
+        List<Throwable> exceptionList = new ArrayList<>();
 
         //清空旧额外数据
         List<Long> existedTransferIdList = getExistedAccessibilityRuleTransferId();
@@ -599,104 +610,105 @@ public interface DataBackupDao {
         clearAccessibilityRuleKeywordGroup();
 
         //规则
-        List<AccessibilityRulePojo> rulePojoList = data.getRuleList();
-        if (rulePojoList != null && !rulePojoList.isEmpty()) {
-            //转账账户数据
-            List<AccessibilityRuleEntity> ruleEntityList = mapper.toAccessibilityRuleEntityList(data.getRuleList());
-            Map<Long, List<AccessibilityRuleEntity>> transferIdMap = ruleEntityList.stream()
-                    .filter(rule -> rule.getTransferId() != null)
-                    .collect(Collectors.groupingBy(
-                            AccessibilityRuleEntity::getTransferId,
-                            HashMap::new,
-                            Collectors.toList()
-                    ));
-            List<ExtraTransferPojo> extraTransferPojoList = data.getExtraTransferList();
-            if (extraTransferPojoList != null && !extraTransferPojoList.isEmpty()) {
-                List<ExtraTransferEntity> extraTransferEntityList = mapper.toExtraTransferEntityList(extraTransferPojoList);
-                for (ExtraTransferEntity transfer : extraTransferEntityList) {
-                    long originTransferId = transfer.getTransferId();
-                    if (hasTransferIdConflict(originTransferId)) {
-                        transfer.setTransferId(0);  //设置为0以触发自增
-                        long newTransferId = writeExtraTransfer(transfer);
-                        List<AccessibilityRuleEntity> accountList = transferIdMap.get(originTransferId);
-                        if (accountList != null) {
-                            for (AccessibilityRuleEntity rule : accountList) {
-                                rule.setTransferId(newTransferId);
+        try {
+            List<AccessibilityRulePojo> rulePojoList = data.getRuleList();
+            if (rulePojoList != null && !rulePojoList.isEmpty()) {
+                //转账账户数据
+                List<AccessibilityRuleEntity> ruleEntityList = mapper.toAccessibilityRuleEntityList(data.getRuleList());
+                Map<Long, List<AccessibilityRuleEntity>> transferIdMap = ruleEntityList.stream()
+                        .filter(rule -> rule.getTransferId() != null)
+                        .collect(Collectors.groupingBy(
+                                AccessibilityRuleEntity::getTransferId,
+                                HashMap::new,
+                                Collectors.toList()
+                        ));
+                List<ExtraTransferPojo> extraTransferPojoList = data.getExtraTransferList();
+                if (extraTransferPojoList != null && !extraTransferPojoList.isEmpty()) {
+                    List<ExtraTransferEntity> extraTransferEntityList = mapper.toExtraTransferEntityList(extraTransferPojoList);
+                    for (ExtraTransferEntity transfer : extraTransferEntityList) {
+                        long originTransferId = transfer.getTransferId();
+                        if (hasTransferIdConflict(originTransferId)) {
+                            transfer.setTransferId(0);  //设置为0以触发自增
+                            long newTransferId = writeExtraTransfer(transfer);
+                            List<AccessibilityRuleEntity> accountList = transferIdMap.get(originTransferId);
+                            if (accountList != null) {
+                                for (AccessibilityRuleEntity rule : accountList) {
+                                    rule.setTransferId(newTransferId);
+                                }
                             }
+                            transferIdMap.remove(originTransferId);
+                        } else {
+                            writeExtraTransfer(transfer);
                         }
-                        transferIdMap.remove(originTransferId);
-                    } else {
-                        writeExtraTransfer(transfer);
                     }
                 }
-            }
 
-            //借款记录数据
-            Map<Long, List<AccessibilityRuleEntity>> loanIdMap = ruleEntityList.stream()
-                    .filter(rule -> rule.getLoanId() != null)
-                    .collect(Collectors.groupingBy(
-                            AccessibilityRuleEntity::getLoanId,
-                            HashMap::new,
-                            Collectors.toList()
-                    ));
-            List<ExtraLoanPojo> extraLoanPojoList = data.getExtraLoanList();
-            if (extraLoanPojoList != null && !extraLoanPojoList.isEmpty()) {
-                List<ExtraLoanEntity> extraLoanEntityList = mapper.toExtraLoanEntityList(extraLoanPojoList);
-                for (ExtraLoanEntity loan : extraLoanEntityList) {
-                    long originId = loan.getLoanId();
-                    if (hasLoanIdConflict(originId)) {
-                        loan.setLoanId(0);  //设置为0以触发自增
-                        long newId = writeExtraLoan(loan);
-                        List<AccessibilityRuleEntity> accountList = loanIdMap.get(originId);
-                        if (accountList != null) {
-                            for (AccessibilityRuleEntity rule : accountList) {
-                                rule.setLoanId(newId);
+                //借款记录数据
+                Map<Long, List<AccessibilityRuleEntity>> loanIdMap = ruleEntityList.stream()
+                        .filter(rule -> rule.getLoanId() != null)
+                        .collect(Collectors.groupingBy(
+                                AccessibilityRuleEntity::getLoanId,
+                                HashMap::new,
+                                Collectors.toList()
+                        ));
+                List<ExtraLoanPojo> extraLoanPojoList = data.getExtraLoanList();
+                if (extraLoanPojoList != null && !extraLoanPojoList.isEmpty()) {
+                    List<ExtraLoanEntity> extraLoanEntityList = mapper.toExtraLoanEntityList(extraLoanPojoList);
+                    for (ExtraLoanEntity loan : extraLoanEntityList) {
+                        long originId = loan.getLoanId();
+                        if (hasLoanIdConflict(originId)) {
+                            loan.setLoanId(0);  //设置为0以触发自增
+                            long newId = writeExtraLoan(loan);
+                            List<AccessibilityRuleEntity> accountList = loanIdMap.get(originId);
+                            if (accountList != null) {
+                                for (AccessibilityRuleEntity rule : accountList) {
+                                    rule.setLoanId(newId);
+                                }
                             }
+                            loanIdMap.remove(originId);
+                        } else {
+                            writeExtraLoan(loan);
                         }
-                        loanIdMap.remove(originId);
-                    } else {
-                        writeExtraLoan(loan);
                     }
                 }
-            }
 
-            //写入无障碍规则数据并修改标识符
-            writeAccessibilityRule(ruleEntityList);
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+                //写入无障碍规则数据并修改标识符
+                writeAccessibilityRule(ruleEntityList);
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //标签映射
-        List<Long> existedTagIdList = getExistedTagId();
-        List<AccessibilityRuleTagRefPojo> tagRefPojoList = data.getTagRefList();
-        if (tagRefPojoList != null && !tagRefPojoList.isEmpty()) {
-            List<AccessibilityRuleTagRefPojo> filteredTagRefPojoList = tagRefPojoList.stream()
-                    .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
-                    .collect(Collectors.toList());  //仅写入存在的标签映射
-            writeAccessibilityRuleTagRef(mapper.toAccessibilityRuleTagRefEntityList(filteredTagRefPojoList));
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+        try {
+            List<Long> existedTagIdList = getExistedTagId();
+            List<AccessibilityRuleTagRefPojo> tagRefPojoList = data.getTagRefList();
+            if (tagRefPojoList != null && !tagRefPojoList.isEmpty()) {
+                List<AccessibilityRuleTagRefPojo> filteredTagRefPojoList = tagRefPojoList.stream()
+                        .filter(pojo -> existedTagIdList.contains(pojo.getTagId()))
+                        .collect(Collectors.toList());  //仅写入存在的标签映射
+                writeAccessibilityRuleTagRef(mapper.toAccessibilityRuleTagRefEntityList(filteredTagRefPojoList));
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //关键词组合
-        List<AccessibilityRuleKeywordGroupPojo> keywordGroupPojoList = data.getKeywordGroupList();
-        if (keywordGroupPojoList != null && !keywordGroupPojoList.isEmpty()) {
-            List<AccessibilityRuleKeywordGroupEntity> keywordGroupEntityList = mapper.toAccessibilityRuleKeywordGroupEntityList(keywordGroupPojoList);
-            writeAccessibilityRuleKeywordGroup(keywordGroupEntityList);
-            resultList.add(true);
-        } else {
-            resultList.add(false);
+        try {
+            List<AccessibilityRuleKeywordGroupPojo> keywordGroupPojoList = data.getKeywordGroupList();
+            if (keywordGroupPojoList != null && !keywordGroupPojoList.isEmpty()) {
+                List<AccessibilityRuleKeywordGroupEntity> keywordGroupEntityList = mapper.toAccessibilityRuleKeywordGroupEntityList(keywordGroupPojoList);
+                writeAccessibilityRuleKeywordGroup(keywordGroupEntityList);
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
         }
 
         //返回导入结果
-        if (!resultList.contains(false)) {
-            return ImportResultType.SUCCEED.ordinal();
-        } else if (!resultList.contains(true)) {
-            return ImportResultType.MISSING.ordinal();
+        if (exceptionList.isEmpty()) {
+            return ImportResult.success();
         } else {
-            return ImportResultType.PARTIALLY_SUCCEED.ordinal();
+            return ImportResult.partlySuccess(exceptionList);
         }
     }
 
