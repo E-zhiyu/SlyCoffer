@@ -151,7 +151,7 @@
         <item name="tabIndicatorColor">?attr/colorPrimary</item>
     </style>
 
-    <!-- 可点击的文本框样式 -->
+    <!-- 可点击的文本样式 -->
     <style name="ClickableTextViewStyle">
         <item name="drawableTint">?attr/colorPrimary</item>
         <item name="android:background">?attr/selectableItemBackground</item>
@@ -160,6 +160,16 @@
         <item name="android:textSize">17sp</item>
         <item name="android:drawablePadding">15dp</item>
         <item name="android:paddingStart">20dp</item>
+    </style>
+
+    <!-- 提示文本样式 -->
+    <style name="TipTextViewStyle" parent="Widget.MaterialComponents.TextView">
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:drawablePadding">5dp</item>
+        <item name="android:textAppearance">?attr/textAppearanceBodySmall</item>
+        <item name="android:textColor">?attr/colorOutline</item>
+        <item name="drawableStartCompat">@drawable/outline_info_24</item>
+        <item name="android:drawableTint">?attr/colorOutline</item>
     </style>
 
     <!-- Chip RecyclerView 样式 -->

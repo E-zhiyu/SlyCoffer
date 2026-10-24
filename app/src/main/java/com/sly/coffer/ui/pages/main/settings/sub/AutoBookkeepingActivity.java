@@ -77,9 +77,7 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         disposable.dispose();
-        binding = null;
     }
 
     /**

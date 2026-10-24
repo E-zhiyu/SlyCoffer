@@ -1,14 +1,42 @@
 package com.sly.coffer.data.save.db.entities;
 
+import androidx.annotation.Nullable;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.ForeignKey;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 @Entity(
         tableName = "accessibilityRules",
+        foreignKeys = {
+                @ForeignKey(
+                        entity = ExtraTransferEntity.class,
+                        parentColumns = "transferId",
+                        childColumns = "transferId",
+                        onDelete = ForeignKey.SET_DEFAULT,
+                        onUpdate = ForeignKey.CASCADE
+                ),
+                @ForeignKey(
+                        entity = ExtraLoanEntity.class,
+                        parentColumns = "loanId",
+                        childColumns = "loanId",
+                        onDelete = ForeignKey.SET_DEFAULT,
+                        onUpdate = ForeignKey.CASCADE
+                ),
+                @ForeignKey(
+                        entity = AccountEntity.class,
+                        parentColumns = "accountId",
+                        childColumns = "repayAccountId",
+                        onDelete = ForeignKey.SET_DEFAULT,
+                        onUpdate = ForeignKey.CASCADE
+                )
+        },
         indices = {
-                @Index(value = "enabled")
+                @Index(value = "enabled"),
+                @Index(value = "transferId"),
+                @Index(value = "loanId"),
+                @Index(value = "repayAccountId")
         }
 )
 public class AccessibilityRuleEntity {
@@ -20,6 +48,15 @@ public class AccessibilityRuleEntity {
     private boolean enabled;        //是否启用
     private String packageName;     //应用包名
     private String activityName;    //目标 Activity 的名称
+    @Nullable
+    @ColumnInfo(defaultValue = "NULL")
+    private Long transferId;        //转账账户额外数据编号
+    @Nullable
+    @ColumnInfo(defaultValue = "NULL")
+    private Long loanId;            //借款额外数据编号
+    @Nullable
+    @ColumnInfo(defaultValue = "NULL")
+    private Long repayAccountId;    //作为还款记录时，把钱还给的那个借款记录的编号
 
     public AccessibilityRuleEntity(String name, int type, String packageName, String activityName) {
         this.name = name;
@@ -75,5 +112,32 @@ public class AccessibilityRuleEntity {
 
     public void setActivityName(String activityName) {
         this.activityName = activityName;
+    }
+
+    @Nullable
+    public Long getTransferId() {
+        return transferId;
+    }
+
+    public void setTransferId(@Nullable Long transferId) {
+        this.transferId = transferId;
+    }
+
+    @Nullable
+    public Long getLoanId() {
+        return loanId;
+    }
+
+    public void setLoanId(@Nullable Long loanId) {
+        this.loanId = loanId;
+    }
+
+    @Nullable
+    public Long getRepayAccountId() {
+        return repayAccountId;
+    }
+
+    public void setRepayAccountId(@Nullable Long repayAccountId) {
+        this.repayAccountId = repayAccountId;
     }
 }

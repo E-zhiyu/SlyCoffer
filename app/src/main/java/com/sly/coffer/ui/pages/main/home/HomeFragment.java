@@ -3,14 +3,17 @@ package com.sly.coffer.ui.pages.main.home;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.core.util.Pair;
 import androidx.fragment.app.Fragment;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.transition.ChangeBounds;
 import androidx.transition.TransitionManager;
 import androidx.transition.TransitionSet;
@@ -20,13 +23,17 @@ import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.daos.AccountDao;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountLoanUnionModel;
 import com.sly.coffer.databinding.FragmentHomeBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
+import com.sly.coffer.helpers.compute.DebtHelper;
+import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.accessibility.pick.PickedPageListActivity;
 import com.sly.coffer.ui.pages.accessibility.rule.AccessibilityRuleListActivity;
 import com.sly.coffer.ui.pages.budget.BudgetListActivity;
+import com.sly.coffer.ui.pages.debt.DebtListActivity;
 import com.sly.coffer.ui.pages.notification.rule.NotificationRuleListActivity;
 import com.sly.coffer.ui.pages.report.ReportActivity;
 import com.sly.coffer.ui.pages.tag.TagListActivity;
@@ -46,8 +53,8 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class HomeFragment extends Fragment {
-    private FragmentHomeBinding binding;                        //XML视图绑定引用
-    private final CompositeDisposable disposable = new CompositeDisposable();   //订阅列表
+    private FragmentHomeBinding binding;                        //绑定的 XML 布局
+    private final CompositeDisposable disposable = new CompositeDisposable();
     private final List<String> tipsList = new ArrayList<>();    //提示文本列表
 
     @Nullable
@@ -58,6 +65,7 @@ public class HomeFragment extends Fragment {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
 
         initViews();
+        observeLiveData();
 
         return binding.getRoot();
     }
@@ -66,8 +74,8 @@ public class HomeFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
 
-        binding = null;
         disposable.dispose();
+        binding = null;
     }
 
     /**
@@ -81,6 +89,7 @@ public class HomeFragment extends Fragment {
 
         initDateCard();
         initReportCard();
+        initDebtCard();
         initTagCard();
         initNotificationRuleCard();
         initBudgetCard();
@@ -161,6 +170,25 @@ public class HomeFragment extends Fragment {
             Intent skip2Report = new Intent(requireContext(), ReportActivity.class);
             startActivity(skip2Report);
         });
+        binding.reportCard.setOnLongClickListener(view -> {
+            HomePageViewModel viewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
+            double balance = viewModel.getReportBalanceLiveData().getValue() == null ?
+                    0 : viewModel.getReportBalanceLiveData().getValue();
+            Pair<Double, Double> incomeAndExpense = viewModel.getReportExpenseIncomeLiveData().getValue();
+            double income = incomeAndExpense == null ? 0 : incomeAndExpense.first;
+            double expense = incomeAndExpense == null ? 0 : incomeAndExpense.second;
+
+            String detail = String.format(
+                    Locale.getDefault(),
+                    "今日消费情况如下：\n\n支出 **%.2f**元  \n收入 **%.2f**元  \n结余 **%.2f**元  \n",
+                    expense, income, balance
+            );
+            new MarkdownDialogBuilder(requireContext(), getString(R.string.report), detail)
+                    .setNegativeButton("关闭", null)
+                    .show();
+
+            return true;
+        });
         AppearanceHelper.attachMorphAnimation(binding.reportCard);
 
         BookkeepingDb db = BookkeepingDb.getInstance(requireContext());
@@ -188,27 +216,85 @@ public class HomeFragment extends Fragment {
                                 }
                             }
 
-
-                            //结余
-                            binding.todayBalanceText.setText(String.format(
-                                    Locale.getDefault(),
-                                    "%s",
-                                    TextHelper.abbreviate(balance)
-                            ));
-
-                            //收支
-                            binding.todayIncomeAndExpenseText.setText(String.format(
-                                    Locale.getDefault(),
-                                    "+%s/-%s",
-                                    TextHelper.abbreviate(income),
-                                    TextHelper.abbreviate(expense)
-                            ));
+                            //更新 ViewModel 中的数据
+                            HomePageViewModel viewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
+                            viewModel.updateBalance(balance);
+                            viewModel.updateExpenseIncome(new Pair<>(income, expense));
                         },
                         e -> {
                             binding.todayBalanceText.setText(R.string.not_applicable);
                             binding.todayIncomeAndExpenseText.setText(R.string.not_applicable);
                             ExceptionHelper.showExceptionDialog(requireContext(), e);
                         }
+                )
+        );
+    }
+
+    /**
+     * 初始化借款卡片
+     */
+    private void initDebtCard() {
+        //设置卡片圆角
+        AppearanceHelper.setRadius(
+                requireContext(),
+                binding.debtCard,
+                AppearanceHelper.SMALL_CARD_RADIUS,
+                AppearanceHelper.SMALL_CARD_RADIUS,
+                AppearanceHelper.MEDIUM_CARD_RADIUS,
+                AppearanceHelper.MEDIUM_CARD_RADIUS
+        );
+
+        //设置点击监听
+        binding.debtCard.setOnClickListener(view -> {
+            Intent intent = new Intent(requireContext(), DebtListActivity.class);
+            startActivity(intent);
+        });
+        binding.debtCard.setOnLongClickListener(view -> {
+            HomePageViewModel viewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
+            double borrowed = viewModel.getLoanBorrowedLiveData().getValue() == null ?
+                    0 : viewModel.getLoanBorrowedLiveData().getValue();
+            double lent = viewModel.getLoanLentLiveData().getValue() == null ?
+                    0 : viewModel.getLoanLentLiveData().getValue();
+
+            String detail = String.format(
+                    Locale.getDefault(),
+                    "截至目前，与您相关的债务信息如下：\n\n应还款 **%.2f**元  \n待收债 **%.2f**元\n\n> 本APP计算的数据不一定准确，请以实际约定为准。",
+                    borrowed, lent
+            );
+            new MarkdownDialogBuilder(requireContext(), "债务信息", detail)
+                    .setNegativeButton("取消", null)
+                    .show();
+
+            return true;
+        });
+        AppearanceHelper.attachMorphAnimation(binding.debtCard);
+
+        BookkeepingDb db = BookkeepingDb.getInstance(requireContext());
+        disposable.add(db.extraDataDao().getAccountWithLoanFlowable()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        modelList -> {
+                            //待还款
+                            HomePageViewModel viewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
+                            List<AccountLoanUnionModel> borrowedList = modelList.stream()
+                                    .filter(model ->
+                                            model.getAccount().getType() == AccountType.BORROW.ordinal()
+                                    )
+                                    .collect(Collectors.toList());
+                            double borrowed = DebtHelper.computeDebt(borrowedList);
+                            viewModel.updateBorrowed(borrowed);
+
+                            //待收债
+                            List<AccountLoanUnionModel> lentList = modelList.stream()
+                                    .filter(model ->
+                                            model.getAccount().getType() == AccountType.LEND.ordinal()
+                                    )
+                                    .collect(Collectors.toList());
+                            double lent = DebtHelper.computeDebt(lentList);
+                            viewModel.updateLent(lent);
+                        },
+                        e -> ExceptionHelper.showExceptionDialog(requireContext(), e)
                 )
         );
     }
@@ -221,7 +307,7 @@ public class HomeFragment extends Fragment {
         AppearanceHelper.setRadius(
                 requireContext(),
                 binding.tagCard,
-                AppearanceHelper.SMALL_CARD_RADIUS,
+                AppearanceHelper.MEDIUM_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS
@@ -286,7 +372,7 @@ public class HomeFragment extends Fragment {
                 requireContext(),
                 binding.budgetCard,
                 AppearanceHelper.SMALL_CARD_RADIUS,
-                AppearanceHelper.SMALL_CARD_RADIUS,
+                AppearanceHelper.MEDIUM_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS,
                 AppearanceHelper.SMALL_CARD_RADIUS
         );
@@ -370,6 +456,38 @@ public class HomeFragment extends Fragment {
                         count -> binding.accessibilityRuleCountText.setText(String.valueOf(count)),
                         e -> ExceptionHelper.showExceptionDialog(requireContext(), e)
                 )
+        );
+    }
+
+    /**
+     * 观察 ViewModel 中的 LiveData
+     */
+    private void observeLiveData() {
+        //结余
+        HomePageViewModel homePageViewModel = new ViewModelProvider(requireActivity()).get(HomePageViewModel.class);
+        homePageViewModel.getReportBalanceLiveData().observe(getViewLifecycleOwner(), balance ->
+                binding.todayBalanceText.setText(TextHelper.abbreviate(balance, 10000))
+        );
+
+        //收入和支出
+        homePageViewModel.getReportExpenseIncomeLiveData().observe(getViewLifecycleOwner(), pair -> {
+            double income = pair.first;
+            double expense = pair.second;
+            binding.todayIncomeAndExpenseText.setText(String.format(
+                    "+%s/-%s",
+                    TextHelper.abbreviate(income),
+                    TextHelper.abbreviate(expense)
+            ));
+        });
+
+        //待还款
+        homePageViewModel.getLoanBorrowedLiveData().observe(getViewLifecycleOwner(), borrowed ->
+                binding.borrowText.setText(TextHelper.abbreviate(borrowed, 10000))
+        );
+
+        //待收债
+        homePageViewModel.getLoanLentLiveData().observe(getViewLifecycleOwner(), lent ->
+                binding.lendText.setText(TextHelper.abbreviate(lent, 10000))
         );
     }
 

@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
+import androidx.core.util.Pair;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -43,7 +44,7 @@ import com.sly.coffer.ui.others.decoration.sticky.StickyHeaderItemDecoration;
 import com.sly.coffer.ui.others.selections.account.AccountKeyProvider;
 import com.sly.coffer.ui.others.selections.account.AccountLookup;
 import com.sly.coffer.ui.others.viewmodel.AccountFilterViewModel;
-import com.sly.coffer.ui.pages.main.bookkeeping.AccountListAdapter;
+import com.sly.coffer.ui.others.adapters.AccountListAdapter;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -86,9 +87,7 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         disposable.dispose();
-        binding = null;
     }
 
     /**
@@ -133,6 +132,7 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
                         //弹出日期选择对话框
                         DateTimePickerHelper.selectDate(
                                 initDate,
+                                new Pair<>(null, LocalDate.now()),
                                 getSupportFragmentManager(),
                                 "选择跳转到的日期",
                                 selection -> {

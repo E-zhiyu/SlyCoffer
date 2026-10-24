@@ -142,8 +142,8 @@ public class BudgetListAdapter extends ListAdapter<BudgetEntity, BudgetListAdapt
         String amountStr = String.format(
                 Locale.getDefault(),
                 "%s/%s",
-                TextHelper.abbreviate(balance),
-                TextHelper.abbreviate(initAmount)
+                TextHelper.abbreviate(balance, TextHelper.THRESHOLD_MILLION),
+                TextHelper.abbreviate(initAmount, TextHelper.THRESHOLD_MILLION)
         );
         holder.binding.amountText.setText(amountStr);
 

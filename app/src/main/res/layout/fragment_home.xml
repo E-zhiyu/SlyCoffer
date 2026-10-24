@@ -130,6 +130,78 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- 债务卡片 -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/debt_card"
+                style="@style/MediumRadiusCardStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="2dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/report_card">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="20dp">
+
+                    <!-- 应还款文本 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/borrow_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="@string/not_applicable"
+                        android:textAppearance="?attr/textAppearanceHeadline5"
+                        app:layout_constraintBottom_toTopOf="@id/borrow_title"
+                        app:layout_constraintEnd_toStartOf="@id/lend_text"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <!-- 应还款标题 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/borrow_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/repayment_due"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textColor="?attr/colorOutline"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="@id/borrow_text"
+                        app:layout_constraintStart_toStartOf="@id/borrow_text"
+                        app:layout_constraintTop_toBottomOf="@id/borrow_text" />
+
+                    <!-- 待收债文本 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/lend_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/not_applicable"
+                        android:textAppearance="?attr/textAppearanceHeadline5"
+                        app:layout_constraintBottom_toTopOf="@id/lend_title"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/borrow_text"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <!-- 待收债标题 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/lend_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/pending_debt_collection"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textColor="?attr/colorOutline"
+                        app:layout_constraintBottom_toBottomOf="@id/lend_text"
+                        app:layout_constraintEnd_toEndOf="@id/lend_text"
+                        app:layout_constraintStart_toStartOf="@id/lend_text"
+                        app:layout_constraintTop_toBottomOf="@id/lend_text" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 简易报表 -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/report_card"
                 style="@style/MediumRadiusCardStyle"
@@ -200,6 +272,19 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- 提示文本 -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/long_click_tip_text"
+                style="@style/TipTextViewStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="10dp"
+                android:text="@string/home_page_card_long_click_tip"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/debt_card" />
+
             <!-- 标签卡片 -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/tag_card"
@@ -207,11 +292,11 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="10dp"
                 android:layout_marginEnd="0dp"
                 app:layout_constraintEnd_toStartOf="@id/notification_rule_card"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/report_card">
+                app:layout_constraintTop_toBottomOf="@id/long_click_tip_text">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -250,11 +335,11 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="2dp"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="10dp"
                 android:layout_marginEnd="00dp"
                 app:layout_constraintEnd_toStartOf="@id/budget_card"
                 app:layout_constraintStart_toEndOf="@id/tag_card"
-                app:layout_constraintTop_toBottomOf="@id/report_card">
+                app:layout_constraintTop_toBottomOf="@id/long_click_tip_text">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -293,11 +378,11 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="2dp"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="10dp"
                 android:layout_marginEnd="10dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@id/notification_rule_card"
-                app:layout_constraintTop_toBottomOf="@id/report_card">
+                app:layout_constraintTop_toBottomOf="@id/long_click_tip_text">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -422,6 +507,14 @@
                         app:layout_constraintTop_toBottomOf="@id/accessibility_rule_count_text" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- 无障碍规则和拾取界面屏障 -->
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/accessibility_barrier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="bottom"
+                app:constraint_referenced_ids="picked_page_card,accessibility_rule_card" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

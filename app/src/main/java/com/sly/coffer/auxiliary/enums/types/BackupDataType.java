@@ -2,6 +2,7 @@ package com.sly.coffer.auxiliary.enums.types;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.sly.coffer.data.backup.helpers.AccessibilityRuleBackupHelper;
@@ -10,7 +11,8 @@ import com.sly.coffer.data.backup.helpers.BudgetBackupHelper;
 import com.sly.coffer.data.backup.helpers.NotificationRuleBackupHelper;
 import com.sly.coffer.data.backup.helpers.RunningAccountBackupHelper;
 
-import java.util.Objects;
+import org.jetbrains.annotations.Contract;
+
 import java.util.function.Function;
 
 /**
@@ -19,52 +21,62 @@ import java.util.function.Function;
 public enum BackupDataType {
     RUNNING_ACCOUNT(
             "流水记录数据",
-            "running_account.json",
-            "RunningAccount.json",
-            RunningAccountBackupHelper::new
+            RunningAccountBackupHelper::new,
+            "RunningAccount.json", "running_account.json", "running_account.json"
     ),
     NOTIFICATION_RULE(
             "通知规则数据",
-            "notification_rule.json",
-            "AnalysisRule.json",
-            NotificationRuleBackupHelper::new
+            NotificationRuleBackupHelper::new,
+            "AnalysisRule.json", "notification_rule.json", "notification_rule.json"
     ),
     ACCESSIBILITY_RULE(
             "无障碍规则数据",
-            "accessibility_rule.json",
-            null,
-            AccessibilityRuleBackupHelper::new
+            AccessibilityRuleBackupHelper::new,
+            null, "accessibility_rule.json", "accessibility_rule.json"
     ),
     BUDGET(
             "预算数据",
-            "budget.json",
-            "Budget.json",
-            BudgetBackupHelper::new
+            BudgetBackupHelper::new,
+            "Budget.json", "budget.json", "budget.json"
     );
     private final String title;
-    private final String fileName;
-
-    private final String oldFileName;
     private final Function<Context, BackupHelperBase<?, ?>> helperFactory;
+    private final String[] fileNames;
 
-    BackupDataType(String title, String fileName, String oldFileName, Function<Context, BackupHelperBase<?, ?>> helperFactory) {
+    BackupDataType(String title, Function<Context, BackupHelperBase<?, ?>> helperFactory, String... fileNames) {
         this.title = title;
-        this.fileName = fileName;
-        this.oldFileName = oldFileName;
         this.helperFactory = helperFactory;
+        this.fileNames = fileNames;
     }
-
 
     public String getTitle() {
         return title;
     }
 
-    public String getFileName() {
-        return fileName;
+    /**
+     * 获取最新版本的备份文件名称
+     *
+     * @return 最新版本的备份文件名称
+     */
+    @Nullable
+    @Contract(pure = true)
+    public String getLatestVersionFileName() {
+        if (fileNames.length > 0) {
+            return fileNames[fileNames.length - 1];
+        } else {
+            return null;
+        }
     }
 
-    public String getOldFileName() {
-        return oldFileName;
+    /**
+     * 根据数据版本获取其对应的备份文件名称
+     *
+     * @param versionType 备份数据的版本种类
+     * @return 与数据版本对应的备份文件名称
+     */
+    @Contract(pure = true)
+    public String getFileNameByVersionType(@NonNull ImportDataVersionType versionType) {
+        return fileNames[versionType.ordinal()];
     }
 
     /**
@@ -84,27 +96,11 @@ public enum BackupDataType {
      * @return 数据类型，若无法匹配类型则返回 null
      */
     @Nullable
-    public static BackupDataType fromFileName(String fileName) {
+    public static BackupDataType fromFileName(String fileName, @NonNull ImportDataVersionType versionType) {
+        int ordinal = versionType.ordinal();
         for (BackupDataType type : values()) {
-            if (type.fileName.equals(fileName)) {
-                return type;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 通过旧版文件名判断数据种类
-     *
-     * @param oldFileName 旧版文件名
-     * @return 数据类型，若无法匹配类型则返回 null
-     */
-    @Nullable
-    public static BackupDataType fromOldFileName(@Nullable String oldFileName) {
-        if (oldFileName == null) return null;
-
-        for (BackupDataType type : values()) {
-            if (Objects.equals(oldFileName, type.oldFileName)) {
+            String effectiveFileName = type.fileNames[ordinal];
+            if (effectiveFileName != null && effectiveFileName.equals(fileName)) {
                 return type;
             }
         }

@@ -7,13 +7,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.data.backup.maps.NotificationRuleDataMap;
-import com.sly.coffer.data.backup.maps.old.OldNotificationRuleDataMap;
+import com.sly.coffer.data.backup.maps.old.extra_v80.ExtraNotificationRuleDataMap;
+import com.sly.coffer.data.backup.maps.old.room_v62.RoomNotificationRuleDataMap;
+import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
+import com.sly.coffer.data.backup.pojo.NotificationRuleGroupPojo;
+import com.sly.coffer.data.backup.pojo.NotificationRuleGroupRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRulePojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTagRefPojo;
-import com.sly.coffer.data.backup.pojo.NotificationRuleTransferPojo;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb, NotificationRuleDataMap> {
@@ -37,20 +42,20 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
     }
 
     @Override
-    protected void saveDataInMapToDb(Context context, NotificationRuleDataMap map) {
-        db.dataBackupDao().importNotificationRuleData(map);
+    protected int saveDataInMapToDb(Context context, NotificationRuleDataMap map) {
+        return db.dataBackupDao().importNotificationRuleData(map);
     }
 
     @Override
     protected String getTempDataFileName() {
-        return BackupDataType.NOTIFICATION_RULE.getFileName();
+        return BackupDataType.NOTIFICATION_RULE.getLatestVersionFileName();
     }
 
     @Override
-    protected NotificationRuleDataMap convertOldData(String json) throws JsonProcessingException {
+    protected NotificationRuleDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
-        OldNotificationRuleDataMap oldMap = mapper.readValue(json, OldNotificationRuleDataMap.class);
+        RoomNotificationRuleDataMap oldMap = mapper.readValue(json, RoomNotificationRuleDataMap.class);
 
         //通知规则
         List<NotificationRulePojo> notificationRulePojoList = oldMap.getRule_data().stream()
@@ -70,11 +75,25 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
                 })
                 .collect(Collectors.toList());
 
-        //通知规则转账账户
-        List<NotificationRuleTransferPojo> notificationRuleTransferPojoList = oldMap.getRule_account().stream()
+        //转账账户
+        Map<Long, NotificationRulePojo> ruleIdMap = notificationRulePojoList.stream()
+                .collect(Collectors.toMap(
+                        NotificationRulePojo::getRuleId,
+                        Function.identity()
+                ));
+        List<ExtraTransferPojo> notificationRuleTransferPojoList = oldMap.getRule_account().stream()
                 .map(old -> {
-                    NotificationRuleTransferPojo pojo = new NotificationRuleTransferPojo();
-                    pojo.setRuleId(old.getRuleNo());
+                    long oldRuleNo = old.getRuleNo();
+
+                    //更新 NotificationRulePojo 的 transferId
+                    NotificationRulePojo rulePojo = ruleIdMap.get(oldRuleNo);
+                    if (rulePojo != null) {
+                        rulePojo.setTransferId(oldRuleNo);
+                    }
+
+                    //创建转账账户记录 Pojo 对象
+                    ExtraTransferPojo pojo = new ExtraTransferPojo();
+                    pojo.setTransferId(oldRuleNo);
                     pojo.setExportAccount(old.getExportAccount());
                     pojo.setImportAccount(old.getImportAccount());
                     return pojo;
@@ -95,8 +114,100 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
         //实例化数据集合
         NotificationRuleDataMap map = new NotificationRuleDataMap();
         map.setNotificationRuleList(notificationRulePojoList);
-        map.setNotificationRuleTransferList(notificationRuleTransferPojoList);
+        map.setExtraTransferList(notificationRuleTransferPojoList);
         map.setNotificationRuleTagRefList(notificationRuleTagRefPojoList);
+        return map;
+    }
+
+    @Override
+    protected NotificationRuleDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
+        //获取旧数据的集合
+        ObjectMapper mapper = new ObjectMapper();
+        ExtraNotificationRuleDataMap oldMap = mapper.readValue(json, ExtraNotificationRuleDataMap.class);
+
+        //通知规则
+        List<NotificationRulePojo> ruleList = oldMap.getNotificationRuleList().stream()
+                .map(old -> {
+                    NotificationRulePojo rule = new NotificationRulePojo();
+                    rule.setRuleId(old.getRuleId());
+                    rule.setName(old.getName());
+                    rule.setType(old.getType());
+                    rule.setPackageName(old.getPackageName());
+                    rule.setTargetTitle(old.getTargetTitle());
+                    rule.setContentRegex(old.getContentRegex());
+                    rule.setCaptureGroupPos(old.getCaptureGroupPos());
+                    rule.setEnabled(old.isEnabled());
+
+                    return rule;
+                })
+                .collect(Collectors.toList());
+
+        //标签映射
+        List<NotificationRuleTagRefPojo> tagRefList = oldMap.getNotificationRuleTagRefList().stream()
+                .map(old -> {
+                    NotificationRuleTagRefPojo ref = new NotificationRuleTagRefPojo();
+                    ref.setRuleId(old.getRuleId());
+                    ref.setTagId(old.getTagId());
+
+                    return ref;
+                })
+                .collect(Collectors.toList());
+
+        //转账账户
+        Map<Long, NotificationRulePojo> ruleIdMap = ruleList.stream()
+                .collect(Collectors.toMap(
+                        NotificationRulePojo::getRuleId,
+                        Function.identity()
+                ));
+        List<ExtraTransferPojo> transferList = oldMap.getNotificationRuleTransferList().stream()
+                .map(old -> {
+                    long oldRuleId = old.getRuleId();
+
+                    //更新外键
+                    NotificationRulePojo rule = ruleIdMap.get(oldRuleId);
+                    if (rule != null) {
+                        rule.setTransferId(oldRuleId);
+                    }
+
+                    //转账账户
+                    ExtraTransferPojo transfer = new ExtraTransferPojo();
+                    transfer.setImportAccount(old.getImportAccount());
+                    transfer.setExportAccount(old.getExportAccount());
+                    transfer.setTransferId(oldRuleId);
+
+                    return transfer;
+                })
+                .collect(Collectors.toList());
+
+        //规则分组
+        List<NotificationRuleGroupPojo> groupList = oldMap.getNotificationRuleGroupList().stream()
+                .map(old -> {
+                    NotificationRuleGroupPojo group = new NotificationRuleGroupPojo();
+                    group.setGroupId(old.getGroupId());
+                    group.setName(old.getName());
+                    group.setOrder(old.getOrder());
+
+                    return group;
+                })
+                .collect(Collectors.toList());
+
+        //规则分组映射
+        List<NotificationRuleGroupRefPojo> groupRefList = oldMap.getNotificationRuleGroupRefList().stream()
+                .map(old -> {
+                    NotificationRuleGroupRefPojo ref = new NotificationRuleGroupRefPojo();
+                    ref.setGroupId(old.getGroupId());
+                    ref.setRuleId(old.getRuleId());
+
+                    return ref;
+                })
+                .collect(Collectors.toList());
+
+        NotificationRuleDataMap map = new NotificationRuleDataMap();
+        map.setNotificationRuleList(ruleList);
+        map.setNotificationRuleTagRefList(tagRefList);
+        map.setExtraTransferList(transferList);
+        map.setNotificationRuleGroupList(groupList);
+        map.setNotificationRuleGroupRefList(groupRefList);
         return map;
     }
 }

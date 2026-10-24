@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.pages.debt.DebtDetailActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true">
+
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            style="@style/CollapsingToolbarLayoutStyle"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/collapsingToolbarLayoutMediumSize"
+            app:toolbarId="@id/toolbar">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:layout_collapseMode="pin"
+                app:title="@string/debt_info" />
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scrollbars="none"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+
+        <LinearLayout
+            android:id="@+id/scroll_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <!-- 债务卡片 -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/debt_card"
+                style="@style/MediumRadiusCardStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:layout_marginBottom="1dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="20dp">
+
+                    <!-- 应还日期文本 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/repay_date_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="@string/not_applicable"
+                        android:textAppearance="?attr/textAppearanceHeadline5"
+                        app:layout_constraintBottom_toTopOf="@id/repay_date_title"
+                        app:layout_constraintEnd_toStartOf="@id/remaining_debt_text"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <!-- 应还日期标题 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/repay_date_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/repay_date"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textColor="?attr/colorOutline"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="@id/repay_date_text"
+                        app:layout_constraintStart_toStartOf="@id/repay_date_text"
+                        app:layout_constraintTop_toBottomOf="@id/repay_date_text" />
+
+                    <!-- 剩余欠款文本 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/remaining_debt_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/not_applicable"
+                        android:textAppearance="?attr/textAppearanceHeadline5"
+                        app:layout_constraintBottom_toTopOf="@id/remaining_debt_title"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/repay_date_text"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <!-- 剩余欠款标题 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/remaining_debt_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/remaining_debt"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textColor="?attr/colorOutline"
+                        app:layout_constraintBottom_toBottomOf="@id/remaining_debt_text"
+                        app:layout_constraintEnd_toEndOf="@id/remaining_debt_text"
+                        app:layout_constraintStart_toStartOf="@id/remaining_debt_text"
+                        app:layout_constraintTop_toBottomOf="@id/remaining_debt_text" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 借款流水记录 -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/loan_account_card"
+                style="@style/MediumRadiusCardStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:layout_marginBottom="1dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingStart="15dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="15dp"
+                    android:paddingBottom="10dp">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/remark_text"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="15dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/remark"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        app:layout_constraintBottom_toTopOf="@+id/type_time_auto_tag_text"
+                        app:layout_constraintEnd_toStartOf="@id/amount_text"
+                        app:layout_constraintHorizontal_bias="0"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintVertical_chainStyle="packed" />
+
+                    <!-- 种类、时间和自动记账种类 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/type_time_auto_tag_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/date_time"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="?attr/colorOutline"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/remark_text" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/amount_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:text="@string/amount"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.divider.MaterialDivider
+                style="@style/Widget.Material3.MaterialDivider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp" />
+
+            <!-- 还款记录列表 -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="-10dp"
+                android:layout_marginEnd="-10dp"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+            <!-- 空状态文本 -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/empty_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="200dp"
+                android:text="@string/no_repayment"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:visibility="visible" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

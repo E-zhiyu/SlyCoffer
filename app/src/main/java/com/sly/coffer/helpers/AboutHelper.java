@@ -10,7 +10,25 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.12.8\n" +
+    private static final String UPDATE_LOG_MD = "# v1.13.0\n" +
+            "\n" +
+            "### 新增内容\n" +
+            "\n" +
+            "- 新增债务管理功能\n" +
+            "- 主页的报表卡片能够长按查看具体数字，报表界面的金额卡片能够点击查看具体数字\n" +
+            "\n" +
+            "### 优化的内容\n" +
+            "\n" +
+            "- 导入数据时能够通过通知显示导入结果\n" +
+            "- 在通知捕获界面开启通知捕获时若没有权限，不需要在授予权限后再手动开启通知捕获\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复无法正常打开界面拾取服务的BUG\n" +
+            "- 修复新增预算界面标题错误的BUG\n" +
+            "- 修复自动记账的金额过大时可能导致通知显示不全的BUG\n" +
+            "\n" +
+            "# v1.12.8\n" +
             "\n" +
             "### BUG修复\n" +
             "\n" +

@@ -8,11 +8,9 @@ import androidx.room.Query;
 import androidx.room.Transaction;
 import androidx.room.Update;
 
-import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccessibilityRuleUnionModel;
 
@@ -85,14 +83,6 @@ public interface AccessibilityRuleDao {
     long insertAccessibilityRule(AccessibilityRuleEntity rule);
 
     /**
-     * 插入无障碍规则的转账账户数据
-     *
-     * @param transfer 转账账户数据
-     */
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    void insertAccessibilityTransfer(AccessibilityRuleTransferEntity transfer);
-
-    /**
      * 插入无障碍规则的标签映射
      *
      * @param tagList 标签映射列表
@@ -112,30 +102,24 @@ public interface AccessibilityRuleDao {
      * 添加无障碍规则事务
      *
      * @param rule             新规则
-     * @param transfer         新规则对应的转账数据
      * @param keywordGroupList 关键词组合列表
      * @param tagIdList        新规则对应的标签编号列表
      */
     @Transaction
-    default void addAccessibilityRule(
+    default void addRule(
             AccessibilityRuleEntity rule,
-            AccessibilityRuleTransferEntity transfer,
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
             List<Long> tagIdList
     ) {
         long ruleId = insertAccessibilityRule(rule);
 
-        //转账账户数据
-        if (rule.getType() == AccountType.TRANSFER.ordinal()) {
-            transfer.setRuleId(ruleId);
-            insertAccessibilityTransfer(transfer);
-        }
-
         //关键词组合
-        for (AccessibilityRuleKeywordGroupEntity group : keywordGroupList) {
-            group.setRuleId(ruleId);
+        if (keywordGroupList != null) {
+            for (AccessibilityRuleKeywordGroupEntity group : keywordGroupList) {
+                group.setRuleId(ruleId);
+            }
+            insertKeywordGroup(keywordGroupList);
         }
-        insertKeywordGroup(keywordGroupList);
 
         //标签数据
         List<AccessibilityRuleTagRefEntity> tagRefList = tagIdList.stream()
@@ -151,7 +135,7 @@ public interface AccessibilityRuleDao {
      * @return 该编号对应的规则
      */
     @Query("SELECT * FROM accessibilityRules WHERE ruleId = :ruleId")
-    Optional<AccessibilityRuleEntity> getAccessibilityRuleOptionalById(long ruleId);
+    AccessibilityRuleEntity getAccessibilityRuleById(long ruleId);
 
     /**
      * 更新无障碍规则
@@ -160,14 +144,6 @@ public interface AccessibilityRuleDao {
      */
     @Update
     void updateAccessibilityRule(AccessibilityRuleEntity rule);
-
-    /**
-     * 通过规则编号删除转账账户数据
-     *
-     * @param ruleId 规则编号
-     */
-    @Query("DELETE FROM accessibilityRuleTransfers WHERE ruleId = :ruleId")
-    void deleteAccessibilityRuleTransferByRuleId(long ruleId);
 
     /**
      * 通过规则编号删除标签映射
@@ -189,40 +165,45 @@ public interface AccessibilityRuleDao {
      * 修改无障碍规则
      *
      * @param rule             修改后的无障碍规则
-     * @param transfer         转账账户
      * @param keywordGroupList 关键词组合列表
      * @param tagIdList        标签编号列表
+     * @param extraDataDao     额外数据操作接口
      */
     @Transaction
-    default void modifyAccessibilityRule(
+    default void modifyRule(
             AccessibilityRuleEntity rule,
-            AccessibilityRuleTransferEntity transfer,
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
-            List<Long> tagIdList
+            List<Long> tagIdList,
+            ExtraDataDao extraDataDao
     ) {
         if (rule == null) return;
         long ruleId = rule.getRuleId();
 
         //获取旧数据
-        Optional<AccessibilityRuleEntity> optional = getAccessibilityRuleOptionalById(ruleId);
-        optional.ifPresent(oldRule -> rule.setEnabled(oldRule.isEnabled()));
+        AccessibilityRuleEntity old = getAccessibilityRuleById(ruleId);
+        if (old != null) {
+            rule.setEnabled(old.isEnabled());
+
+            //删除原来的额外数据
+            if (old.getTransferId() != null) {
+                extraDataDao.deleteExtraTransferById(old.getTransferId());
+            }
+            if (old.getLoanId() != null) {
+                extraDataDao.deleteExtraLoanById(old.getLoanId());
+            }
+        }
 
         //更新规则
         updateAccessibilityRule(rule);
 
-        //转账账户
-        deleteAccessibilityRuleTransferByRuleId(ruleId);
-        if (rule.getType() == AccountType.TRANSFER.ordinal()) {
-            transfer.setRuleId(ruleId);
-            insertAccessibilityTransfer(transfer);
-        }
-
         //关键词组合
         deleteKeywordGroupByRuleId(ruleId);
-        for (AccessibilityRuleKeywordGroupEntity group : keywordGroupList) {
-            group.setRuleId(ruleId);
+        if (keywordGroupList != null) {
+            for (AccessibilityRuleKeywordGroupEntity group : keywordGroupList) {
+                group.setRuleId(ruleId);
+            }
+            insertKeywordGroup(keywordGroupList);
         }
-        insertKeywordGroup(keywordGroupList);
 
         //标签数据
         deleteAccessibilityRuleTagRefByRuleId(ruleId);

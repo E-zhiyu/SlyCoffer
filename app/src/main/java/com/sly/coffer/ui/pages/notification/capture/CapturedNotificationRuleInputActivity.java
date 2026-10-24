@@ -2,7 +2,6 @@ package com.sly.coffer.ui.pages.notification.capture;
 
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
@@ -10,20 +9,24 @@ import androidx.activity.EdgeToEdge;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
+import androidx.core.util.Pair;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.chip.Chip;
 import com.sly.coffer.R;
+import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
+import com.sly.coffer.auxiliary.enums.types.InterestPeriodType;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
-import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.services.NotificationRuleService;
 import com.sly.coffer.data.save.preference.TipPreference;
@@ -33,14 +36,18 @@ import com.sly.coffer.helpers.ImmHelper;
 import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
+import com.sly.coffer.helpers.time.DateTimePickerHelper;
 import com.sly.coffer.ui.others.adapters.NoFilteringArrayAdapter;
+import com.sly.coffer.ui.others.bottom.RelatedLoanSelectBottomSheet;
 import com.sly.coffer.ui.others.bottom.TagSelectBottomSheet;
 import com.sly.coffer.ui.others.viewmodel.TagMultiSelectViewModel;
+import com.sly.coffer.ui.pages.main.bookkeeping.AccountExtraDataViewModel;
 import com.sly.coffer.ui.pages.main.bookkeeping.AccountTagAdapter;
 import com.sly.coffer.ui.pages.notification.GroupSelectBottomSheet;
 import com.sly.coffer.ui.pages.notification.GroupSelectViewModel;
 import com.sly.coffer.ui.pages.notification.RuleGroupChipListAdapter;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,6 +56,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -94,7 +102,6 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
-        binding = null;
     }
 
     /**
@@ -235,30 +242,19 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         ImmHelper.showImm(binding.nameInput);
 
         //种类
-        CNRInputViewModel viewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
-        int visibility = viewModel.getType() == AccountType.TRANSFER ? View.VISIBLE : View.GONE;
-        binding.exportAccountLayout.setVisibility(visibility);
-        binding.importAccountLayout.setVisibility(visibility);
+        AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         NoFilteringArrayAdapter<String> typeAdapter = new NoFilteringArrayAdapter<>(
                 this,
                 Arrays.stream(AccountType.values())
                         .map(AccountType::getTitle)
                         .toArray(String[]::new)
         );
-        binding.typeInput.setText(viewModel.getType().getTitle());
+        binding.typeInput.setText(accountExtraDataViewModel.getAccountType().getTitle());
         binding.typeInput.setAdapter(typeAdapter);
         binding.typeInput.setOnItemClickListener(
                 (parent, view, position, id) -> {
-                    boolean transferVisible = position == AccountType.TRANSFER.ordinal();
-                    VisibilityHelper.toggleViewExpansion(
-                            binding.scrollLayout,
-                            transferVisible,
-                            null,
-                            binding.exportAccountLayout,
-                            binding.importAccountLayout
-                    );
-
-                    viewModel.setType(AccountType.values()[position]);
+                    AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+                    viewModel.updateAccountType(AccountType.values()[position]);
                 }
         );
 
@@ -274,7 +270,6 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
                                     R.layout.exposed_dropdown_popup_item,
                                     transferAccountList
                             );
-
                             binding.exportAccountInput.setAdapter(adapter);
                             binding.importAccountInput.setAdapter(adapter);
                         },
@@ -282,13 +277,40 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
                 )
         );
 
+        //借款对象适配器
+        disposable.add(db.extraDataDao().getLoanTargetNameSingle()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                        loanTargetNameList -> {
+                            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                                    this,
+                                    R.layout.exposed_dropdown_popup_item,
+                                    loanTargetNameList
+                            );
+                            binding.loanTargetNameInput.setAdapter(adapter);
+                        },
+                        e -> ExceptionHelper.showExceptionDialog(this, e)
+                )
+        );
+
+        //结息周期自动填充适配器
+        List<String> interestPeriodTypeTitleList = Arrays.stream(InterestPeriodType.values())
+                .map(InterestPeriodType::getTitle)
+                .collect(Collectors.toList());
+        NoFilteringArrayAdapter<String> interestPeriodAdapter = new NoFilteringArrayAdapter<>(
+                this, interestPeriodTypeTitleList
+        );
+        binding.interestPeriodInput.setAdapter(interestPeriodAdapter);
+
         //转出账户
         binding.exportAccountInput.setOnFocusChangeListener((view, b) -> {
             if (b) {
                 binding.exportAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.exportAccountInput.getText()).trim();
-                if (viewModel.getType() == AccountType.TRANSFER && input.isEmpty()) {
+                boolean isTransfer = accountExtraDataViewModel.getAccountType().hasExtraData(AccountType.DATA_FLAG_TRANSFER);
+                if (isTransfer && input.isEmpty()) {
                     binding.exportAccountLayout.setError("转出账户不能为空");
                 }
             }
@@ -300,10 +322,61 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
                 binding.importAccountLayout.setError(null);
             } else {
                 String input = String.valueOf(binding.importAccountInput.getText()).trim();
-                if (viewModel.getType() == AccountType.TRANSFER && input.isEmpty()) {
+                boolean isTransfer = accountExtraDataViewModel.getAccountType().hasExtraData(AccountType.DATA_FLAG_TRANSFER);
+                if (isTransfer && input.isEmpty()) {
                     binding.importAccountLayout.setError("转出账户不能为空");
                 }
             }
+        });
+
+        //关联的借款记录
+        binding.relatedLoanInput.setOnClickListener(view -> {
+            AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+            Bundle bundle = new Bundle();
+            bundle.putInt(KeyStrings.RUNNING_TYPE.v(), viewModel.getAccountType().ordinal());
+
+            RelatedLoanSelectBottomSheet bottomSheet = new RelatedLoanSelectBottomSheet();
+            bottomSheet.setArguments(bundle);
+            bottomSheet.show(getSupportFragmentManager(), TagStrings.RELATED_LOAN_SELECT_BOTTOM.t());
+        });
+        binding.relatedLoanInput.setOnFocusChangeListener((view, b) -> {
+            if (b) {
+                AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+                Bundle bundle = new Bundle();
+                bundle.putInt(KeyStrings.RUNNING_TYPE.v(), viewModel.getAccountType().ordinal());
+
+                RelatedLoanSelectBottomSheet bottomSheet = new RelatedLoanSelectBottomSheet();
+                bottomSheet.setArguments(bundle);
+                bottomSheet.show(getSupportFragmentManager(), TagStrings.RELATED_LOAN_SELECT_BOTTOM.t());
+            }
+        });
+
+        //应还日期
+        binding.repayDateInput.setOnClickListener(v -> selectRepayDate());
+        binding.repayDateInput.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                selectRepayDate();
+            }
+        });
+
+        //借款对象
+        binding.loanTargetNameInput.setOnFocusChangeListener((view, b) -> {
+            if (b) {
+                binding.loanTargetNameLayout.setError(null);
+            } else {
+                String input = String.valueOf(binding.loanTargetNameInput.getText()).trim();
+                boolean isLoan = accountExtraDataViewModel.getAccountType().hasExtraData(AccountType.DATA_FLAG_LOAN);
+                if (isLoan && input.isEmpty()) {
+                    binding.loanTargetNameLayout.setError("借款对象不能为空");
+                }
+            }
+        });
+
+        //结息周期
+        binding.interestPeriodInput.setText(accountExtraDataViewModel.getInterestPeriodType().getTitle());
+        binding.interestPeriodInput.setOnItemClickListener((parent, view, position, id) -> {
+            AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+            viewModel.setInterestPeriodType(InterestPeriodType.values()[position]);
         });
 
         //分组选择按钮
@@ -322,7 +395,7 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         binding.tagSelectBtn.setOnClickListener(view -> {
             TagSelectBottomSheet bottomSheet = new TagSelectBottomSheet();
             Bundle bundle = new Bundle();
-            bundle.putInt(KeyStrings.TAG_SCOPE.v(), (int) Math.pow(2, viewModel.getType().ordinal())); //传递标签作用域标识符
+            bundle.putInt(KeyStrings.TAG_SCOPE.v(), (int) Math.pow(2, accountExtraDataViewModel.getAccountType().ordinal())); //传递标签作用域标识符
             bottomSheet.setArguments(bundle);
             bottomSheet.show(getSupportFragmentManager(), TagStrings.TAG_SELECT_BOTTOM.t());
         });
@@ -365,6 +438,39 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
+        //流水记录种类
+        AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+        accountExtraDataViewModel.getAccountTypeLiveData().observe(this, type -> {
+            //转账账户输入框
+            VisibilityHelper.toggleViewExpansion(
+                    binding.scrollLayout,
+                    type.hasExtraData(AccountType.DATA_FLAG_TRANSFER),
+                    null,
+                    binding.transferInputLayout
+            );
+
+            //还款信息输入框
+            VisibilityHelper.toggleViewExpansion(
+                    binding.scrollLayout,
+                    type.hasExtraData(AccountType.DATA_FLAG_REPAY),
+                    null,
+                    binding.repayExtraLayout
+            );
+
+            //借款信息输入框
+            VisibilityHelper.toggleViewExpansion(
+                    binding.scrollLayout,
+                    type.hasExtraData(AccountType.DATA_FLAG_LOAN),
+                    null,
+                    binding.loanExtraLayout
+            );
+        });
+
+        //关联的还款记录
+        accountExtraDataViewModel.getRelatedLoanAccountLiveData().observe(this, account ->
+                binding.relatedLoanInput.setText(account == null ? "" : account.getRemark())
+        );
+
         //标签选择
         TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
         tagMultiSelectViewModel.getCheckedIdLiveData().observe(this, idSet -> {
@@ -444,17 +550,24 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         String name = String.valueOf(binding.nameInput.getText()).trim();
         String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
         String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
+        String loanTargetName = String.valueOf(binding.loanTargetNameInput.getText()).trim();
 
-        CNRInputViewModel viewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
+        AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+        AccountType type = accountExtraDataViewModel.getAccountType();
+        boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
+        boolean isLoan = type.hasExtraData(AccountType.DATA_FLAG_LOAN);
         if (name.isEmpty()) {
             err = "名称不能为空";
             binding.nameLayout.setError(err);
-        } else if (viewModel.getType() == AccountType.TRANSFER && exportAccount.isEmpty()) {
+        } else if (isTransfer && exportAccount.isEmpty()) {
             err = "转出账户不能为空";
             binding.exportAccountLayout.setError(err);
-        } else if (viewModel.getType() == AccountType.TRANSFER && importAccount.isEmpty()) {
+        } else if (isTransfer && importAccount.isEmpty()) {
             err = "转入账户不能为空";
             binding.importAccountLayout.setError(err);
+        } else if (isLoan && loanTargetName.isEmpty()) {
+            err = "借款对象不能为空";
+            binding.loanTargetNameLayout.setError(err);
         } else if (notification == null) {
             err = "错误：通知数据获取失败";
         } else {
@@ -469,18 +582,98 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
     }
 
     /**
+     * 首先保存额外的数据
+     *
+     * @param rule 通知规则
+     * @return 是否完成
+     */
+    private Completable saveExtraDataFirstly(NotificationRuleEntity rule) {
+        AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+        AccountType type = viewModel.getAccountType();
+        BookkeepingDb db = BookkeepingDb.getInstance(this);
+
+        if (type.hasExtraData()) {
+            rule.setRepayAccountId(viewModel.getRepayAccountId());  //设置关联的借款记录的编号
+
+            //判断是否需要保存额外数据
+            boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
+            boolean isLoan = type.hasExtraData(AccountType.DATA_FLAG_LOAN);
+
+            //转账额外数据
+            Completable transferTask, loanTask;
+            if (isTransfer) {
+                String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
+                String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
+                ExtraTransferEntity transfer = new ExtraTransferEntity(
+                        exportAccount,
+                        importAccount
+                );
+                transferTask = db.extraDataDao().insertExtraTransferSingle(transfer)
+                        .flatMapCompletable(transferId -> {
+                            rule.setTransferId(transferId);
+                            return Completable.complete();
+                        });
+            } else {
+                transferTask = Completable.complete();
+            }
+
+            //借款额外数据
+            if (isLoan) {
+                String loanTargetName = String.valueOf(binding.loanTargetNameInput.getText()).trim();
+                int interestPeriod = viewModel.getInterestPeriodType().ordinal();
+                int yearBasepoint;
+                String annualInterestStr = String.valueOf(binding.annualInterestRateInput.getText()).trim();
+                if (annualInterestStr.isEmpty()) {
+                    yearBasepoint = 0;
+                } else {
+                    try {
+                        double annualInterest = Double.parseDouble(annualInterestStr);
+                        yearBasepoint = (int) (annualInterest * 100);
+                    } catch (NumberFormatException e) {
+                        yearBasepoint = 0;
+                    }
+                }
+                String repayDateStr = String.valueOf(binding.repayDateInput.getText()).trim();
+                LocalDate repayDate;
+                if (repayDateStr.isEmpty()) {
+                    repayDate = null;
+                } else {
+                    repayDate = LocalDate.parse(repayDateStr, CustomDateTimeFormatter.DATE);
+                }
+                boolean allowCompoundInterest = binding.compoundInterestSwitch.isChecked();
+
+                ExtraLoanEntity loan = new ExtraLoanEntity(
+                        loanTargetName,
+                        interestPeriod,
+                        yearBasepoint,
+                        allowCompoundInterest,
+                        repayDate
+                );
+                loanTask = db.extraDataDao().insertExtraLoanSingle(loan)
+                        .flatMapCompletable(loanId -> {
+                            rule.setLoanId(loanId);
+                            return Completable.complete();
+                        });
+            } else {
+                loanTask = Completable.complete();
+            }
+
+            return transferTask.andThen(loanTask);
+        } else {
+            return Completable.complete();
+        }
+    }
+
+    /**
      * 将数据保存到数据库
      */
     private void saveData() {
         if (notification == null) return;
 
         //获取必要数据
-        CNRInputViewModel viewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
         String name = String.valueOf(binding.nameInput.getText()).trim();
         String packageName = notification.getPackageName();
         String title = notification.getTitle();
-        String exportAccount = String.valueOf(binding.exportAccountInput.getText()).trim();
-        String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
 
         //生成标签 ID 列表
         List<Long> tagIdList;
@@ -509,17 +702,19 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
                 .replaceAll(REGEX, REPLACEMENT);
 
         //保存数据
+        AccountExtraDataViewModel extraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+        CNRInputViewModel cnrViewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
         NotificationRuleEntity rule = new NotificationRuleEntity(
                 name,
-                viewModel.getType().ordinal(),
+                extraDataViewModel.getAccountType().ordinal(),
                 packageName,
                 title,
                 contentRegex,
-                viewModel.getGroupPos()
+                cnrViewModel.getGroupPos()
         );
-        NotificationRuleTransferEntity transfer = new NotificationRuleTransferEntity(importAccount, exportAccount);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        disposable.add(NotificationRuleService.addNewNotificationRule(rule, transfer, tagIdList, groupIdList, db)
+        disposable.add(saveExtraDataFirstly(rule)
+                .andThen(NotificationRuleService.addNewNotificationRule(rule, tagIdList, groupIdList, db))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
@@ -529,6 +724,28 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
                         },
                         e -> ExceptionHelper.showExceptionDialog(this, e)
                 )
+        );
+    }
+
+    /**
+     * 选择应还日期
+     */
+    private void selectRepayDate() {
+        //解析已输入的时间
+        String datetimeStr = String.valueOf(binding.repayDateInput.getText()).trim();
+        LocalDate inputDate = datetimeStr.isEmpty() ?
+                LocalDate.now() :
+                LocalDate.parse(datetimeStr, CustomDateTimeFormatter.DATE);
+
+        DateTimePickerHelper.selectDate(
+                inputDate,
+                new Pair<>(LocalDate.now(), null),
+                getSupportFragmentManager(),
+                dateTimeMillis -> {
+                    //组合日期和时间
+                    LocalDate selectedDate = DateTimePickerHelper.getLocalDateFromTimeMilli(dateTimeMillis);
+                    binding.repayDateInput.setText(selectedDate.format(CustomDateTimeFormatter.DATE));
+                }
         );
     }
 }

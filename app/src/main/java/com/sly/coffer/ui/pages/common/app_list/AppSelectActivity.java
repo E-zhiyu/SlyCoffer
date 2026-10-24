@@ -70,7 +70,6 @@ public class AppSelectActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
-        binding = null;
     }
 
     /**

@@ -14,6 +14,7 @@ import com.sly.coffer.auxiliary.classes.AmountProportionInfo;
 import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnClickListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.ViewHolderListener;
 import com.sly.coffer.databinding.ViewHolderAmountProportionBinding;
+import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 
 import java.util.Locale;
@@ -116,7 +117,7 @@ public class AmountProportionAdapter extends ListAdapter<AmountProportionInfo, A
 
         //金额
         double amount = info.getAmount();
-        holder.binding.amountText.setText(String.format(Locale.getDefault(), "%.2f", amount));
+        holder.binding.amountText.setText(TextHelper.abbreviate(amount, TextHelper.THRESHOLD_MILLION));
         if (amount < 0) {
             holder.binding.percentageBar.setIndicatorColor(holder.itemView.getContext().getColor(R.color.md_theme_error));
         }

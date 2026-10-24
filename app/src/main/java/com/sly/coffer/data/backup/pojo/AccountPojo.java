@@ -10,6 +10,9 @@ public class AccountPojo {
     private int type;
     private long dateTime;
     private int autoTag;
+    private Long transferId = null;
+    private Long loanId = null;
+    private Long repayAccountId = null;
 
     public AccountPojo() {
     }
@@ -60,5 +63,29 @@ public class AccountPojo {
 
     public void setAutoTag(int autoTag) {
         this.autoTag = autoTag;
+    }
+
+    public Long getTransferId() {
+        return transferId;
+    }
+
+    public void setTransferId(Long transferId) {
+        this.transferId = transferId;
+    }
+
+    public Long getLoanId() {
+        return loanId;
+    }
+
+    public void setLoanId(Long loanId) {
+        this.loanId = loanId;
+    }
+
+    public Long getRepayAccountId() {
+        return repayAccountId;
+    }
+
+    public void setRepayAccountId(Long repayAccountId) {
+        this.repayAccountId = repayAccountId;
     }
 }

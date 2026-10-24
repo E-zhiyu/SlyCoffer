@@ -230,6 +230,30 @@
     <string name="move_down">向下移动</string>
     <string name="move_to_bottom">移至底部</string>
     <string name="copy_notification">复制通知</string>
+    <string name="running_account">流水记录</string>
+    <string name="check_account_detail">查看流水详情</string>
+    <string name="loan_record">借款记录</string>
+    <string name="account_related_loan_help">如果该记录用于还款，请填写借款记录的备注</string>
+    <string name="loan_target">借款对象</string>
+    <string name="account_loan_target_help">与您达成借款约定的对象名称</string>
+    <string name="account_interest_period_help">您与借款对象约定好的结息周期</string>
+    <string name="interest_accrual_period">结息周期</string>
+    <string name="account_annual_interest_rate_help">不计利息则留空，年利率=月利率×12=日利率×360</string>
+    <string name="annual_interest_rate">年利率</string>
+    <string name="account_repay_date_help">约定的还款日期，若未约定应还日期请留空</string>
+    <string name="repay_date">应还日期</string>
+    <string name="allow_compound_interest">允许复利</string>
+    <string name="select_loan_record">选择借款记录</string>
+    <string name="no_loan_record">无借款记录</string>
+    <string name="select_data_version">选择数据版本</string>
+    <string name="repayment_due">应还款</string>
+    <string name="pending_debt_collection">待收债</string>
+    <string name="debt_info">债务信息</string>
+    <string name="no_debt_info">无债务信息</string>
+    <string name="debt_search_hint">搜索借款对象……</string>
+    <string name="add_budget">新建预算</string>
+    <string name="remaining_debt">剩余欠款</string>
+    <string name="no_repayment">无还款记录</string>
     <string name="troubleshooting">问题解答</string>
     <string name="help_solve_some_common_problems">帮助解决一些常见的问题</string>
     <string name="floating_notification_question">Q : 为什么授予通知权限后不会弹出悬浮通知？</string>
@@ -248,9 +272,8 @@
     <string name="data_save_answer">A : 您在使用过程中产生的所有数据都保存在本地，不会上传至互联网。如果您需要迁移应用数据，请前往数据管理界面导出您需要的数据。</string>
     <string name="update_question">Q : 我要如何更新软件版本？</string>
     <string name="update_answer">A : 您可以直接访问项目仓库，从发行版(Release)中下载安装包。更推荐的方式是通过APP内的更新检测功能，APP会自动从仓库中下载最新版安装包，下载完成后点击立刻更新即可安装新版本。部分用户可能在安装时出现问题，此时您可以尝试进入手机上的文件管理应用，进入Downloads文件夹并手动安装新版本。</string>
-    <string name="running_account">流水记录</string>
-    <string name="check_account_detail">查看流水详情</string>
-
+    <string name="income_expense_card_click_tip">点击收支卡片可以查看详细金额</string>
+    <string name="home_page_card_long_click_tip">长按报表卡片和债务卡片可以查看详细金额</string>
 
     <string-array name="tips_array">
         <item>如果设置了自动备份目录，进行软件更新时会自动备份一次。</item>

@@ -8,7 +8,6 @@ import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.daos.AccessibilityRuleDao;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
-import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.PickedPageGroupUiModel;
 import com.sly.coffer.helpers.AppListHelper;
@@ -28,7 +27,6 @@ public class AccessibilityRuleService {
      * 添加新无障碍规则
      *
      * @param rule             新规则
-     * @param transfer         新规则对应的转账账户数据
      * @param keywordGroupList 关键词组合列表
      * @param tagIdList        新规则的标签编号数据
      * @param db               数据库实例
@@ -36,13 +34,12 @@ public class AccessibilityRuleService {
      */
     public static Completable addNewAccessibilityRule(
             AccessibilityRuleEntity rule,
-            AccessibilityRuleTransferEntity transfer,
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
             List<Long> tagIdList,
             BookkeepingDb db
     ) {
         return Completable.defer(() -> {
-            db.accessibilityRuleDao().addAccessibilityRule(rule, transfer, keywordGroupList, tagIdList);
+            db.accessibilityRuleDao().addRule(rule, keywordGroupList, tagIdList);
             return Completable.complete();
         });
     }
@@ -51,7 +48,6 @@ public class AccessibilityRuleService {
      * 修改无障碍规则
      *
      * @param rule             修改后的规则
-     * @param transfer         转账账户数据
      * @param keywordGroupList 关键词组合列表
      * @param tagIdList        标签编号数据
      * @param db               数据库实例
@@ -59,13 +55,12 @@ public class AccessibilityRuleService {
      */
     public static Completable modifyAccessibilityRule(
             AccessibilityRuleEntity rule,
-            AccessibilityRuleTransferEntity transfer,
             List<AccessibilityRuleKeywordGroupEntity> keywordGroupList,
             List<Long> tagIdList,
             BookkeepingDb db
     ) {
         return Completable.defer(() -> {
-            db.accessibilityRuleDao().modifyAccessibilityRule(rule, transfer, keywordGroupList, tagIdList);
+            db.accessibilityRuleDao().modifyRule(rule, keywordGroupList, tagIdList, db.extraDataDao());
             return Completable.complete();
         });
     }

@@ -173,7 +173,12 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".ui.pages.common.account.AccountListActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.pages.debt.DebtListActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".ui.pages.main.MainActivity"
             android:exported="true">
@@ -261,6 +266,11 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/pick_accessibility_service_config" />
         </service>
+
+        <activity
+            android:name=".ui.pages.debt.DebtDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

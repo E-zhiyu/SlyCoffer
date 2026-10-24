@@ -4,11 +4,15 @@ import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.work.Data;
 import androidx.work.WorkerParameters;
 import androidx.work.rxjava3.RxWorker;
 
+import com.sly.coffer.R;
+import com.sly.coffer.auxiliary.enums.ChannelInfo;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
@@ -18,8 +22,6 @@ import com.sly.coffer.data.save.preference.AutoBackupPreference;
 import com.sly.coffer.helpers.NotificationHelper;
 import com.sly.coffer.helpers.file.FileHelper;
 import com.sly.coffer.helpers.file.ZipHelper;
-
-import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +85,7 @@ public class BackupWorker extends RxWorker {
         }
 
         //执行备份逻辑
+        sendProgressNotification(context);  //发送通知
         boolean includeMedia = choices == null || choices[BackupDataType.RUNNING_ACCOUNT.ordinal()];
         return Completable.merge(taskList)
                 .andThen(ZipHelper.createBackupFile(finalBackupFileUri, context, includeMedia))
@@ -92,6 +95,42 @@ public class BackupWorker extends RxWorker {
                     Log.e(LogTags.BACKUP_WORKER.n(), "备份失败");
                     return Result.failure();
                 })
-                .doFinally(() -> NotificationHelper.cancelNotification(NotificationID.BACKUP_AND_RESTORE.ordinal(), context));
+                .doFinally(() -> {
+                    //发送通知
+                    String channelID = ChannelInfo.BACKUP_AND_RESTORE.getId();
+                    NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, channelID)
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setContentTitle(context.getString(R.string.export_data))
+                            .setContentText("数据备导出完成")
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .setCategory(NotificationCompat.CATEGORY_CALL)
+                            .setTimeoutAfter(5000)
+                            .setAutoCancel(true);
+                    NotificationHelper.sendNotification(NotificationID.BACKUP_AND_RESTORE.ordinal(), notificationBuilder, context);
+                });
+    }
+
+    /**
+     * 发送进度条通知
+     *
+     * @param context 上下文
+     */
+    private void sendProgressNotification(Context context) {
+        //构建通知
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, ChannelInfo.BACKUP_AND_RESTORE.getId())
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(context.getString(R.string.export_data))
+                .setContentText("正在导出数据……")
+                .setProgress(0, 0, true)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setCategory(NotificationCompat.CATEGORY_PROGRESS);
+
+        //发送通知
+        NotificationHelper.sendNotification(
+                NotificationID.BACKUP_AND_RESTORE.ordinal(),
+                builder,
+                context
+        );
     }
 }

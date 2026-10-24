@@ -12,7 +12,6 @@ import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
 import com.sly.coffer.data.save.db.daos.AccountDao;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
-import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.AccountUiModel;
 import com.sly.coffer.helpers.file.FileHelper;
@@ -61,7 +60,7 @@ public class AccountService {
         //生成基础 SQL 语句
         StringBuilder sql = new StringBuilder(
                 "SELECT accountId FROM accounts " +
-                        "WHERE 1=1"
+                        "WHERE accountId >= 0"
         );
         List<Object> args = new ArrayList<>();
 
@@ -230,7 +229,6 @@ public class AccountService {
      * 插入新流水记录
      *
      * @param account         新流水记录
-     * @param transfer        转账账户数据（仅当记录类型为转账时会写入）
      * @param mediaEntityList 位于永久目录下的媒体文件实体列表
      * @param tagIdList       与该记录绑定的标签的 ID 列表
      * @param context         上下文
@@ -238,14 +236,13 @@ public class AccountService {
      */
     public static Single<Long> addNewAccount(
             AccountEntity account,
-            AccountTransferEntity transfer,
             @Nullable List<MediaEntity> mediaEntityList,
             @Nullable List<Long> tagIdList,
             Context context
     ) {
         return Single.defer(() -> {
             BookkeepingDb db = BookkeepingDb.getInstance(context);
-            long accountId = db.accountDao().addAccount(account, transfer, mediaEntityList, tagIdList);
+            long accountId = db.accountDao().addAccount(account, mediaEntityList, tagIdList);
 
             //检查预算
             BudgetService.checkAndSendLowBalanceNotification(context);
@@ -258,22 +255,20 @@ public class AccountService {
      * 修改流水记录
      *
      * @param account         修改后的流水记录
-     * @param transfer        转账账户数据（仅当记录类型为转账时会写入）
      * @param mediaEntityList 位于永久目录下的媒体文件实体列表，可能包含新添加的媒体
      * @param tagIdList       与该记录绑定的标签的 Id 列表
      * @param context         上下文
      * @return 是否完成
      */
-    public static Completable modifyAccount(
+    public static Single<Long> modifyAccount(
             AccountEntity account,
-            AccountTransferEntity transfer,
             List<MediaEntity> mediaEntityList,
             List<Long> tagIdList,
             Context context
     ) {
-        return Completable.defer(() -> {
-            BookkeepingDb db = BookkeepingDb.getInstance(context);
-            Set<Uri> oldMediaUriSet = db.accountDao().modifyAccount(account, transfer, mediaEntityList, tagIdList);
+        BookkeepingDb db = BookkeepingDb.getInstance(context);
+        return Single.defer(() -> {
+            Set<Uri> oldMediaUriSet = db.accountDao().modifyAccount(account, mediaEntityList, tagIdList, db.extraDataDao());
 
             //删除旧媒体文件
             if (oldMediaUriSet != null) {
@@ -285,7 +280,7 @@ public class AccountService {
             //检查预算
             BudgetService.checkAndSendLowBalanceNotification(context);
 
-            return Completable.complete();
+            return Single.just(account.getAccountId());
         });
     }
 

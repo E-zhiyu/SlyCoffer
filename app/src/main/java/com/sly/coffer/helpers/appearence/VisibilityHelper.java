@@ -151,13 +151,11 @@ public class VisibilityHelper {
         // 5. 【核心修正】通知 TransitionManager 开始捕获变化（必须在改变可见性之前，且整个过程只调用一次！）
         TransitionManager.beginDelayedTransition(sceneRoot, transitionSet);
 
-        // 6. 执行可见性变更（系统会自动计算旧状态到新状态的差异，并播放动画）
-        sceneRoot.post(() -> {
-            for (View targetView : targetViews) {
-                if (targetView.getVisibility() != targetVisibility) {
-                    targetView.setVisibility(targetVisibility);
-                }
+        // 6. 执行可见性变更（系统会自动计算旧状态到新状态的差异，并播放动画）() -> {
+        for (View targetView : targetViews) {
+            if (targetView.getVisibility() != targetVisibility) {
+                targetView.setVisibility(targetVisibility);
             }
-        });
+        }
     }
 }

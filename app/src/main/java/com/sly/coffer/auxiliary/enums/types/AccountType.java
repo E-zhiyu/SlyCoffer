@@ -1,17 +1,24 @@
 package com.sly.coffer.auxiliary.enums.types;
 
-public enum AccountType {
-    EXPENSE("支出", -1, "EXPENSE"),
-    INCOME("收入", 1, "INCOME"),
-    TRANSFER("转账", 0, "TRANSFER");
-    private final String title; //名称
-    private final int flag;     //是否为收入/支出种类的标识符
-    private final String oldValue;  //旧枚举值
+import org.jetbrains.annotations.Contract;
 
-    AccountType(String title, int flag, String oldValue) {
+public enum AccountType {
+    EXPENSE("支出", -1, 4),
+    INCOME("收入", 1, 4),
+    TRANSFER("转账", 0, 1),
+    LEND("借出", -1, 2),
+    BORROW("借入", 1, 2);
+    public static final int DATA_FLAG_TRANSFER = 1;
+    public static final int DATA_FLAG_LOAN = 2;
+    public static final int DATA_FLAG_REPAY = 4;
+    private final String title;     //名称
+    private final int reportFlag;   //钱增加/减少的标识符
+    private final int dataFlag;     //额外数据输入标识符（二进制位为1表示需要输入额外数据）
+
+    AccountType(String title, int flag, int dataFlag) {
         this.title = title;
-        this.flag = flag;
-        this.oldValue = oldValue;
+        this.reportFlag = flag;
+        this.dataFlag = dataFlag;
     }
 
     public String getTitle() {
@@ -19,11 +26,11 @@ public enum AccountType {
     }
 
     public boolean isExpenseType() {
-        return flag == -1;
+        return reportFlag == -1;
     }
 
     public boolean isIncomeType() {
-        return flag == 1;
+        return reportFlag == 1;
     }
 
     /**
@@ -32,12 +39,36 @@ public enum AccountType {
      * @param oldValue 旧枚举值
      * @return 流水种类
      */
+    @Contract(pure = true)
     public static AccountType fromOldValue(String oldValue) {
-        for (AccountType type : values()) {
-            if (type.oldValue.equals(oldValue)) {
-                return type;
-            }
+        if (oldValue == null) return EXPENSE;
+        switch (oldValue) {
+            case "INCOME":
+                return INCOME;
+            case "TRANSFER":
+                return TRANSFER;
+            case "EXPENSE":
+            default:
+                return EXPENSE;
         }
-        return EXPENSE;
+    }
+
+    /**
+     * 判断是否能够输入指定的额外数据
+     *
+     * @param edittextFlag 额外数据标识符，详见{@link AccountType}中的静态常量
+     * @return 是否能够输入指定的额外数据
+     */
+    public boolean hasExtraData(int edittextFlag) {
+        return (this.dataFlag & edittextFlag) == edittextFlag;
+    }
+
+    /**
+     * 判断是否能输入额外数据
+     *
+     * @return 是否能输入额外数据
+     */
+    public boolean hasExtraData() {
+        return dataFlag != 0;
     }
 }

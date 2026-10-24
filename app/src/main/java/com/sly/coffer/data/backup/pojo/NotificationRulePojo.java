@@ -12,6 +12,9 @@ public class NotificationRulePojo {
     private String contentRegex;
     private int captureGroupPos = 1;
     private boolean enabled = true;
+    private Long transferId = null;
+    private Long loanId = null;
+    private Long repayAccountId = null;
 
     public NotificationRulePojo() {
     }
@@ -78,5 +81,29 @@ public class NotificationRulePojo {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Long getTransferId() {
+        return transferId;
+    }
+
+    public void setTransferId(Long transferId) {
+        this.transferId = transferId;
+    }
+
+    public Long getLoanId() {
+        return loanId;
+    }
+
+    public void setLoanId(Long loanId) {
+        this.loanId = loanId;
+    }
+
+    public Long getRepayAccountId() {
+        return repayAccountId;
+    }
+
+    public void setRepayAccountId(Long repayAccountId) {
+        this.repayAccountId = repayAccountId;
     }
 }

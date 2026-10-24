@@ -1,11 +1,12 @@
 package com.sly.coffer.data.backup.maps;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.sly.coffer.data.backup.pojo.ExtraLoanPojo;
+import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleGroupPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleGroupRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRulePojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTagRefPojo;
-import com.sly.coffer.data.backup.pojo.NotificationRuleTransferPojo;
 
 import java.util.List;
 
@@ -13,7 +14,8 @@ import java.util.List;
 public class NotificationRuleDataMap {
     private List<NotificationRulePojo> notificationRuleList;
     private List<NotificationRuleTagRefPojo> notificationRuleTagRefList;
-    private List<NotificationRuleTransferPojo> notificationRuleTransferList;
+    private List<ExtraTransferPojo> extraTransferList;
+    private List<ExtraLoanPojo> extraLoanList;
     private List<NotificationRuleGroupPojo> notificationRuleGroupList;
     private List<NotificationRuleGroupRefPojo> notificationRuleGroupRefList;
 
@@ -36,12 +38,12 @@ public class NotificationRuleDataMap {
         this.notificationRuleTagRefList = notificationRuleTagRefList;
     }
 
-    public List<NotificationRuleTransferPojo> getNotificationRuleTransferList() {
-        return notificationRuleTransferList;
+    public List<ExtraTransferPojo> getExtraTransferList() {
+        return extraTransferList;
     }
 
-    public void setNotificationRuleTransferList(List<NotificationRuleTransferPojo> notificationRuleTransferList) {
-        this.notificationRuleTransferList = notificationRuleTransferList;
+    public void setExtraTransferList(List<ExtraTransferPojo> extraTransferList) {
+        this.extraTransferList = extraTransferList;
     }
 
     public List<NotificationRuleGroupPojo> getNotificationRuleGroupList() {
@@ -58,5 +60,13 @@ public class NotificationRuleDataMap {
 
     public void setNotificationRuleGroupRefList(List<NotificationRuleGroupRefPojo> notificationRuleGroupRefList) {
         this.notificationRuleGroupRefList = notificationRuleGroupRefList;
+    }
+
+    public List<ExtraLoanPojo> getExtraLoanList() {
+        return extraLoanList;
+    }
+
+    public void setExtraLoanList(List<ExtraLoanPojo> extraLoanList) {
+        this.extraLoanList = extraLoanList;
     }
 }

@@ -15,7 +15,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.PopupMenu;
-import androidx.core.app.NotificationCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -28,7 +27,7 @@ import com.sly.coffer.automation.workers.WorkerScheduler;
 import com.sly.coffer.automation.workers.backup.BackupWorker;
 import com.sly.coffer.automation.workers.backup.RestoreWorker;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
-import com.sly.coffer.auxiliary.enums.ChannelInfo;
+import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.NotificationID;
 import com.sly.coffer.auxiliary.enums.RadiusStyle;
@@ -63,7 +62,6 @@ public class DataManageActivity extends AppCompatActivity {
     private final CompositeDisposable disposables = new CompositeDisposable();      //多线程任务列表
     private List<Boolean> exportChoiceStatList = null;                              //导出数据时的选项选择情况
     private ActivityResultLauncher<Intent> importDataLauncher, exportDataLauncher;  //活动启动器
-    private ActivityResultLauncher<Intent> importOldDataLauncher;                   //导入旧版数据的启动器
     private ActivityResultLauncher<Intent> backupDirSelectLauncher;                 //自动备份目录选择启动器
 
     @Override
@@ -118,21 +116,18 @@ public class DataManageActivity extends AppCompatActivity {
                         return;
                     }
 
-                    showImportChoiceDialog(data.getData(), false);
-                }
-        );
+                    //显示数据版本选择对话框
+                    String[] titles = Arrays.stream(ImportDataVersionType.values())
+                            .map(ImportDataVersionType::getTitle)
+                            .toArray(String[]::new);
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.select_data_version)
+                            .setItems(titles, (dialog, which) ->
+                                    showImportChoiceDialog(data.getData(), ImportDataVersionType.values()[which])
+                            )
+                            .setNegativeButton("取消", null)
+                            .show();
 
-        importOldDataLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    int resultCode = result.getResultCode();
-                    Intent data = result.getData();
-                    if (resultCode != Activity.RESULT_OK || data == null || data.getData() == null) {
-                        FileHelper.clearTempDataDir(this);
-                        return;
-                    }
-
-                    showImportChoiceDialog(data.getData(), true);
                 }
         );
 
@@ -184,7 +179,7 @@ public class DataManageActivity extends AppCompatActivity {
                 this,
                 binding.importDataOption,
                 R.string.import_data,
-                "长按可导入v1.9.0之前的数据",
+                "从外部文件导入数据",
                 R.drawable.outline_download_24,
                 RadiusStyle.BOTTOM
         );
@@ -192,13 +187,6 @@ public class DataManageActivity extends AppCompatActivity {
                 new String[]{"application/zip"},
                 importDataLauncher
         ));
-        importDataOption.setOnLongClickListener(view -> {
-            SAFHelper.openDocumentViaSAF(
-                    new String[]{"application/zip"},
-                    importOldDataLauncher
-            );
-            return true;
-        });
 
         //自动备份开关
         SettingSwitchView autoBackupSwitchOption = new SettingSwitchView(
@@ -387,70 +375,26 @@ public class DataManageActivity extends AppCompatActivity {
         UUID uuid = WorkerScheduler.executeWorkOnceNow(this, BackupWorker.class, data);
 
         //显示进度条对话框
-        AlertDialog progressDialog = new ProgressDialogBuilder(this, "导出数据", "正在导出数据……")
+        AlertDialog dialog = new ProgressDialogBuilder(this, "导出数据", "正在导出数据……")
                 .setPositiveButton("后台执行", (dialogInterface, i) ->
-                        sendBackgroundProgress("导出数据", "正在导出数据……")
+                        Toast.makeText(this, "已在后台执行，请留意通知", Toast.LENGTH_SHORT).show()
                 )
                 .setNegativeButton("取消执行", (dialogInterface, i) ->
                         WorkerScheduler.cancelWorkById(this, uuid)
                 )
                 .show();
-        progressDialog.setOnCancelListener(dialogInterface ->
-                sendBackgroundProgress("导出数据", "正在导出数据……")
-        );
 
         //监听运行状态
-        WorkManager.getInstance(this)
-                .getWorkInfoByIdLiveData(uuid)
-                .observe(this, workInfo -> {
-                    if (workInfo == null) return;
-
-                    //判断 Worker 是否运行结束
-                    if (workInfo.getState().isFinished()) {
-                        String text;
-                        switch (workInfo.getState()) {
-                            case SUCCEEDED:
-                                text = "数据导出成功";
-                                break;
-                            case CANCELLED:
-                                text = "数据导出已取消";
-                                break;
-                            case FAILED:
-                            default:
-                                text = "数据导出失败";
-                        }
-
-                        if (progressDialog.isShowing()) {
-                            Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
-                        } else {
-                            //构建通知
-                            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ChannelInfo.BACKUP_AND_RESTORE.getId())
-                                    .setSmallIcon(R.mipmap.ic_launcher)
-                                    .setContentTitle("导出数据")
-                                    .setContentText(text)
-                                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                                    .setCategory(NotificationCompat.CATEGORY_PROGRESS);
-
-                            //发送通知
-                            NotificationHelper.sendNotification(
-                                    NotificationID.BACKUP_AND_RESTORE.ordinal(),
-                                    builder,
-                                    this
-                            );
-                        }
-
-                        progressDialog.dismiss();
-                    }
-                });
+        observeWorker(uuid, dialog);
     }
 
     /**
      * 扫描备份文件并显示多选对话框
      *
-     * @param uri       SAF 返回的 Uri 实例
-     * @param isOldData 是否是旧版数据
+     * @param uri         SAF 返回的 Uri 实例
+     * @param versionType 导入的数据的版本种类
      */
-    private void showImportChoiceDialog(Uri uri, boolean isOldData) {
+    private void showImportChoiceDialog(Uri uri, ImportDataVersionType versionType) {
         //显示扫描文件的进度条对话框
         AlertDialog progressDialog = new ProgressDialogBuilder(this, "扫描文件", "正在扫描文件……")
                 .setNegativeButton("取消", (dialogInterface, i) -> {
@@ -469,8 +413,7 @@ public class DataManageActivity extends AppCompatActivity {
                     //实例化选项列表
                     List<MultiChoiceDialogBuilder.ChoiceItem> itemList = Arrays.stream(BackupDataType.values())
                             .map(backupDataType -> {
-                                if (!isOldData && fileNameSet.contains(backupDataType.getFileName()) ||
-                                        isOldData && fileNameSet.contains(backupDataType.getOldFileName())) {
+                                if (fileNameSet.contains(backupDataType.getFileNameByVersionType(versionType))) {
                                     return new MultiChoiceDialogBuilder.ChoiceItem(
                                             true,
                                             backupDataType.getTitle(),
@@ -489,7 +432,7 @@ public class DataManageActivity extends AppCompatActivity {
                     //显示多选对话框
                     new MultiChoiceDialogBuilder(this, "导入数据", itemList)
                             .setPositiveButton("确认", checkedStatList ->
-                                    importData(uri, checkedStatList)
+                                    importData(uri, checkedStatList, versionType)
                             )
                             .setNegativeButton("取消", null)
                             .show();
@@ -505,8 +448,9 @@ public class DataManageActivity extends AppCompatActivity {
      *
      * @param uri          备份文件的 Uri
      * @param checkedStats 用户选择的选项状态，选项的下标与{@link BackupDataType}的枚举序数一一对应
+     * @param versionType  导入数据的版本种类
      */
-    private void importData(Uri uri, @NonNull List<Boolean> checkedStats) {
+    private void importData(Uri uri, @NonNull List<Boolean> checkedStats, ImportDataVersionType versionType) {
         //构建传递给 Worker 的 Data
         boolean[] choices = new boolean[checkedStats.size()];
         for (int i = 0; i < checkedStats.size(); i++) {
@@ -515,25 +459,33 @@ public class DataManageActivity extends AppCompatActivity {
         Data data = new Data.Builder()
                 .putString(KeyStrings.BACKUP_TARGET.v(), uri.toString())
                 .putBooleanArray(KeyStrings.BACKUP_CHOICES.v(), choices)
+                .putInt(KeyStrings.IMPORT_DATA_VERSION_TYPE.v(), versionType.ordinal())
                 .build();
 
         //执行一次任务
         UUID uuid = WorkerScheduler.executeWorkOnceNow(this, RestoreWorker.class, data);
 
         //显示扫描文件的进度条对话框
-        AlertDialog progressDialog = new ProgressDialogBuilder(this, "导入数据", "正在导入数据……")
+        AlertDialog dialog = new ProgressDialogBuilder(this, "导入数据", "正在导入数据……")
                 .setPositiveButton("后台执行", (dialogInterface, i) ->
-                        sendBackgroundProgress("导入数据", "正在导入数据……")
+                        Toast.makeText(this, "已在后台执行，请留意通知", Toast.LENGTH_SHORT).show()
                 )
                 .setNegativeButton("取消执行", (dialogInterface, i) ->
                         WorkerScheduler.cancelWorkById(this, uuid)
                 )
                 .show();
-        progressDialog.setOnCancelListener(dialogInterface ->
-                sendBackgroundProgress("导入数据", "正在导入数据……")
-        );
 
         //监听运行状态
+        observeWorker(uuid, dialog);
+    }
+
+    /**
+     * 观察 Worker 的工作状况
+     *
+     * @param uuid   待观察的 Worker 的标识符
+     * @param dialog 需要隐藏的对话框
+     */
+    private void observeWorker(UUID uuid, AlertDialog dialog) {
         WorkManager.getInstance(this)
                 .getWorkInfoByIdLiveData(uuid)
                 .observe(this, workInfo -> {
@@ -541,65 +493,23 @@ public class DataManageActivity extends AppCompatActivity {
 
                     //判断 Worker 是否运行结束
                     if (workInfo.getState().isFinished()) {
-                        String text;
+                        String toast;
                         switch (workInfo.getState()) {
                             case SUCCEEDED:
-                                text = "数据导入成功";
+                                toast = "操作完成，请在通知查看详情";
                                 break;
                             case CANCELLED:
-                                text = "数据导入已取消";
+                                toast = "操作已取消";
+                                NotificationHelper.cancelNotification(NotificationID.BACKUP_AND_RESTORE.ordinal(), this);
                                 break;
                             case FAILED:
                             default:
-                                text = "数据导入失败";
+                                toast = "操作出错，请在通知查看详情";
                         }
 
-                        if (progressDialog.isShowing()) {
-                            Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
-                        } else {
-                            //构建通知
-                            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ChannelInfo.BACKUP_AND_RESTORE.getId())
-                                    .setSmallIcon(R.mipmap.ic_launcher)
-                                    .setContentTitle("导入数据")
-                                    .setContentText(text)
-                                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                                    .setCategory(NotificationCompat.CATEGORY_PROGRESS);
-
-                            //发送通知
-                            NotificationHelper.sendNotification(
-                                    NotificationID.BACKUP_AND_RESTORE.ordinal(),
-                                    builder,
-                                    this
-                            );
-                        }
-
-                        progressDialog.dismiss();
+                        dialog.dismiss();
+                        Toast.makeText(this, toast, Toast.LENGTH_SHORT).show();
                     }
                 });
-    }
-
-    /**
-     * 发送处于后台运行状态的进度条通知
-     *
-     * @param title   标题
-     * @param content 文本内容
-     */
-    private void sendBackgroundProgress(String title, String content) {
-        //构建通知
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ChannelInfo.BACKUP_AND_RESTORE.getId())
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(title)
-                .setContentText(content)
-                .setProgress(0, 0, true)
-                .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setCategory(NotificationCompat.CATEGORY_PROGRESS);
-
-        //发送通知
-        NotificationHelper.sendNotification(
-                NotificationID.BACKUP_AND_RESTORE.ordinal(),
-                builder,
-                this
-        );
     }
 }

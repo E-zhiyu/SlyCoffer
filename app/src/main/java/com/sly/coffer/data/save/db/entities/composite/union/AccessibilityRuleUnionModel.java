@@ -8,37 +8,55 @@ import androidx.room.Relation;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
+import com.sly.coffer.data.save.db.entities.AccountEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 
 import java.util.List;
 
 public class AccessibilityRuleUnionModel {
     @Embedded
-    private final AccessibilityRuleEntity rule;
+    private final AccessibilityRuleEntity rule;         //规则本体数据
     @Nullable
     @Relation(
-            entity = AccessibilityRuleTransferEntity.class,
-            parentColumn = "ruleId",
-            entityColumn = "ruleId"
+            entity = ExtraTransferEntity.class,
+            parentColumn = "transferId",
+            entityColumn = "transferId"
     )
-    private final AccessibilityRuleTransferEntity transfer;
+    private final ExtraTransferEntity transfer;         //转账额外数据
+    @Nullable
+    @Relation(
+            entity = ExtraLoanEntity.class,
+            parentColumn = "loanId",
+            entityColumn = "loanId"
+    )
+    private final ExtraLoanEntity loan;                 //借款额外数据
+    @Relation(
+            parentColumn = "repayAccountId",
+            entityColumn = "accountId",
+            entity = AccountEntity.class
+    )
+    @Nullable
+    private final AccountEntity repayRelatedAccount;    //还款额外数据，包含其关联的借款记录
     @Relation(
             parentColumn = "ruleId",
             entityColumn = "tagId",
             associateBy = @Junction(AccessibilityRuleTagRefEntity.class)
     )
-    private final List<TagEntity> tagList;
+    private final List<TagEntity> tagList;      //标签列表
     @Relation(
             entity = AccessibilityRuleKeywordGroupEntity.class,
             parentColumn = "ruleId",
             entityColumn = "ruleId"
     )
-    private final List<AccessibilityRuleKeywordGroupEntity> keywordGroupList;
+    private final List<AccessibilityRuleKeywordGroupEntity> keywordGroupList;   //关键词分组列表
 
-    public AccessibilityRuleUnionModel(AccessibilityRuleEntity rule, @Nullable AccessibilityRuleTransferEntity transfer, List<TagEntity> tagList, List<AccessibilityRuleKeywordGroupEntity> keywordGroupList) {
+    public AccessibilityRuleUnionModel(AccessibilityRuleEntity rule, @Nullable ExtraTransferEntity transfer, @Nullable ExtraLoanEntity loan, @Nullable AccountEntity repayRelatedAccount, List<TagEntity> tagList, List<AccessibilityRuleKeywordGroupEntity> keywordGroupList) {
         this.rule = rule;
         this.transfer = transfer;
+        this.loan = loan;
+        this.repayRelatedAccount = repayRelatedAccount;
         this.tagList = tagList;
         this.keywordGroupList = keywordGroupList;
     }
@@ -48,7 +66,7 @@ public class AccessibilityRuleUnionModel {
     }
 
     @Nullable
-    public AccessibilityRuleTransferEntity getTransfer() {
+    public ExtraTransferEntity getTransfer() {
         return transfer;
     }
 
@@ -58,5 +76,15 @@ public class AccessibilityRuleUnionModel {
 
     public List<AccessibilityRuleKeywordGroupEntity> getKeywordGroupList() {
         return keywordGroupList;
+    }
+
+    @Nullable
+    public ExtraLoanEntity getLoan() {
+        return loan;
+    }
+
+    @Nullable
+    public AccountEntity getRepayRelatedAccount() {
+        return repayRelatedAccount;
     }
 }

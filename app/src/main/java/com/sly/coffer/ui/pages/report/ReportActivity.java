@@ -35,6 +35,7 @@ import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
 import com.sly.coffer.helpers.time.DateTimePickerHelper;
+import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.common.account.AccountListActivity;
 
 import org.jetbrains.annotations.Contract;
@@ -83,7 +84,6 @@ public class ReportActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
-        binding = null;
     }
 
     /**
@@ -99,6 +99,47 @@ public class ReportActivity extends AppCompatActivity {
             showDatePickerDialog(viewModel.getRangeType());
         });
         binding.dateSelectBtn.setText(LocalDate.now().format(CustomDateTimeFormatter.LOCAL_DATE));
+
+        //收入和支出卡片
+        binding.amountCard.setOnClickListener(v -> {
+            //获取收入和支出
+            ReportViewModel viewModel = new ViewModelProvider(this).get(ReportViewModel.class);
+            Pair<Double, Double> amountPair = viewModel.getReportExpenseIncomeLiveData().getValue();
+            double income = amountPair == null ? 0 : amountPair.first;
+            double expense = amountPair == null ? 0 : amountPair.second;
+
+            //获取日期范围
+            Pair<LocalDate, LocalDate> dateRangePair = viewModel.getDateRangeLiveData().getValue();
+            String dateRangeStr;
+            if (dateRangePair != null && dateRangePair.first != null && dateRangePair.second != null) {
+                if (dateRangePair.first.isEqual(dateRangePair.second)) {
+                    dateRangeStr = dateRangePair.first.format(CustomDateTimeFormatter.LOCAL_DATE);
+                } else {
+                    LocalDate start = dateRangePair.first.isBefore(dateRangePair.second) ? dateRangePair.first : dateRangePair.second;
+                    LocalDate end = dateRangePair.first.isBefore(dateRangePair.second) ? dateRangePair.second : dateRangePair.first;
+                    dateRangeStr = String.format(
+                            Locale.getDefault(),
+                            "**%s**至**%s**",
+                            start.format(CustomDateTimeFormatter.LOCAL_DATE),
+                            end.format(CustomDateTimeFormatter.LOCAL_DATE)
+                    );
+                }
+            } else {
+                dateRangeStr = "所选日期";
+            }
+
+            //显示对话框
+            String detail = String.format(
+                    Locale.getDefault(),
+                    "%s的消费情况如下：\n\n支出 **%.2f**元  \n收入 **%.2f**元  \n结余 **%.2f**元  \n",
+                    dateRangeStr,
+                    expense, income, income - expense
+            );
+            new MarkdownDialogBuilder(this, getString(R.string.report), detail)
+                    .setNegativeButton("关闭", null)
+                    .show();
+        });
+        AppearanceHelper.attachMorphAnimation(binding.amountCard);
 
         //日期范围种类选择按钮
         binding.dateRangeSelectBtn.addOnCheckedChangeListener((materialButton, b) -> {
@@ -214,18 +255,7 @@ public class ReportActivity extends AppCompatActivity {
                             //结余、收支文本
                             double income = incomePair.second;
                             double expense = expensePair.second;
-                            double balance = income - expense;
-                            binding.balanceText.setText(String.format(
-                                    Locale.getDefault(),
-                                    "%s",
-                                    TextHelper.abbreviate(balance)
-                            ));
-                            binding.incomeAndExpenseText.setText(String.format(
-                                    Locale.getDefault(),
-                                    "+%s/-%s",
-                                    TextHelper.abbreviate(income),
-                                    TextHelper.abbreviate(expense)
-                            ));
+                            viewModel.updateExpenseIncome(new Pair<>(income, expense));
                         },
                         e -> ExceptionHelper.showExceptionDialog(this, e)
                 )
@@ -329,6 +359,24 @@ public class ReportActivity extends AppCompatActivity {
             //设置文本内容
             binding.startDateText.setText(start.format(CustomDateTimeFormatter.DATE_SHORT));
             binding.endDateText.setText(end.format(CustomDateTimeFormatter.DATE_SHORT));
+        });
+
+        //收入和支出
+        reportViewModel.getReportExpenseIncomeLiveData().observe(this, pair -> {
+            double income = pair.first;
+            double expense = pair.second;
+            double balance = income - expense;
+            binding.balanceText.setText(String.format(
+                    Locale.getDefault(),
+                    "%s",
+                    TextHelper.abbreviate(balance, TextHelper.THRESHOLD_MILLION)
+            ));
+            binding.incomeAndExpenseText.setText(String.format(
+                    Locale.getDefault(),
+                    "+%s/-%s",
+                    TextHelper.abbreviate(income, TextHelper.THRESHOLD_MILLION),
+                    TextHelper.abbreviate(expense, TextHelper.THRESHOLD_MILLION)
+            ));
         });
     }
 
@@ -489,6 +537,7 @@ public class ReportActivity extends AppCompatActivity {
             LocalDate selectedDate = viewModel.getSelectedDate();
             DateTimePickerHelper.selectDate(
                     selectedDate,
+                    new Pair<>(null, LocalDate.now()),
                     getSupportFragmentManager(),
                     selection -> {
                         //更新 ViewModel 中的选中日期的数据

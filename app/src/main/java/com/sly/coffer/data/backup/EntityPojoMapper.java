@@ -5,10 +5,10 @@ import android.net.Uri;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleKeywordGroupPojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRulePojo;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleTagRefPojo;
-import com.sly.coffer.data.backup.pojo.AccessibilityRuleTransferPojo;
 import com.sly.coffer.data.backup.pojo.AccountPojo;
 import com.sly.coffer.data.backup.pojo.AccountTagRefPojo;
-import com.sly.coffer.data.backup.pojo.AccountTransferPojo;
+import com.sly.coffer.data.backup.pojo.ExtraLoanPojo;
+import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 import com.sly.coffer.data.backup.pojo.BudgetPojo;
 import com.sly.coffer.data.backup.pojo.BudgetTagRefPojo;
 import com.sly.coffer.data.backup.pojo.MediaPojo;
@@ -16,7 +16,6 @@ import com.sly.coffer.data.backup.pojo.NotificationRuleGroupPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleGroupRefPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRulePojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleTagRefPojo;
-import com.sly.coffer.data.backup.pojo.NotificationRuleTransferPojo;
 import com.sly.coffer.data.backup.pojo.TagGroupPojo;
 import com.sly.coffer.data.backup.pojo.TagPojo;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
@@ -24,18 +23,17 @@ import com.sly.coffer.data.save.db.converters.UriConverter;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
-import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 
@@ -100,13 +98,23 @@ public interface EntityPojoMapper {
 
     List<AccountTagRefPojo> toAccountTagRefPojoList(List<AccountTagRefEntity> entityList);
 
-    AccountTransferEntity toAccountTransferEntity(AccountTransferPojo pojo);
+    ExtraTransferEntity toExtraTransferEntity(ExtraTransferPojo pojo);
 
-    List<AccountTransferEntity> toAccountTransferEntityList(List<AccountTransferPojo> pojoList);
+    List<ExtraTransferEntity> toExtraTransferEntityList(List<ExtraTransferPojo> pojoList);
 
-    AccountTransferPojo toAccountTransferPojo(AccountTransferEntity entity);
+    ExtraTransferPojo toExtraTransferPojo(ExtraTransferEntity entity);
 
-    List<AccountTransferPojo> toAccountTransferPojoList(List<AccountTransferEntity> entityList);
+    List<ExtraTransferPojo> toExtraTransferPojoList(List<ExtraTransferEntity> entityList);
+
+    @Mapping(target = "repayDate", source = "repayDate", qualifiedByName = "longToDate")
+    ExtraLoanEntity toExtraLoanEntity(ExtraLoanPojo pojo);
+
+    List<ExtraLoanEntity> toExtraLoanEntityList(List<ExtraLoanPojo> pojoList);
+
+    @Mapping(target = "repayDate", source = "repayDate", qualifiedByName = "dateToLong")
+    ExtraLoanPojo toExtraLoanPojo(ExtraLoanEntity entity);
+
+    List<ExtraLoanPojo> toExtraLoanPojoList(List<ExtraLoanEntity> entityList);
 
     @Mapping(target = "startDate", source = "startDate", qualifiedByName = "longToDate")
     BudgetEntity toBudgetEntity(BudgetPojo pojo);
@@ -151,14 +159,6 @@ public interface EntityPojoMapper {
     NotificationRuleTagRefPojo toNotificationRuleTagRefPojo(NotificationRuleTagRefEntity entity);
 
     List<NotificationRuleTagRefPojo> toNotificationRuleTagRefPojoList(List<NotificationRuleTagRefEntity> entityList);
-
-    NotificationRuleTransferEntity toNotificationRuleTransferEntity(NotificationRuleTransferPojo pojo);
-
-    List<NotificationRuleTransferEntity> toNotificationRuleTransferEntityList(List<NotificationRuleTransferPojo> pojoList);
-
-    NotificationRuleTransferPojo toNotificationRuleTransferPojo(NotificationRuleTransferEntity entity);
-
-    List<NotificationRuleTransferPojo> toNotificationRuleTransferPojoList(List<NotificationRuleTransferEntity> entityList);
 
     NotificationRuleGroupEntity toNotificationRuleGroupEntity(NotificationRuleGroupPojo pojo);
 
@@ -207,14 +207,6 @@ public interface EntityPojoMapper {
     AccessibilityRuleTagRefPojo toAccessibilityRuleTagRefPojo(AccessibilityRuleTagRefEntity entity);
 
     List<AccessibilityRuleTagRefPojo> toAccessibilityRuleTagRefPojoList(List<AccessibilityRuleTagRefEntity> entityList);
-
-    AccessibilityRuleTransferEntity toAccessibilityRuleTransferEntity(AccessibilityRuleTransferPojo pojo);
-
-    List<AccessibilityRuleTransferEntity> toAccessibilityRuleTransferEntityList(List<AccessibilityRuleTransferPojo> pojoList);
-
-    AccessibilityRuleTransferPojo toAccessibilityRuleTransferPojo(AccessibilityRuleTransferEntity entity);
-
-    List<AccessibilityRuleTransferPojo> toAccessibilityRuleTransferPojoList(List<AccessibilityRuleTransferEntity> entityList);
 
     AccessibilityRuleKeywordGroupEntity toAccessibilityRuleKeywordGroupEntity(AccessibilityRuleKeywordGroupPojo pojo);
 

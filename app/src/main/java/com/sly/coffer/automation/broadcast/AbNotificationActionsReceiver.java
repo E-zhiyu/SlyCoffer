@@ -14,9 +14,13 @@ import androidx.core.app.TaskStackBuilder;
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.enums.settings.NotificationCancelBehaviour;
 import com.sly.coffer.auxiliary.enums.settings.NotificationClickBehaviour;
+import com.sly.coffer.auxiliary.enums.types.AccountType;
+import com.sly.coffer.auxiliary.enums.types.InterestPeriodType;
+import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
-import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
 import com.sly.coffer.auxiliary.enums.ChannelInfo;
@@ -25,6 +29,7 @@ import com.sly.coffer.auxiliary.enums.PendingRequestCode;
 import com.sly.coffer.helpers.NotificationHelper;
 import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +37,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -129,7 +135,7 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
     private void saveAccountData(PendingResult syncResult, @NonNull Bundle bundle, String ruleName, int notificationID, Context context) {
         //解包数据包
         long dateTimeMillis = bundle.getLong(KeyStrings.RUNNING_DATETIME.v());
-        int type = bundle.getInt(KeyStrings.RUNNING_TYPE.v());
+        int typeOrdinal = bundle.getInt(KeyStrings.RUNNING_TYPE.v());
         String remark = bundle.getString(KeyStrings.RUNNING_REMARK.v());
         double amount = bundle.getDouble(KeyStrings.RUNNING_AMOUNT.v());
         long[] tagIds = bundle.getLongArray(KeyStrings.TAG_ID.v());
@@ -141,17 +147,17 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
         } else {
             tagIdList = null;
         }
-        String exportAccount = bundle.getString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v());
-        String importAccount = bundle.getString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v());
 
         //实例化实体类
-        int autoBookkeepingType = bundle.getInt(KeyStrings.AUTO_BOOKKEEPING_TYPE.v(), 0);
+        int autoBookkeepingTag = bundle.getInt(KeyStrings.AUTO_BOOKKEEPING_TAG.v(), 0);
         LocalDateTime dateTime = DateTimeConverter.toLocalDateTime(dateTimeMillis);
-        AccountEntity account = new AccountEntity(amount, remark, type, dateTime, autoBookkeepingType);
-        AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
+        AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, dateTime, autoBookkeepingTag);
+        long repayAccountId = bundle.getLong(KeyStrings.REPAY_ACCOUNT_ID.v(), -1);
+        account.setRepayAccountId(repayAccountId);
 
         //保存数据
-        disposable.add(AccountService.addNewAccount(account, transfer, null, tagIdList, context)
+        disposable.add(saveExtraDataFirstly(account, bundle, typeOrdinal, context)
+                .andThen(AccountService.addNewAccount(account, null, tagIdList, context))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
@@ -213,6 +219,72 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
                         }
                 )
         );
+    }
+
+    /**
+     * 先保存流水记录的额外数据
+     *
+     * @param account     需要保存的流水记录
+     * @param bundle      包含参数的数据包
+     * @param typeOrdinal 流水记录种类枚举序数
+     * @param context     上下文
+     * @return 是否完成
+     */
+    private Completable saveExtraDataFirstly(AccountEntity account, Bundle bundle, int typeOrdinal, Context context) {
+        //判断是否需要保存额外数据
+        AccountType type = AccountType.values()[typeOrdinal];
+        BookkeepingDb db = BookkeepingDb.getInstance(context);
+        if (type.hasExtraData()) {
+            boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
+            boolean isLoan = type.hasExtraData(AccountType.DATA_FLAG_LOAN);
+
+            //转账额外数据
+            Completable transferTask, loanTask;
+            if (isTransfer) {
+                String exportAccount = bundle.getString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v());
+                String importAccount = bundle.getString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v());
+                ExtraTransferEntity transfer = new ExtraTransferEntity(
+                        exportAccount,
+                        importAccount
+                );
+                transferTask = db.extraDataDao().insertExtraTransferSingle(transfer)
+                        .flatMapCompletable(transferId -> {
+                            account.setTransferId(transferId);
+                            return Completable.complete();
+                        });
+            } else {
+                transferTask = Completable.complete();
+            }
+
+            //借款额外数据
+            if (isLoan) {
+                String loanTargetName = bundle.getString(KeyStrings.LOAN_TARGET_NAME.v());
+                int interestPeriod = bundle.getInt(KeyStrings.LOAN_INTEREST_ACCRUAL_PERIOD.v(), InterestPeriodType.EVERY_MONTH.ordinal());
+                int yearBasepoint = bundle.getInt(KeyStrings.LOAN_ANNUAL_INTEREST_BASEPOINT.v(), 0);
+                long repayDateMillis = bundle.getLong(KeyStrings.LOAN_REPAY_DATE.v(), -1);
+                LocalDate repayDate = repayDateMillis >= 0 ? DateTimeConverter.toLocalDate(repayDateMillis) : null;
+                boolean allowCompoundInterest = bundle.getBoolean(KeyStrings.LOAN_ALLOW_COMPOUND_INTEREST.v());
+
+                ExtraLoanEntity loan = new ExtraLoanEntity(
+                        loanTargetName,
+                        interestPeriod,
+                        yearBasepoint,
+                        allowCompoundInterest,
+                        repayDate
+                );
+                loanTask = db.extraDataDao().insertExtraLoanSingle(loan)
+                        .flatMapCompletable(loanId -> {
+                            account.setLoanId(loanId);
+                            return Completable.complete();
+                        });
+            } else {
+                loanTask = Completable.complete();
+            }
+
+            return transferTask.andThen(loanTask);
+        } else {
+            return Completable.complete();
+        }
     }
 
     /**

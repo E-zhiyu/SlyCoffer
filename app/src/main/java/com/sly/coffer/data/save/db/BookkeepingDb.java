@@ -16,16 +16,18 @@ import com.sly.coffer.data.save.db.converters.UriConverter;
 import com.sly.coffer.data.save.db.daos.AccessibilityRuleDao;
 import com.sly.coffer.data.save.db.daos.AccountDao;
 import com.sly.coffer.data.save.db.daos.BudgetDao;
+import com.sly.coffer.data.save.db.daos.ExtraDataDao;
 import com.sly.coffer.data.save.db.daos.NotificationRuleDao;
 import com.sly.coffer.data.save.db.daos.TagDao;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleTagRefEntity;
-import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
@@ -34,8 +36,6 @@ import com.sly.coffer.data.save.db.entities.NotificationRuleGroupRefEntity;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
-import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
-import com.sly.coffer.data.save.db.entities.NotificationRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleTagRefEntity;
 
 import java.util.List;
@@ -45,27 +45,26 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 
 @Database(
         entities = {
-                BudgetEntity.class,
-                BudgetTagRefEntity.class,
+                AccountEntity.class,
+                AccountTagRefEntity.class,
                 NotificationRuleEntity.class,
-                NotificationRuleTransferEntity.class,
                 NotificationRuleTagRefEntity.class,
                 NotificationRuleGroupEntity.class,
                 NotificationRuleGroupRefEntity.class,
-                AccountEntity.class,
-                AccountTransferEntity.class,
-                AccountTagRefEntity.class,
+                CapturedNotificationEntity.class,
+                ExtraTransferEntity.class,
+                ExtraLoanEntity.class,
                 MediaEntity.class,
                 TagEntity.class,
                 TagGroupEntity.class,
-                CapturedNotificationEntity.class,
+                BudgetEntity.class,
+                BudgetTagRefEntity.class,
                 AccessibilityRuleEntity.class,
                 AccessibilityRuleTagRefEntity.class,
-                AccessibilityRuleTransferEntity.class,
                 AccessibilityRuleKeywordGroupEntity.class,
                 PickedPageEntity.class
         },
-        version = 7
+        version = 8
 )
 @TypeConverters({
         DateTimeConverter.class,
@@ -106,7 +105,8 @@ public abstract class BookkeepingDb extends RoomDatabase {
                                     DatabaseMigrations.MIGRATION_3_4,
                                     DatabaseMigrations.MIGRATION_4_5,
                                     DatabaseMigrations.MIGRATION_5_6,
-                                    DatabaseMigrations.MIGRATION_6_7
+                                    DatabaseMigrations.MIGRATION_6_7,
+                                    DatabaseMigrations.MIGRATION_7_8
                             )
                             .build();
                 }
@@ -126,6 +126,8 @@ public abstract class BookkeepingDb extends RoomDatabase {
 
     public abstract AccessibilityRuleDao accessibilityRuleDao();
 
+    public abstract ExtraDataDao extraDataDao();
+
     public abstract DataBackupDao dataBackupDao();
 
     /**
@@ -135,10 +137,8 @@ public abstract class BookkeepingDb extends RoomDatabase {
      */
     private Completable insertDefaultData() {
         return Completable.defer(() -> {
-            //默认标签分组
-            TagGroupEntity defaultGroup = new TagGroupEntity("默认分组");
-            defaultGroup.setGroupId(-1);
-            tagDao().insertTagGroup(defaultGroup);
+            //插入空外键对应的数据
+            insertEmptyForeignKeyData();
 
             //插入默认规则
             insertDefaultNotificationRule();    //默认通知规则
@@ -146,6 +146,16 @@ public abstract class BookkeepingDb extends RoomDatabase {
 
             return Completable.complete();
         });
+    }
+
+    /**
+     * 插入作为默认外键的数据
+     */
+    private void insertEmptyForeignKeyData() {
+        //默认标签分组
+        TagGroupEntity defaultGroup = new TagGroupEntity("默认分组");
+        defaultGroup.setGroupId(-1);
+        tagDao().insertTagGroup(defaultGroup);
     }
 
     /**

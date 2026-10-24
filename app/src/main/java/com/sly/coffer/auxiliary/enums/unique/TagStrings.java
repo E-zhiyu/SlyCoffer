@@ -11,6 +11,7 @@ public enum TagStrings {
     NOTIFICATION_RULE_GROUP_SELECT_BOTTOM("notification_rule_group_select_bottom"), //通知规则分组选择对话框
     NOTIFICATION_RULE_SELECT_BOTTOM("notification_rule_select_bottom"), //通知规则选择对话框
     PICKED_VIEW_BOTTOM("picked_view_bottom"),   //拾取的视图选择对话框
+    RELATED_LOAN_SELECT_BOTTOM("related_loan_select_bottom"),   //关联的借款记录选择对话框
     MEDIA_ADD_BOTTOM("media_add_bottom");       //图片添加选项弹窗
 
     private final String value;

@@ -74,7 +74,6 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
-        binding = null;
     }
 
     /**

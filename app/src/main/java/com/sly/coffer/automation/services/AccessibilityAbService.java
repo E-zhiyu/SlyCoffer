@@ -39,9 +39,9 @@ import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleKeywordGroupEntity;
-import com.sly.coffer.data.save.db.entities.AccessibilityRuleTransferEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
-import com.sly.coffer.data.save.db.entities.AccountTransferEntity;
+import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
+import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccessibilityRuleUnionModel;
 import com.sly.coffer.data.save.db.services.AccountService;
@@ -51,6 +51,7 @@ import com.sly.coffer.helpers.NotificationHelper;
 import com.sly.coffer.ui.pages.accessibility.rule.AccessibilityRuleListActivity;
 import com.sly.coffer.ui.pages.main.bookkeeping.RunningAccountInputActivity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,6 +67,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -426,44 +428,69 @@ public class AccessibilityAbService extends AccessibilityService {
     }
 
     /**
-     * 获得流水记录数据
+     * 生成确认通知的数据包
      *
      * @param amount 提取的金额数据
-     * @param model  匹配到的通知规则详情数据
-     * @return 流水数据包
+     * @param model  匹配到的规则详情数据
+     * @return 可以作为通知参数的{@link Bundle}对象
      */
     @NonNull
-    private Bundle getNewAccountData(
+    private Bundle generateBundle(
             double amount,
             @NonNull AccessibilityRuleUnionModel model
     ) {
-        //获取规则数据
+        //流水记录本体数据
+        Bundle bundle = new Bundle();
         AccessibilityRuleEntity rule = model.getRule();
-        String remark = rule.getName();                   //规则名称
-        int type = rule.getType();                          //流水种类枚举序数
+        String remark = rule.getName();                             //规则名称
+        int typeOrdinal = rule.getType();                           //流水种类枚举序数
         long[] tagIds = model.getTagList().stream()
                 .map(TagEntity::getTagId)
                 .mapToLong(Long::longValue)
-                .toArray();                                 //标签列表
-        AccessibilityRuleTransferEntity transfer = model.getTransfer(); //转账账户数据
-
-        //生成流水记录数据包
-        Bundle bundle = new Bundle();
-        bundle.putLongArray(KeyStrings.TAG_ID.v(), tagIds);                         //标签 ID
-        bundle.putLong(                                                             //日期和时间
+                .toArray();                                         //标签列表
+        bundle.putLongArray(KeyStrings.TAG_ID.v(), tagIds);         //标签 ID
+        bundle.putLong(                                             //日期和时间
                 KeyStrings.RUNNING_DATETIME.v(),
                 DateTimeConverter.fromLocalDateTime(LocalDateTime.now())
         );
-        bundle.putInt(KeyStrings.RUNNING_TYPE.v(), type);                           //种类
-        bundle.putDouble(KeyStrings.RUNNING_AMOUNT.v(), amount);                    //金额
-        bundle.putString(KeyStrings.RUNNING_REMARK.v(), remark);                    //备注
-        if (type == AccountType.TRANSFER.ordinal() && transfer != null) {
+        bundle.putInt(KeyStrings.RUNNING_TYPE.v(), typeOrdinal);    //种类
+        bundle.putDouble(KeyStrings.RUNNING_AMOUNT.v(), amount);    //金额
+        bundle.putString(KeyStrings.RUNNING_REMARK.v(), remark);    //备注
+
+        //转账额外数据
+        AccountType type = AccountType.values()[typeOrdinal];
+        ExtraTransferEntity transfer = model.getTransfer();
+        if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER) && transfer != null) {
             String exportAccount = transfer.getExportAccount();
             String importAccount = transfer.getImportAccount();
             bundle.putString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v(), exportAccount); //转出账户
             bundle.putString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v(), importAccount); //转入账户
         }
-        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TYPE.v(), AutoBookkeepingType.ACCESSIBILITY.ordinal());   //自动记账种类
+        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TAG.v(), AutoBookkeepingType.NOTIFICATION.ordinal());    //自动记账种类
+
+        //借款额外数据
+        ExtraLoanEntity loan = model.getLoan();
+        if (type.hasExtraData(AccountType.DATA_FLAG_LOAN) && loan != null) {
+            String loanTargetName = loan.getLoanTargetName();
+            int interestPeriod = loan.getInterestPeriodType();
+            int yearBasepoint = loan.getYearBasepoint();
+            LocalDate repayDate = loan.getRepayDate();
+            boolean allowCompoundInterest = loan.isAllowCompoundInterest();
+
+            bundle.putString(KeyStrings.LOAN_TARGET_NAME.v(), loanTargetName);
+            bundle.putInt(KeyStrings.LOAN_INTEREST_ACCRUAL_PERIOD.v(), interestPeriod);
+            bundle.putInt(KeyStrings.LOAN_ANNUAL_INTEREST_BASEPOINT.v(), yearBasepoint);
+            if (repayDate != null) {
+                bundle.putLong(KeyStrings.LOAN_REPAY_DATE.v(), DateTimeConverter.fromLocalDate(repayDate));
+            }
+            bundle.putBoolean(KeyStrings.LOAN_ALLOW_COMPOUND_INTEREST.v(), allowCompoundInterest);
+        }
+
+        //还款额外数据
+        Long repayAccountId = rule.getRepayAccountId();
+        if (type.hasExtraData(AccountType.DATA_FLAG_REPAY) && repayAccountId != null) {
+            bundle.putLong(KeyStrings.REPAY_ACCOUNT_ID.v(), repayAccountId);
+        }
 
         return bundle;
     }
@@ -477,7 +504,7 @@ public class AccessibilityAbService extends AccessibilityService {
     private void sendConfirmNotification(double amount, @NonNull AccessibilityRuleUnionModel model) {
         //生成数据包
         AccessibilityRuleEntity rule = model.getRule();
-        Bundle bundle = getNewAccountData(amount, model);
+        Bundle bundle = generateBundle(amount, model);
 
         //生成通知唯一标识符
         String ruleName = rule.getName();
@@ -538,8 +565,8 @@ public class AccessibilityAbService extends AccessibilityService {
         String channelID = ChannelInfo.AUTO_BOOKKEEPING.getId();
         String content = String.format(
                 Locale.getDefault(),
-                "“%s”产生了一条%s记录，金额为%.2f，请展开通知确认是否入账。",
-                ruleName, AccountType.values()[rule.getType()].getTitle(), amount
+                "“%s”产生了一条%s记录，金额为%s，请展开通知确认是否入账。",
+                ruleName, AccountType.values()[rule.getType()].getTitle(), TextHelper.abbreviate(amount, TextHelper.THRESHOLD_MILLION)
         );
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelID)
                 .setSmallIcon(R.mipmap.ic_launcher)
@@ -639,26 +666,26 @@ public class AccessibilityAbService extends AccessibilityService {
         //解析规则数据
         AccessibilityRuleEntity rule = model.getRule();
         String remark = rule.getName();
-        int type = rule.getType();
-        AccessibilityRuleTransferEntity ruleTransfer = model.getTransfer();
-        String exportAccount = "";
-        String importAccount = "";
-        if (ruleTransfer != null) {
-            exportAccount = ruleTransfer.getExportAccount();
-            importAccount = ruleTransfer.getImportAccount();
-        }
+        int typeOrdinal = rule.getType();
         List<Long> tagIdList = model.getTagList().stream()
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
 
         //实例化实体类
-        AccountEntity account = new AccountEntity(amount, remark, type, LocalDateTime.now(), AutoBookkeepingType.ACCESSIBILITY.ordinal());
-        AccountTransferEntity transfer = new AccountTransferEntity(exportAccount, importAccount);
+        AccountEntity account = new AccountEntity(
+                amount,
+                remark,
+                typeOrdinal,
+                LocalDateTime.now(),
+                AutoBookkeepingType.ACCESSIBILITY.ordinal()
+        );
+        account.setRepayAccountId(rule.getRepayAccountId());    //还款关联的借款记录
 
         //保存数据
         String ruleName = rule.getName();
         int notificationId = (int) (rule.getRuleId() + System.currentTimeMillis() + NotificationID.AUTO_BOOKKEEPING_CONFIRM.ordinal());
-        disposable.add(AccountService.addNewAccount(account, transfer, null, tagIdList, this)
+        disposable.add(saveExtraDataFirstly(account, model)
+                .andThen(AccountService.addNewAccount(account, null, tagIdList, this))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
@@ -666,8 +693,8 @@ public class AccessibilityAbService extends AccessibilityService {
                             //创建通知构建器
                             String content = String.format(
                                     Locale.getDefault(),
-                                    "“%s”生成的%s记录已自动入账，金额为%.2f，点击查看详情。",
-                                    ruleName, AccountType.values()[rule.getType()].getTitle(), amount
+                                    "“%s”生成的%s记录已自动入账，金额为%s，点击查看详情。",
+                                    ruleName, AccountType.values()[rule.getType()].getTitle(), TextHelper.abbreviate(amount, TextHelper.THRESHOLD_MILLION)
                             );
                             String channelID = ChannelInfo.AUTO_BOOKKEEPING.getId();
                             PendingIntent accountModifyPendingIntent = getAccountDetailPendingIntent(accountId);
@@ -694,6 +721,72 @@ public class AccessibilityAbService extends AccessibilityService {
                         }
                 )
         );
+    }
+
+    /**
+     * 保存流水记录的额外数据
+     *
+     * @param account 流水记录数据
+     * @param model   无障碍规则数据模型
+     * @return 是否完成
+     */
+    private Completable saveExtraDataFirstly(AccountEntity account, @NonNull AccessibilityRuleUnionModel model) {
+        BookkeepingDb db = BookkeepingDb.getInstance(this);
+        int typeOrdinal = model.getRule().getType();
+        AccountType type = AccountType.values()[typeOrdinal];
+        if (type.hasExtraData()) {
+            //判断是否需要保存额外数据
+            boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
+            boolean isLoan = type.hasExtraData(AccountType.DATA_FLAG_LOAN);
+
+            //转账额外数据
+            Completable transferTask, loanTask;
+            ExtraTransferEntity ruleTransfer = model.getTransfer();
+            if (isTransfer && ruleTransfer != null) {
+                String exportAccount = ruleTransfer.getExportAccount();
+                String importAccount = ruleTransfer.getImportAccount();
+                ExtraTransferEntity transfer = new ExtraTransferEntity(
+                        exportAccount,
+                        importAccount
+                );
+                transferTask = db.extraDataDao().insertExtraTransferSingle(transfer)
+                        .flatMapCompletable(transferId -> {
+                            account.setTransferId(transferId);
+                            return Completable.complete();
+                        });
+            } else {
+                transferTask = Completable.complete();
+            }
+
+            //借款额外数据
+            ExtraLoanEntity ruleLoan = model.getLoan();
+            if (isLoan && ruleLoan != null) {
+                String loanTargetName = ruleLoan.getLoanTargetName();
+                int interestPeriod = ruleLoan.getInterestPeriodType();
+                int yearBasepoint = ruleLoan.getYearBasepoint();
+                LocalDate repayDate = ruleLoan.getRepayDate();
+                boolean allowCompoundInterest = ruleLoan.isAllowCompoundInterest();
+
+                ExtraLoanEntity loan = new ExtraLoanEntity(
+                        loanTargetName,
+                        interestPeriod,
+                        yearBasepoint,
+                        allowCompoundInterest,
+                        repayDate
+                );
+                loanTask = db.extraDataDao().insertExtraLoanSingle(loan)
+                        .flatMapCompletable(loanId -> {
+                            account.setLoanId(loanId);
+                            return Completable.complete();
+                        });
+            } else {
+                loanTask = Completable.complete();
+            }
+
+            return transferTask.andThen(loanTask);
+        } else {
+            return Completable.complete();
+        }
     }
 
     /**
