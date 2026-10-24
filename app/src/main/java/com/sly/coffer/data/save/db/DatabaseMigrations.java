@@ -104,7 +104,7 @@ public class DatabaseMigrations {
             //将需要重建的旧表数据迁移到新表（不包含转账账户等数据）
             db.execSQL("INSERT INTO accountsNew (accountId, amount, remark, type, dateTime, autoTag) SELECT accountId, amount, remark, type, dateTime, autoTag FROM accounts");
             db.execSQL("INSERT INTO notificationRulesNew (ruleId, name, type, packageName, targetTitle, contentRegex, captureGroupPos, enabled) SELECT ruleId, name, type, packageName, targetTitle, contentRegex, captureGroupPos, enabled FROM notificationRules");
-            db.execSQL("INSERT INTO accessibilityRulesNew (ruleId, name, type, enabled, packageName, activityName) SELECT ruleId, name, type, enabled, packageName, activityName FROM accessibilityRulesNew");
+            db.execSQL("INSERT INTO accessibilityRulesNew (ruleId, name, type, enabled, packageName, activityName) SELECT ruleId, name, type, enabled, packageName, activityName FROM accessibilityRules");
 
             //迁移流水记录的转账账户数据
             Cursor accountTransferCursor = db.query("SELECT accountId, exportAccount, importAccount FROM accountTransfers");
