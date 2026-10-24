@@ -65,6 +65,15 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (!PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.isGranted(this)) {
+            AutoBookKeepingPreference.setNotificationCapture(this,false);
+            binding.startStopFab.setImageResource(R.drawable.outline_play_arrow_24);
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
@@ -136,6 +145,10 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
                 binding.startStopFab.setImageResource(R.drawable.outline_play_arrow_24);
                 Toast.makeText(this, "已关闭通知捕获", Toast.LENGTH_SHORT).show();
             } else {
+                binding.startStopFab.setImageResource(R.drawable.outline_pause_24);
+                AutoBookKeepingPreference.setNotificationCapture(this, true);
+
+                //若没有权限则跳转到权限设置界面
                 if (!PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.isGranted(this)) {
                     Toast.makeText(this, "请开启通知监听服务", Toast.LENGTH_SHORT).show();
                     Intent intent = PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.getIntent(this);
@@ -143,8 +156,6 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
                     return;
                 }
 
-                AutoBookKeepingPreference.setNotificationCapture(this, true);
-                binding.startStopFab.setImageResource(R.drawable.outline_pause_24);
                 Toast.makeText(this, "通知捕获已开始，将在24小时后关闭", Toast.LENGTH_SHORT).show();
             }
         });
