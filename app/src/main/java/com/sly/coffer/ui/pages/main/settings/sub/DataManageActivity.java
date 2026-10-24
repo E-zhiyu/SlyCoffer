@@ -496,7 +496,7 @@ public class DataManageActivity extends AppCompatActivity {
                         String toast;
                         switch (workInfo.getState()) {
                             case SUCCEEDED:
-                                toast = "操作完成，请在通知查看详情";
+                                toast = "操作完成";
                                 break;
                             case CANCELLED:
                                 toast = "操作已取消";
@@ -504,7 +504,7 @@ public class DataManageActivity extends AppCompatActivity {
                                 break;
                             case FAILED:
                             default:
-                                toast = "操作出错，请在通知查看详情";
+                                toast = "发生错误，请在通知查看详情";
                         }
 
                         dialog.dismiss();
