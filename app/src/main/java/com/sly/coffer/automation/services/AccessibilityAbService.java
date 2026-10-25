@@ -25,7 +25,7 @@ import androidx.core.app.TaskStackBuilder;
 import androidx.core.content.ContextCompat;
 
 import com.sly.coffer.R;
-import com.sly.coffer.automation.broadcast.AbNotificationActionsReceiver;
+import com.sly.coffer.automation.broadcast.AbActionsReceiver;
 import com.sly.coffer.automation.broadcast.BroadcastActions;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.ChannelInfo;
@@ -548,7 +548,7 @@ public class AccessibilityAbService extends AccessibilityService {
         );
 
         //创建通知被取消的 PendingIntent
-        Intent notificationCancelIntent = new Intent(this, AbNotificationActionsReceiver.class);
+        Intent notificationCancelIntent = new Intent(this, AbActionsReceiver.class);
         notificationCancelIntent.setAction(BroadcastActions.ACTION_NOTIFICATION_CANCELED.toString());
         notificationCancelIntent.putExtra(KeyStrings.NOTIFICATION_ID.v(), notificationId);
         notificationCancelIntent.putExtras(bundle);                                         //发送流水记录数据包
@@ -581,7 +581,7 @@ public class AccessibilityAbService extends AccessibilityService {
         //创建通知点击 PendingIntent
         int clickBehaviourCode = AutoBookKeepingPreference.getNotificationClickBehaviour(this);
         if (clickBehaviourCode != NotificationClickBehaviour.NONE.getItemId()) {
-            Intent notificationClickIntent = new Intent(this, AbNotificationActionsReceiver.class);
+            Intent notificationClickIntent = new Intent(this, AbActionsReceiver.class);
             notificationClickIntent.setAction(BroadcastActions.ACTION_NOTIFICATION_CLICKED.toString());
             notificationClickIntent.putExtra(KeyStrings.NOTIFICATION_ID.v(), notificationId);
             notificationClickIntent.putExtras(bundle);                                      //发送流水记录数据
@@ -629,7 +629,7 @@ public class AccessibilityAbService extends AccessibilityService {
             RemoteInput remoteInput
     ) {
         //创建Intent
-        Intent intent = new Intent(this, AbNotificationActionsReceiver.class);
+        Intent intent = new Intent(this, AbActionsReceiver.class);
         intent.setAction(actionId);
         intent.putExtra(KeyStrings.NOTIFICATION_ID.v(), notificationId);
         intent.putExtras(dataBundle);                                   //发送流水记录数据包
@@ -715,7 +715,8 @@ public class AccessibilityAbService extends AccessibilityService {
                             );
                         },
                         e -> {
-                            //创建通知构建器
+                            //TODO:测试为什么自动记账会出错
+                            Log.e(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "无障碍记账出错\n" + e.getMessage());
                             String content = String.format(Locale.getDefault(), "保存由“%s”触发的记录时出错。", ruleName);
                             sendErrorNotification(content, rule.getRuleId());
                         }

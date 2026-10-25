@@ -12,6 +12,7 @@ public enum LogTags {
     FILE_HELPER("FileHelper"),
     ACCOUNT_INPUT("RunningAccountInputActivity"),
     NOTIFICATION_AB_SERVICE("NotificationAbService"),
+    AB_ACTIONS_RECEIVER("AbActionsReceiver"),
     PICK_ACCESSIBILITY_SERVICE("PickAccessibilityService"),
     ACCESSIBILITY_AB_SERVICE("AccessibilityAbService"),
     DATA_IO_HELPER("DataIOHelper"),

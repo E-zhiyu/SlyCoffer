@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -16,6 +17,7 @@ import com.sly.coffer.auxiliary.enums.settings.NotificationCancelBehaviour;
 import com.sly.coffer.auxiliary.enums.settings.NotificationClickBehaviour;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.types.InterestPeriodType;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
@@ -41,7 +43,7 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
-public class AbNotificationActionsReceiver extends BroadcastReceiver {
+public class AbActionsReceiver extends BroadcastReceiver {
     private final CompositeDisposable disposable = new CompositeDisposable();
 
     @Override
@@ -153,7 +155,7 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
         LocalDateTime dateTime = DateTimeConverter.toLocalDateTime(dateTimeMillis);
         AccountEntity account = new AccountEntity(amount, remark, typeOrdinal, dateTime, autoBookkeepingTag);
         long repayAccountId = bundle.getLong(KeyStrings.REPAY_ACCOUNT_ID.v(), -1);
-        account.setRepayAccountId(repayAccountId);
+        account.setRepayAccountId(repayAccountId == -1 ? null : repayAccountId);
 
         //保存数据
         disposable.add(saveExtraDataFirstly(account, bundle, typeOrdinal, context)
@@ -191,6 +193,8 @@ public class AbNotificationActionsReceiver extends BroadcastReceiver {
                             syncResult.finish();
                         },
                         e -> {
+                            Log.e(LogTags.AB_ACTIONS_RECEIVER.n(), "自动记账出错\n" + e.getMessage());
+
                             //创建通知构建器
                             String content = String.format(
                                     Locale.getDefault(),
