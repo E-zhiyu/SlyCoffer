@@ -222,7 +222,7 @@
         </receiver>
         <!-- 通知内联回复监听器 -->
         <receiver
-            android:name=".automation.broadcast.AbNotificationActionsReceiver"
+            android:name=".automation.broadcast.AbActionsReceiver"
             android:enabled="true"
             android:exported="false"
             android:label="通过自动记账确认通知进行各种操作的接收器" />
