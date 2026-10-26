@@ -384,7 +384,6 @@ public interface AccountDao {
      */
     @Query("SELECT * FROM accounts WHERE loanId IN (" +
             "   SELECT loanId FROM extraLoan" +
-            ") AND ((:getBorrow AND type = 4) OR (NOT :getBorrow AND type = 3)) " +
-            "ORDER BY dateTime DESC")
+            ") AND ((:getBorrow AND type = 4) OR (NOT :getBorrow AND type = 3))")
     Single<List<AccountEntity>> getAccountWithLoanDataSingle(boolean getBorrow);
 }
