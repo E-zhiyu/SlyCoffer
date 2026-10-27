@@ -278,6 +278,8 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
         } else if (model instanceof TagListUiModel.Item) {
             if (position == getItemCount() - 1 || getItem(position + 1) instanceof TagListUiModel.Group) {
                 AppearanceHelper.setRadiusStyle(view, RadiusStyle.BOTTOM);
+            } else if (position == 0 && getItem(position + 1) instanceof TagListUiModel.Item) {
+                AppearanceHelper.setRadiusStyle(view, RadiusStyle.TOP);
             } else {
                 AppearanceHelper.setRadiusStyle(view, RadiusStyle.MIDDLE);
             }

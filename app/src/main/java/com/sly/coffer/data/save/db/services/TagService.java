@@ -14,12 +14,15 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
 
 public class TagService {
+    final static int NO_GROUP_KEY = -1; //没有分组的分组外键值
+
     /**
      * 获取分组后的标签数据
      *
@@ -37,7 +40,7 @@ public class TagService {
                     //将标签数据按照分组编号分组
                     Map<Long, List<TagEntity>> groupedTagMap = tagList.stream()
                             .collect(Collectors.groupingBy(
-                                    TagEntity::getGroupId,
+                                    tag -> tag.getGroupId() != null ? tag.getGroupId() : NO_GROUP_KEY,
                                     LinkedHashMap::new,
                                     Collectors.toList()
                             ));
@@ -52,8 +55,13 @@ public class TagService {
                     //生成带有分隔符的标签列表
                     List<TagGroupUiModel> resultList = new ArrayList<>();
                     for (Map.Entry<Long, List<TagEntity>> entry : groupedTagMap.entrySet()) {
-                        long groupId = entry.getKey();
-                        String groupName = groupNameMap.getOrDefault(groupId, "<未知分组>");
+                        Long groupId = entry.getKey();
+                        String groupName;
+                        if (groupId != NO_GROUP_KEY) {
+                            groupName = groupNameMap.getOrDefault(groupId, "<未知分组>");
+                        } else {
+                            groupName = "默认分组";
+                        }
                         resultList.add(new TagGroupUiModel.Separator(groupName));
 
                         resultList.add(new TagGroupUiModel.Item(entry.getValue()));
@@ -76,26 +84,61 @@ public class TagService {
                 dao.getAllTagFlowable(0, null),
                 dao.getAllTagGroupFlowable(),
                 (tagList, groupList) -> {
-                    //将标签数据按照分组编号分组
-                    Map<Long, List<TagEntity>> groupedTagMap = tagList.stream()
-                            .collect(Collectors.groupingBy(
-                                    TagEntity::getGroupId,
-                                    LinkedHashMap::new,
-                                    Collectors.toList()
+                    //按照分组编号分组
+                    Map<Long, TagGroupEntity> groupMap = groupList.stream()
+                            .collect(Collectors.toMap(
+                                    TagGroupEntity::getGroupId,
+                                    Function.identity()
                             ));
 
-                    //生成带有分隔符的标签列表
-                    List<TagListUiModel> resultList = new ArrayList<>();
-                    for (TagGroupEntity group : groupList) {
-                        resultList.add(new TagListUiModel.Group(group));
+                    //构建标签分组 Map，并先填入已有的分组
+                    Map<Long, List<TagEntity>> groupedTagMap = groupList.stream()
+                            .collect(Collectors.toMap(
+                                    TagGroupEntity::getGroupId,
+                                    group -> new ArrayList<>()
+                            ));
 
-                        List<TagEntity> tagInGroupList = groupedTagMap.get(group.getGroupId());
-                        if (tagInGroupList != null) {
-                            List<TagListUiModel.Item> itemList = tagInGroupList.stream()
-                                    .map(TagListUiModel.Item::new)
-                                    .collect(Collectors.toList());
-                            resultList.addAll(itemList);
+                    //将有分组的标签填入分组 Map
+                    List<TagEntity> tagWithGroupList = tagList.stream()
+                            .filter(tag -> tag.getGroupId() != null)
+                            .collect(Collectors.toList());
+                    for (TagEntity tag : tagWithGroupList) {
+                        Long groupId = tag.getGroupId();
+                        List<TagEntity> listInMap = groupedTagMap.get(groupId);
+                        if (listInMap != null) {
+                            listInMap.add(tag);
+                        } else {
+                            List<TagEntity> newList = new ArrayList<>();
+                            newList.add(tag);
+                            groupedTagMap.put(groupId, newList);
                         }
+                    }
+
+                    //填充没有分组的标签
+                    List<TagListUiModel> resultList = tagList.stream()
+                            .filter(tag -> tag.getGroupId() == null)
+                            .map(TagListUiModel.Item::new)
+                            .collect(Collectors.toList());
+
+                    //填充有分组的标签
+                    for (Map.Entry<Long, List<TagEntity>> entry : groupedTagMap.entrySet()) {
+                        Long groupId = entry.getKey();
+
+                        //插入分组
+                        TagGroupEntity group = groupMap.get(groupId);
+                        if (group != null) {
+                            resultList.add(new TagListUiModel.Group(group));
+                        } else {
+                            TagGroupEntity unknowGroup = new TagGroupEntity("<未知分组>");
+                            unknowGroup.setGroupId(groupId);
+                            resultList.add(new TagListUiModel.Group(unknowGroup));
+                        }
+
+                        //插入标签
+                        List<TagListUiModel.Item> itemList = entry.getValue().stream()
+                                .map(TagListUiModel.Item::new)
+                                .collect(Collectors.toList());
+                        resultList.addAll(itemList);
                     }
 
                     return resultList;
