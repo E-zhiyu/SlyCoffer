@@ -206,6 +206,7 @@ public class DatabaseMigrations {
     };
 
     //将 TagEntity 的 groupId 由 long 改为 Long
+    //将标签的借入和借出作用域取消勾选
     static final Migration MIGRATION_8_9 = new Migration(8, 9) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase db) {
@@ -232,6 +233,9 @@ public class DatabaseMigrations {
 
             //重启外键
             db.execSQL("PRAGMA foreign_keys = ON");
+
+            //取消勾选借入和借出作用域
+            db.execSQL("UPDATE tags SET scope = scope | 24");
         }
     };
 }
