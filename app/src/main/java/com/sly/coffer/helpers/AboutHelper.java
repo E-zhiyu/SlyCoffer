@@ -12,6 +12,10 @@ import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 public class AboutHelper {
     private static final String UPDATE_LOG_MD = "# v1.13.4\n" +
             "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复无障碍记账的流水记录被标记为通知记账的BUG\n" +
+            "\n" +
             "### 修改的内容\n" +
             "\n" +
             "- 修改不计复利的利息计算逻辑，现在中途还款会抵消本金，而不是一直计息到“今天”再减去总还款\n" +
