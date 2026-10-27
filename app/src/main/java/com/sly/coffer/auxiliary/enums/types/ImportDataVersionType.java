@@ -27,7 +27,7 @@ public enum ImportDataVersionType {
      * @param versionCode 应用版本号
      * @return 数据版本
      */
-    public static ImportDataVersionType getDataVersionByVersionCode(int versionCode) {
+    public static ImportDataVersionType getDataVersionByVersionCode(long versionCode) {
         List<ImportDataVersionType> versionTypeList = Arrays.stream(ImportDataVersionType.values())
                 .sorted(Comparator.comparing(version -> version.versionCode))
                 .collect(Collectors.toList());

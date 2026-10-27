@@ -215,7 +215,7 @@ public class ZipHelper {
     public static Single<List<File>> unpackBackupFileWithFilter(
             Context context,
             Uri zipUri,
-            List<String> allowedFiles,
+            Set<String> allowedFiles,
             boolean includeMedia
     ) {
         return Single.fromCallable(() -> {

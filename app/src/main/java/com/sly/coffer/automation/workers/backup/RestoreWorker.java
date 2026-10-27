@@ -23,7 +23,10 @@ import com.sly.coffer.helpers.NotificationHelper;
 import com.sly.coffer.helpers.file.ZipHelper;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Completable;
@@ -43,10 +46,6 @@ public class RestoreWorker extends RxWorker {
         Data inputData = getInputData();
         String inputUriStr = inputData.getString(KeyStrings.BACKUP_TARGET.v());
         boolean[] choices = inputData.getBooleanArray(KeyStrings.BACKUP_CHOICES.v());
-        int importDataVersionTypeOrdinal = inputData.getInt(
-                KeyStrings.IMPORT_DATA_VERSION_TYPE.v(),
-                ImportDataVersionType.values().length - 1
-        );
 
         //判断输入参数是否为空
         if (inputUriStr == null) {
@@ -60,31 +59,44 @@ public class RestoreWorker extends RxWorker {
             return Single.just(Result.failure());
         }
 
-        //获取需要解压的文件名列表
-        List<String> allowedFileNameList = Arrays.stream(BackupDataType.values())
-                .filter(type -> choices[type.ordinal()])
-                .map(BackupDataType::getLatestVersionFileName)
-                .collect(Collectors.toList());
-        boolean includeMedia = choices[BackupDataType.RUNNING_ACCOUNT.ordinal()];
-
         //解压文件并写入数据
         sendProgressNotification(context);  //发送通知
         Uri uri = Uri.parse(inputUriStr);
         List<ImportResult> resultFlagList = Arrays.stream(BackupDataType.values())
                 .map(type -> ImportResult.missed())
                 .collect(Collectors.toList());  //存有数据导入结果的列表
-        ImportDataVersionType[] versionTypes = ImportDataVersionType.values();
-        return ZipHelper.unpackBackupFileWithFilter(context, uri, allowedFileNameList, includeMedia)
+        AtomicReference<ImportDataVersionType> versionType = new AtomicReference<>();
+        return ZipHelper.getDataInfoFromBackupFile(context, uri)
+                .flatMap(infoMap -> {
+                    if (infoMap == null) {
+                        throw new RuntimeException("文件格式不受支持，请选择正确的文件");
+                    }
+
+                    //识别数据版本
+                    versionType.set(ImportDataVersionType.getDataVersionByVersionCode(infoMap.getAppVersionCode()));
+
+                    //获取需要解压的文件名
+                    Set<String> allowedFileNameSet = new HashSet<>();
+                    List<String> fileNameList = infoMap.getFileNames();
+                    for (int i = 0; i < fileNameList.size(); i++) {
+                        String fileName = fileNameList.get(i);
+                        if (fileName != null && choices[i]) {
+                            allowedFileNameSet.add(fileName);
+                        }
+                    }
+
+                    boolean includeMedia = choices[BackupDataType.RUNNING_ACCOUNT.ordinal()];
+                    return ZipHelper.unpackBackupFileWithFilter(context, uri, allowedFileNameSet, includeMedia);
+                })
                 .flatMapObservable(Observable::fromIterable)
                 .flatMapCompletable(file -> {
                     //根据文件名判断数据类型
-                    ImportDataVersionType importDataVersionType = versionTypes[importDataVersionTypeOrdinal];
-                    BackupDataType type = BackupDataType.fromFileName(file.getName(), importDataVersionType);
+                    BackupDataType type = BackupDataType.fromFileName(file.getName(), versionType.get());
 
                     //使用对应的备份Helper导入数据
                     if (type != null) {
                         BackupHelperBase<?, ?> helper = type.createBackupHelper(context);
-                        return helper.importDataFromTempFile(context, file, importDataVersionType)
+                        return helper.importDataFromTempFile(context, file, versionType.get())
                                 .flatMapCompletable(resultFlag -> {
                                     resultFlagList.set(type.ordinal(), resultFlag); //更新结果
                                     return Completable.complete();
