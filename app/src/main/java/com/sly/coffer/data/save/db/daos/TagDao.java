@@ -36,7 +36,9 @@ public interface TagDao {
      * @param scopePow 作用域标识符，传递0获取所有作用域的标签
      * @return 所有标签组成的列表，支持响应式更新
      */
-    @Query("SELECT * FROM tags WHERE scope & :scopePow = 0 AND (:exceptedTagIds IS NULL OR tagId NOT IN (:exceptedTagIds)) ORDER BY groupId")
+    @Query("SELECT * FROM tags " +
+            "WHERE scope & :scopePow = 0 AND (:exceptedTagIds IS NULL OR tagId NOT IN (:exceptedTagIds)) " +
+            "ORDER BY groupId")
     Flowable<List<TagEntity>> getAllTagFlowable(int scopePow, long[] exceptedTagIds);
 
     /**

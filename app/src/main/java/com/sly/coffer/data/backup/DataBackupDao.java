@@ -49,6 +49,7 @@ import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -141,9 +142,15 @@ public interface DataBackupDao {
         clearTag();
 
         //标签分组数据
+        Set<Long> groupIdSet = new HashSet<>();
         try {
             List<TagGroupPojo> tagGroupPojoList = data.getTagGroupList();
             if (tagGroupPojoList != null && !tagGroupPojoList.isEmpty()) {
+                //保存分组编号
+                for (TagGroupPojo pojo : tagGroupPojoList) {
+                    groupIdSet.add(pojo.getGroupId());
+                }
+
                 writeTagGroup(mapper.toTagGroupEntityList(tagGroupPojoList));
             }
         } catch (Exception e) {
@@ -154,6 +161,13 @@ public interface DataBackupDao {
         try {
             List<TagPojo> tagPojoList = data.getTagList();
             if (tagPojoList != null && !tagPojoList.isEmpty()) {
+                //将无效的外键改为 null
+                for (TagPojo pojo : tagPojoList) {
+                    if (!groupIdSet.contains(pojo.getGroupId())) {
+                        pojo.setGroupId(null);
+                    }
+                }
+
                 writeTag(mapper.toTagEntityList(tagPojoList));
             }
         } catch (Exception e) {
