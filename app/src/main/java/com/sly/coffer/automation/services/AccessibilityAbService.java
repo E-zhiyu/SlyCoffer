@@ -715,7 +715,6 @@ public class AccessibilityAbService extends AccessibilityService {
                             );
                         },
                         e -> {
-                            //TODO:测试为什么自动记账会出错
                             Log.e(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "无障碍记账出错\n" + e.getMessage());
                             String content = String.format(Locale.getDefault(), "保存由“%s”触发的记录时出错。", ruleName);
                             sendErrorNotification(content, rule.getRuleId());
