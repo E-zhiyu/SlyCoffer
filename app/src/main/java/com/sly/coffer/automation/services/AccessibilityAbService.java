@@ -466,7 +466,7 @@ public class AccessibilityAbService extends AccessibilityService {
             bundle.putString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v(), exportAccount); //转出账户
             bundle.putString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v(), importAccount); //转入账户
         }
-        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TAG.v(), AutoBookkeepingType.NOTIFICATION.ordinal());    //自动记账种类
+        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TAG.v(), AutoBookkeepingType.ACCESSIBILITY.ordinal());    //自动记账种类
 
         //借款额外数据
         ExtraLoanEntity loan = model.getLoan();
