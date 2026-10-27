@@ -1,17 +1,25 @@
 package com.sly.coffer.data.backup.helpers;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 
+import androidx.annotation.NonNull;
 import androidx.room.RoomDatabase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.classes.ImportResult;
+import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
+import com.sly.coffer.data.backup.maps.DataInfoMap;
+import com.sly.coffer.helpers.AboutHelper;
 import com.sly.coffer.helpers.file.FileHelper;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
@@ -91,7 +99,7 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
     /**
      * 从临时文件中导入数据
      *
-     * @param context 上下文
+     * @param context     上下文
      * @param file        临时文件对象
      * @param versionType 导入数据的版本种类
      * @return 带有导入结果的{@link Single}对象
@@ -151,5 +159,23 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
                 return Completable.error(e);
             }
         });
+    }
+
+    /**
+     * 生成备份数据信息集合
+     *
+     * @param context 上下文
+     * @param choice  备份数据选择情况
+     * @return 备份数据信息集合
+     * @throws PackageManager.NameNotFoundException 当前包名未找到时引发的异常
+     */
+    @NonNull
+    public static DataInfoMap generateDataInfo(Context context, boolean[] choice) throws PackageManager.NameNotFoundException {
+        long versionCode = AboutHelper.getVersionCode(context);
+        List<String> fileNameList = Arrays.stream(BackupDataType.values())
+                .map(type -> choice[type.ordinal()] ? type.getLatestVersionFileName() : null)
+                .collect(Collectors.toList());
+
+        return new DataInfoMap(fileNameList, versionCode);
     }
 }

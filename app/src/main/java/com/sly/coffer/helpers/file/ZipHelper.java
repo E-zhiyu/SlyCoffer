@@ -7,9 +7,12 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.enums.DirectoryPaths;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
+import com.sly.coffer.data.backup.maps.DataInfoMap;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -28,6 +31,8 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 
 public class ZipHelper {
+    private final static String DATA_INFO_JSON = "DataInfo.json";
+
     /**
      * 将源文件或目录打包到 ZipOutputStream
      *
@@ -155,6 +160,46 @@ public class ZipHelper {
             }
 
             return fileNameSet;
+        });
+    }
+
+    /**
+     * 从备份文件中获取备份数据信息
+     *
+     * @param context 上下文
+     * @param zipUri  指向备份文件的 Uri
+     * @return 备份数据信息
+     */
+    public static Single<DataInfoMap> getDataInfoFromBackupFile(Context context, Uri zipUri) {
+        return Single.fromCallable(() -> {
+            byte[] jsonBuffer = new byte[1024 * 8];
+            try (InputStream is = context.getContentResolver().openInputStream(zipUri);
+                 ZipInputStream zis = new ZipInputStream(is)) {
+
+                ZipEntry entry;
+                while ((entry = zis.getNextEntry()) != null) {
+                    String name = entry.getName();
+
+                    if (name.equals(DATA_INFO_JSON) && !entry.isDirectory()) {
+                        //读取文件内容
+                        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                        int len;
+                        // 读到当前条目末尾时 read 返回 -1
+                        while ((len = zis.read(jsonBuffer)) != -1) {
+                            buffer.write(jsonBuffer, 0, len);
+                        }
+                        String content = buffer.toString();
+
+                        //反序列化
+                        ObjectMapper mapper = new ObjectMapper();
+                        return mapper.readValue(content,DataInfoMap.class);
+                    } else {
+                        zis.closeEntry();
+                    }
+                }
+            }
+
+            return null;
         });
     }
 
