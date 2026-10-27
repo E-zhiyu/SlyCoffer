@@ -276,10 +276,14 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
                 );
             }
         } else if (model instanceof TagListUiModel.Item) {
-            if (position == getItemCount() - 1 || getItem(position + 1) instanceof TagListUiModel.Group) {
-                AppearanceHelper.setRadiusStyle(view, RadiusStyle.BOTTOM);
-            } else if (position == 0 && getItem(position + 1) instanceof TagListUiModel.Item) {
-                AppearanceHelper.setRadiusStyle(view, RadiusStyle.TOP);
+            if (position == 0) {
+                if (getItem(position + 1) instanceof TagListUiModel.Item) {
+                    AppearanceHelper.setRadiusStyle(view, RadiusStyle.TOP);     //在顶部且下一个是标签
+                } else {
+                    AppearanceHelper.setRadiusStyle(view, RadiusStyle.SINGLE);
+                }
+            } else if (position == getItemCount() - 1 || getItem(position + 1) instanceof TagListUiModel.Group) {
+                AppearanceHelper.setRadiusStyle(view, RadiusStyle.BOTTOM);      //在末尾或者下一个是分组
             } else {
                 AppearanceHelper.setRadiusStyle(view, RadiusStyle.MIDDLE);
             }
