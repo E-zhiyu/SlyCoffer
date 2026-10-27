@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.entities.composite.union;
 
+import androidx.annotation.Nullable;
 import androidx.room.Embedded;
 import androidx.room.Relation;
 
@@ -15,9 +16,10 @@ public class TagUnionModel {
             parentColumn = "groupId",
             entityColumn = "groupId"
     )
+    @Nullable
     private final TagGroupEntity group;
 
-    public TagUnionModel(TagEntity tag, TagGroupEntity group) {
+    public TagUnionModel(TagEntity tag, @Nullable TagGroupEntity group) {
         this.tag = tag;
         this.group = group;
     }
@@ -26,6 +28,7 @@ public class TagUnionModel {
         return tag;
     }
 
+    @Nullable
     public TagGroupEntity getGroup() {
         return group;
     }

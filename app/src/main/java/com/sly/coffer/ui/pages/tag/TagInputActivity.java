@@ -16,7 +16,7 @@ import com.google.android.material.chip.Chip;
 import com.sly.coffer.R;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.TagGroupEntity;
+import com.sly.coffer.data.save.db.entities.composite.union.TagUnionModel;
 import com.sly.coffer.data.save.db.services.TagService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityTagInputBinding;
@@ -90,13 +90,17 @@ public class TagInputActivity extends AppCompatActivity {
                             optional -> {
                                 if (optional.isEmpty()) return;
 
-                                TagEntity tag = optional.get().getTag();
-                                TagGroupEntity group = optional.get().getGroup();
-                                String tagName = tag.getName();
-                                String groupName = group.getName();
+                                TagUnionModel model = optional.get();
+                                TagEntity tag = model.getTag();
 
-                                binding.nameInput.setText(tagName);     //标签名称
-                                binding.groupInput.setText(groupName);  //分组名称
+                                //标签名称
+                                String tagName = tag.getName();
+                                binding.nameInput.setText(tagName);
+
+                                //分组名称
+                                if (model.getGroup() != null) {
+                                    binding.groupInput.setText(model.getGroup().getName());
+                                }
 
                                 //标签作用域选择
                                 scope = tag.getScope();
@@ -216,7 +220,7 @@ public class TagInputActivity extends AppCompatActivity {
         String groupName = String.valueOf(binding.groupInput.getText()).trim();
 
         //保存数据
-        TagEntity tag = new TagEntity(tagName, scope, 0);
+        TagEntity tag = new TagEntity(tagName, scope, 0L);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         final String NAME_EXISTS_EXCEPTION = "NAME_EXISTS";
         if (initBundle == null) {

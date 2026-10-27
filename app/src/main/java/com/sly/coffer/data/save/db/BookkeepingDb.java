@@ -64,7 +64,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
                 AccessibilityRuleKeywordGroupEntity.class,
                 PickedPageEntity.class
         },
-        version = 8
+        version = 9
 )
 @TypeConverters({
         DateTimeConverter.class,
@@ -106,7 +106,8 @@ public abstract class BookkeepingDb extends RoomDatabase {
                                     DatabaseMigrations.MIGRATION_4_5,
                                     DatabaseMigrations.MIGRATION_5_6,
                                     DatabaseMigrations.MIGRATION_6_7,
-                                    DatabaseMigrations.MIGRATION_7_8
+                                    DatabaseMigrations.MIGRATION_7_8,
+                                    DatabaseMigrations.MIGRATION_8_9
                             )
                             .build();
                 }
@@ -137,25 +138,11 @@ public abstract class BookkeepingDb extends RoomDatabase {
      */
     private Completable insertDefaultData() {
         return Completable.defer(() -> {
-            //插入空外键对应的数据
-            insertEmptyForeignKeyData();
-
-            //插入默认规则
             insertDefaultNotificationRule();    //默认通知规则
             insertDefaultAccessibilityRule();   //默认无障碍规则
 
             return Completable.complete();
         });
-    }
-
-    /**
-     * 插入作为默认外键的数据
-     */
-    private void insertEmptyForeignKeyData() {
-        //默认标签分组
-        TagGroupEntity defaultGroup = new TagGroupEntity("默认分组");
-        defaultGroup.setGroupId(-1);
-        tagDao().insertTagGroup(defaultGroup);
     }
 
     /**

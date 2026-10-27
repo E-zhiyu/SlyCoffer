@@ -466,7 +466,7 @@ public class AccessibilityAbService extends AccessibilityService {
             bundle.putString(KeyStrings.RUNNING_EXPORT_ACCOUNT.v(), exportAccount); //转出账户
             bundle.putString(KeyStrings.RUNNING_IMPORT_ACCOUNT.v(), importAccount); //转入账户
         }
-        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TAG.v(), AutoBookkeepingType.NOTIFICATION.ordinal());    //自动记账种类
+        bundle.putInt(KeyStrings.AUTO_BOOKKEEPING_TAG.v(), AutoBookkeepingType.ACCESSIBILITY.ordinal());    //自动记账种类
 
         //借款额外数据
         ExtraLoanEntity loan = model.getLoan();
@@ -715,7 +715,6 @@ public class AccessibilityAbService extends AccessibilityService {
                             );
                         },
                         e -> {
-                            //TODO:测试为什么自动记账会出错
                             Log.e(LogTags.ACCESSIBILITY_AB_SERVICE.n(), "无障碍记账出错\n" + e.getMessage());
                             String content = String.format(Locale.getDefault(), "保存由“%s”触发的记录时出错。", ruleName);
                             sendErrorNotification(content, rule.getRuleId());

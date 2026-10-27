@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.entities;
 
+import androidx.annotation.Nullable;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
@@ -14,7 +15,7 @@ import java.util.Objects;
                 entity = TagGroupEntity.class,
                 parentColumns = "groupId",
                 childColumns = "groupId",
-                onDelete = ForeignKey.CASCADE
+                onDelete = ForeignKey.SET_NULL
         ),
         indices = {
                 @Index(value = "tagId"),
@@ -29,9 +30,10 @@ public class TagEntity {
     private String name;    //名称
     @ColumnInfo(defaultValue = "0")
     private int scope;      //作用域
-    private long groupId;   //所属分组的编号
+    @Nullable
+    private Long groupId;   //所属分组的编号
 
-    public TagEntity(String name, int scope, long groupId) {
+    public TagEntity(String name, int scope, @Nullable Long groupId) {
         this.name = name;
         this.scope = scope;
         this.groupId = groupId;
@@ -61,7 +63,8 @@ public class TagEntity {
         this.scope = scope;
     }
 
-    public long getGroupId() {
+    @Nullable
+    public Long getGroupId() {
         return groupId;
     }
 

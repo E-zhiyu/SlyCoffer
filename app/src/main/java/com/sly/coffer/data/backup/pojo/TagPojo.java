@@ -7,7 +7,7 @@ public class TagPojo {
     private long tagId;
     private String name;
     private int scope;
-    private long groupId;
+    private Long groupId;
 
     public TagPojo() {
     }
@@ -36,11 +36,11 @@ public class TagPojo {
         this.scope = scope;
     }
 
-    public long getGroupId() {
+    public Long getGroupId() {
         return groupId;
     }
 
-    public void setGroupId(long groupId) {
+    public void setGroupId(Long groupId) {
         this.groupId = groupId;
     }
 }

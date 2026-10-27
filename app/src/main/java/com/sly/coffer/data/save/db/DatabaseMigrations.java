@@ -204,4 +204,38 @@ public class DatabaseMigrations {
             db.execSQL("PRAGMA foreign_keys = ON");
         }
     };
+
+    //将 TagEntity 的 groupId 由 long 改为 Long
+    //将标签的借入和借出作用域取消勾选
+    static final Migration MIGRATION_8_9 = new Migration(8, 9) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            //关闭外键
+            db.execSQL("PRAGMA foreign_keys = OFF");
+
+            //创建新表
+            db.execSQL("CREATE TABLE IF NOT EXISTS `tagsNew` (`tagId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `scope` INTEGER NOT NULL DEFAULT 0, `groupId` INTEGER, FOREIGN KEY(`groupId`) REFERENCES `tagGroups`(`groupId`) ON UPDATE NO ACTION ON DELETE SET NULL )");
+
+            //迁移数据
+            db.execSQL("INSERT INTO tagsNew (name, scope, groupId) SELECT name, scope, groupId FROM tags");
+            db.execSQL("UPDATE tagsNew SET groupId = NULL WHERE groupId < 0");
+
+            //删除旧表和旧默认分组
+            db.execSQL("DROP TABLE tags");
+            db.execSQL("DELETE FROM tagGroups WHERE groupId < 0");
+
+            //重命名新表并重建索引
+            db.execSQL("ALTER TABLE tagsNew RENAME TO tags");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_tags_tagId` ON `tags` (`tagId`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_tags_scope` ON `tags` (`scope`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_tags_groupId` ON `tags` (`groupId`)");
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_tags_name` ON `tags` (`name`)");
+
+            //重启外键
+            db.execSQL("PRAGMA foreign_keys = ON");
+
+            //取消勾选借入和借出作用域
+            db.execSQL("UPDATE tags SET scope = scope | 24");
+        }
+    };
 }

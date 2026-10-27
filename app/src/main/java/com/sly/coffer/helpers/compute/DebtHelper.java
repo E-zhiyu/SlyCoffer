@@ -156,12 +156,50 @@ public class DebtHelper {
                 debt = compounded - repayment;
             }
         } else {
+            debt = principal;
+            double acInterest = 0;  //累计的没有抵消完的利息
+
+            //将还款记录根据日期分组
+            Map<LocalDate, List<AccountEntity>> repayAccountMap = model.getRepaymentList().stream()
+                    .collect(Collectors.groupingBy(
+                            account -> account.getDateTime().toLocalDate(),
+                            HashMap::new,
+                            Collectors.toList()
+                    ));
+            List<LocalDate> repayDateList = repayAccountMap.keySet().stream()
+                    .sorted()
+                    .collect(Collectors.toList());
+
+            //每次还款时抵消利息，多余的还款再抵消本金
+            for (LocalDate repayDate : repayDateList) {
+                long dayDifference = ChronoUnit.DAYS.between(lastSettleDate, repayDate);
+                lastSettleDate = repayDate;
+
+                //计算利息和还款
+                double interest = debt * dayDifference * yearBasepoint / 360 / 10000;
+                List<AccountEntity> repaymentList = repayAccountMap.get(repayDate);
+                double repayment;
+                if (repaymentList != null) {
+                    repayment = repaymentList.stream()
+                            .mapToDouble(AccountEntity::getAmount)
+                            .sum();
+                } else {
+                    repayment = 0;
+                }
+
+                //抵消利息/累加利息
+                if (repayment > interest + acInterest) {
+                    debt -= repayment - interest - acInterest;
+                    acInterest = 0;
+                } else {
+                    acInterest += interest - repayment;
+                }
+            }
+
+            //计算最后一次还款到现在累计的本息和
             long dayDifference = ChronoUnit.DAYS.between(lastSettleDate, LocalDate.now());
-            double interest = principal * dayDifference * yearBasepoint / 360 / 10000;
-            double repayment = model.getRepaymentList().stream()
-                    .mapToDouble(AccountEntity::getAmount)
-                    .sum();
-            debt = principal + interest - repayment;
+            double interest = debt * dayDifference * yearBasepoint / 360 / 10000;
+            debt += interest + acInterest;
         }
 
         return Math.max(debt, 0);
