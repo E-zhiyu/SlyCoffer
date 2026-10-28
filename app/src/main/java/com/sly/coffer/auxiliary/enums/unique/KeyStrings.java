@@ -8,8 +8,6 @@ public enum KeyStrings {
     LOAN_ALLOW_COMPOUND_INTEREST("loan_allow_compound_interest"),   //是否允许复利
     REPAY_ACCOUNT_ID("repay_account_id"),                   //作为还款记录时，关联的借款记录的编号
     AUTO_BOOKKEEPING_TAG("auto_bookkeeping_type"),          //自动记账的种类
-    IMPORT_DATA_VERSION_TYPE("import_data_version_type"),   //导入数据时的数据版本种类
-    BACKUP_DATA_INFO_MAP("backup_data_info_map"),           //TODO:备份时的信息
     BACKUP_CHOICES("backup_choices"),                       //备份时的选择情况
     BACKUP_TARGET("backup_target"),                         //备份时的目标文件(夹)
     RUNNING_EXPORT_ACCOUNT("running_export_account"),       //流水转出账户

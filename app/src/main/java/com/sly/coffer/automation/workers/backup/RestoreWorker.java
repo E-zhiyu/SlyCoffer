@@ -66,10 +66,10 @@ public class RestoreWorker extends RxWorker {
                 .map(type -> ImportResult.missed())
                 .collect(Collectors.toList());  //存有数据导入结果的列表
         AtomicReference<ImportDataVersionType> versionType = new AtomicReference<>();
-        return ZipHelper.getDataInfoFromBackupFile(context, uri)
+        return Single.fromCallable(() -> ZipHelper.getDataInfoFromBackupFile(context, uri))
                 .flatMap(infoMap -> {
                     if (infoMap == null) {
-                        throw new RuntimeException("文件格式不受支持，请选择正确的文件");
+                        throw new RuntimeException("无法读取备份文件信息，请选择正确的备份文件");
                     }
 
                     //识别数据版本
@@ -80,12 +80,13 @@ public class RestoreWorker extends RxWorker {
                     List<String> fileNameList = infoMap.getFileNames();
                     for (int i = 0; i < fileNameList.size(); i++) {
                         String fileName = fileNameList.get(i);
-                        if (fileName != null && choices[i]) {
+                        if (choices[i] && fileName != null) {
                             allowedFileNameSet.add(fileName);
                         }
                     }
 
-                    boolean includeMedia = choices[BackupDataType.RUNNING_ACCOUNT.ordinal()];
+                    boolean includeMedia = choices[BackupDataType.RUNNING_ACCOUNT.ordinal()] &&
+                            fileNameList.get(BackupDataType.RUNNING_ACCOUNT.ordinal()) != null;
                     return ZipHelper.unpackBackupFileWithFilter(context, uri, allowedFileNameSet, includeMedia);
                 })
                 .flatMapObservable(Observable::fromIterable)
@@ -114,7 +115,7 @@ public class RestoreWorker extends RxWorker {
                 .toSingleDefault(Result.success())
                 .doFinally(() -> {
                     String message;
-                    if (resultFlagList.stream().allMatch(result -> result instanceof ImportResult.Success)) {
+                    if (resultFlagList.stream().allMatch(result -> result.getClass() == ImportResult.Success.class)) {
                         message = "所有数据均导入成功。";
                     } else {
                         StringBuilder strBuilder = getStrBuilder(resultFlagList, choices);
