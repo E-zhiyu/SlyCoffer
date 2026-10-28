@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.classes.ImportResult;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
+import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
 import com.sly.coffer.data.backup.maps.NotificationRuleDataMap;
 import com.sly.coffer.data.backup.maps.old.extra_v80.ExtraNotificationRuleDataMap;
 import com.sly.coffer.data.backup.maps.old.room_v62.RoomNotificationRuleDataMap;
@@ -22,7 +23,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb, NotificationRuleDataMap> {
+public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb, NotificationRuleDataMap>
+        implements OldDataConverter<NotificationRuleDataMap> {
     public NotificationRuleBackupHelper(Context context) {
         super(context);
     }
@@ -53,7 +55,19 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
     }
 
     @Override
-    protected NotificationRuleDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
+    protected NotificationRuleDataMap getDataMap(String json, ImportDataVersionType versionType) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        if (versionType == ImportDataVersionType.BEFORE_ROOM) {
+            return convertOldDataBeforeRoom(json);
+        } else if (versionType == ImportDataVersionType.BEFORE_EXTRA) {
+            return convertOldDataBeforeExtra(json);
+        } else {
+            return mapper.readValue(json, mapClass);
+        }
+    }
+
+    @Override
+    public NotificationRuleDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
         RoomNotificationRuleDataMap oldMap = mapper.readValue(json, RoomNotificationRuleDataMap.class);
@@ -121,7 +135,7 @@ public class NotificationRuleBackupHelper extends BackupHelperBase<BookkeepingDb
     }
 
     @Override
-    protected NotificationRuleDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
+    public NotificationRuleDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
         ExtraNotificationRuleDataMap oldMap = mapper.readValue(json, ExtraNotificationRuleDataMap.class);

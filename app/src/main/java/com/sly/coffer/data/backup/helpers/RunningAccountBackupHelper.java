@@ -8,6 +8,7 @@ import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.classes.ImportResult;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
+import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
 import com.sly.coffer.data.backup.maps.RunningAccountDataMap;
 import com.sly.coffer.data.backup.maps.old.extra_v80.ExtraRunningAccountDataMap;
 import com.sly.coffer.data.backup.maps.old.room_v62.RoomRunningAccountDataMap;
@@ -26,7 +27,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, RunningAccountDataMap> {
+public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, RunningAccountDataMap>
+        implements OldDataConverter<RunningAccountDataMap> {
     public RunningAccountBackupHelper(Context context) {
         super(context);
     }
@@ -57,7 +59,19 @@ public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, 
     }
 
     @Override
-    protected RunningAccountDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
+    protected RunningAccountDataMap getDataMap(String json, ImportDataVersionType versionType) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        if (versionType == ImportDataVersionType.BEFORE_ROOM) {
+            return convertOldDataBeforeRoom(json);
+        } else if (versionType == ImportDataVersionType.BEFORE_EXTRA) {
+            return convertOldDataBeforeExtra(json);
+        } else {
+            return mapper.readValue(json, mapClass);
+        }
+    }
+
+    @Override
+    public RunningAccountDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
         RoomRunningAccountDataMap oldMap = mapper.readValue(json, RoomRunningAccountDataMap.class);
@@ -148,7 +162,7 @@ public class RunningAccountBackupHelper extends BackupHelperBase<BookkeepingDb, 
     }
 
     @Override
-    protected RunningAccountDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
+    public RunningAccountDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
         ExtraRunningAccountDataMap oldMap = mapper.readValue(json, ExtraRunningAccountDataMap.class);
