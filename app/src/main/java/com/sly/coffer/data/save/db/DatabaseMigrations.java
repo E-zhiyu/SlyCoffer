@@ -217,7 +217,7 @@ public class DatabaseMigrations {
             db.execSQL("CREATE TABLE IF NOT EXISTS `tagsNew` (`tagId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `scope` INTEGER NOT NULL DEFAULT 0, `groupId` INTEGER, FOREIGN KEY(`groupId`) REFERENCES `tagGroups`(`groupId`) ON UPDATE NO ACTION ON DELETE SET NULL )");
 
             //迁移数据
-            db.execSQL("INSERT INTO tagsNew (name, scope, groupId) SELECT name, scope, groupId FROM tags");
+            db.execSQL("INSERT INTO tagsNew (tagId, name, scope, groupId) SELECT tagId, name, scope, groupId FROM tags");
             db.execSQL("UPDATE tagsNew SET groupId = NULL WHERE groupId < 0");
 
             //删除旧表和旧默认分组
