@@ -271,28 +271,4 @@ public class ZipHelper {
             fos.getFD().sync();
         }
     }
-
-    /**
-     * 二次解压旧版媒体文件压缩包
-     *
-     * @param zipFile  已经从主备份文件解压出来的包含媒体文件的压缩包文件
-     * @param mediaDir 永久存放媒体文件的目录
-     * @param buffer   缓冲区
-     * @throws IOException 解压失败引发的异常
-     */
-    private static void unpackOldMediaZip(File zipFile, File mediaDir, byte[] buffer) throws IOException {
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                String fileName = entry.getName();
-                File outFile = new File(mediaDir, fileName);
-                extractFile(zis, outFile, buffer);
-                zis.closeEntry();
-            }
-
-            if (!zipFile.delete()) {
-                Log.w(LogTags.ZIP_HELPER.n(), "解压旧媒体文件后压缩包删除失败");
-            }
-        }
-    }
 }
