@@ -277,8 +277,8 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
             }
         } else if (model instanceof TagListUiModel.Item) {
             if (position == 0) {
-                if (getItem(position + 1) instanceof TagListUiModel.Item) {
-                    AppearanceHelper.setRadiusStyle(view, RadiusStyle.TOP);     //在顶部且下一个是标签
+                if (position != getItemCount() - 1 && getItem(position + 1) instanceof TagListUiModel.Item) {
+                    AppearanceHelper.setRadiusStyle(view, RadiusStyle.TOP);     //在顶部，并且不在末尾且下一个是标签
                 } else {
                     AppearanceHelper.setRadiusStyle(view, RadiusStyle.SINGLE);
                 }
