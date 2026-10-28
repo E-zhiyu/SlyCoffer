@@ -148,6 +148,8 @@ public interface DataBackupDao {
             if (tagGroupPojoList != null && !tagGroupPojoList.isEmpty()) {
                 //保存分组编号
                 for (TagGroupPojo pojo : tagGroupPojoList) {
+                    long groupId = pojo.getGroupId();
+                    if (groupId < 0) continue;
                     groupIdSet.add(pojo.getGroupId());
                 }
 
@@ -158,11 +160,13 @@ public interface DataBackupDao {
         }
 
         //标签数据
+        Set<Long> tagIdSet = new HashSet<>();
         try {
             List<TagPojo> tagPojoList = data.getTagList();
             if (tagPojoList != null && !tagPojoList.isEmpty()) {
-                //将无效的外键改为 null
+                //将无效的外键改为 null，并保存标签的编号
                 for (TagPojo pojo : tagPojoList) {
+                    tagIdSet.add(pojo.getTagId());
                     if (!groupIdSet.contains(pojo.getGroupId())) {
                         pojo.setGroupId(null);
                     }
@@ -246,11 +250,14 @@ public interface DataBackupDao {
             exceptionList.add(e);
         }
 
-        //流水标签数据
+        //流水标签映射
         try {
             List<AccountTagRefPojo> accountTagRefPojoList = data.getAccountTagRefList();
             if (accountTagRefPojoList != null && !accountTagRefPojoList.isEmpty()) {
-                writeAccountTagRef(mapper.toAccountTagRefEntityList(accountTagRefPojoList));
+                List<AccountTagRefPojo> effectiveTagRefPojoList = accountTagRefPojoList.stream()
+                        .filter(pojo -> tagIdSet.contains(pojo.getTagId()))
+                        .collect(Collectors.toList());
+                writeAccountTagRef(mapper.toAccountTagRefEntityList(effectiveTagRefPojoList));
             }
         } catch (Exception e) {
             exceptionList.add(e);
