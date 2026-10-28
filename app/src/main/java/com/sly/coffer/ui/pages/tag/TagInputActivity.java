@@ -220,7 +220,7 @@ public class TagInputActivity extends AppCompatActivity {
         String groupName = String.valueOf(binding.groupInput.getText()).trim();
 
         //保存数据
-        TagEntity tag = new TagEntity(tagName, scope, 0L);
+        TagEntity tag = new TagEntity(tagName, scope);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         final String NAME_EXISTS_EXCEPTION = "NAME_EXISTS";
         if (initBundle == null) {

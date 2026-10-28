@@ -33,10 +33,9 @@ public class TagEntity {
     @Nullable
     private Long groupId;   //所属分组的编号
 
-    public TagEntity(String name, int scope, @Nullable Long groupId) {
+    public TagEntity(String name, int scope) {
         this.name = name;
         this.scope = scope;
-        this.groupId = groupId;
     }
 
     public long getTagId() {
@@ -68,7 +67,7 @@ public class TagEntity {
         return groupId;
     }
 
-    public void setGroupId(long groupId) {
+    public void setGroupId(@Nullable Long groupId) {
         this.groupId = groupId;
     }
 
