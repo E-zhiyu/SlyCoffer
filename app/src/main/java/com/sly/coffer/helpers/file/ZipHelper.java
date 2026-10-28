@@ -98,10 +98,11 @@ public class ZipHelper {
                 // 将 ZipOutputStream 包装在外部传入的流上
                 try (ZipOutputStream zos = new ZipOutputStream(os)) {
 
-                    // 1. 打包临时 JSON 目录下的所有文件（不包含目录本身）
+                    // 1. 打包临时 JSON 目录下的所有 JSON 文件（不包含目录本身）
                     File[] tempFiles = tempDir.listFiles();
                     if (tempFiles != null) {
                         for (File file : tempFiles) {
+                            if (!file.getName().endsWith(".json")) continue;
                             addToZip(file, file.getName(), zos);
                         }
                     }
