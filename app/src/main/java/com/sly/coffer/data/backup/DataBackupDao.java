@@ -146,14 +146,17 @@ public interface DataBackupDao {
         try {
             List<TagGroupPojo> tagGroupPojoList = data.getTagGroupList();
             if (tagGroupPojoList != null && !tagGroupPojoList.isEmpty()) {
-                //保存分组编号
-                for (TagGroupPojo pojo : tagGroupPojoList) {
-                    long groupId = pojo.getGroupId();
-                    if (groupId < 0) continue;
-                    groupIdSet.add(pojo.getGroupId());
-                }
+                List<TagGroupPojo> filteredTagGroupPojoList = tagGroupPojoList.stream()
+                        .filter(pojo -> pojo.getGroupId() >= 0)
+                        .collect(Collectors.toList());
 
-                writeTagGroup(mapper.toTagGroupEntityList(tagGroupPojoList));
+                //保存分组编号
+                groupIdSet.addAll(filteredTagGroupPojoList.stream()
+                        .map(TagGroupPojo::getGroupId)
+                        .collect(Collectors.toSet())
+                );
+
+                writeTagGroup(mapper.toTagGroupEntityList(filteredTagGroupPojoList));
             }
         } catch (Exception e) {
             exceptionList.add(e);
