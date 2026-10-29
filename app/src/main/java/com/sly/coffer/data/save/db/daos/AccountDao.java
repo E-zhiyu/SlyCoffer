@@ -13,6 +13,7 @@ import androidx.room.Transaction;
 import androidx.room.Update;
 import androidx.sqlite.db.SupportSQLiteQuery;
 
+import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
@@ -174,7 +175,7 @@ public interface AccountDao {
             "budgetId NOT IN (" +
             "   SELECT budgetId FROM budgetTagRef WHERE tagId NOT IN (:tagIdList)" +
             ")")
-    void updateBudgetBalanceByTagId(double increase, List<Long> tagIdList, LocalDateTime accountDateTime);
+    void increaseBudgetBalanceByTagId(double increase, List<Long> tagIdList, LocalDateTime accountDateTime);
 
     /**
      * 将预算余额限制在初始金额 ~ 0的范围内
@@ -217,8 +218,12 @@ public interface AccountDao {
         }
 
         //更新预算余额
-        updateBudgetBalanceByTagId(-account.getAmount(), tagIdList, account.getDateTime());
-        limitBudgetBalanceByTagId(tagIdList, account.getDateTime());
+        AccountType type = AccountType.values()[account.getType()];
+        if (type.isExpenseType() || type.isIncomeType()) {
+            double amountIncrement = type.isExpenseType() ? -account.getAmount() : account.getAmount();
+            increaseBudgetBalanceByTagId(amountIncrement, tagIdList, account.getDateTime());
+            limitBudgetBalanceByTagId(tagIdList, account.getDateTime());
+        }
 
         return accountId;
     }
@@ -333,12 +338,15 @@ public interface AccountDao {
         insertMedia(mediaEntityList);
 
         //更新预算余额
-        double amount = account.getAmount();
-        LocalDateTime dateTime = account.getDateTime();
-        updateBudgetBalanceByTagId(amount, oldTagIdList, oldDateTime);
-        updateBudgetBalanceByTagId(-amount, tagIdList, dateTime);
-        limitBudgetBalanceByTagId(oldTagIdList, oldDateTime);
-        limitBudgetBalanceByTagId(tagIdList, dateTime);
+        AccountType type = AccountType.values()[account.getType()];
+        if (type.isIncomeType() || type.isExpenseType()) {
+            double amountIncrement = type.isExpenseType() ? -account.getAmount() : account.getAmount();
+            LocalDateTime dateTime = account.getDateTime();
+            increaseBudgetBalanceByTagId(-amountIncrement, oldTagIdList, oldDateTime);
+            increaseBudgetBalanceByTagId(amountIncrement, tagIdList, dateTime);
+            limitBudgetBalanceByTagId(oldTagIdList, oldDateTime);
+            limitBudgetBalanceByTagId(tagIdList, dateTime);
+        }
 
         return oldMediaUriSet;
     }
@@ -365,10 +373,14 @@ public interface AccountDao {
         Set<Uri> uriSet = new HashSet<>(getMediaUriByAccountId(account.getAccountId()));
 
         //更新预算
-        LocalDateTime dateTime = account.getDateTime();
-        List<Long> oldTagIdList = getTagIdListByAccountId(account.getAccountId());
-        updateBudgetBalanceByTagId(account.getAmount(), oldTagIdList, dateTime);
-        limitBudgetBalanceByTagId(oldTagIdList, dateTime);
+        AccountType type = AccountType.values()[account.getType()];
+        if (type.isExpenseType() || type.isIncomeType()) {
+            double amountIncrement = type.isExpenseType() ? account.getAmount() : -account.getAmount();
+            LocalDateTime dateTime = account.getDateTime();
+            List<Long> oldTagIdList = getTagIdListByAccountId(account.getAccountId());
+            increaseBudgetBalanceByTagId(amountIncrement, oldTagIdList, dateTime);
+            limitBudgetBalanceByTagId(oldTagIdList, dateTime);
+        }
 
         //删除流水记录
         deleteAccount(account);

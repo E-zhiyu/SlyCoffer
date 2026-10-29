@@ -10,7 +10,13 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.13.4\n" +
+    private static final String UPDATE_LOG_MD = "# v1.13.5\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复收入类型的流水记录也会减少预算余额的BUG\n" +
+            "\n" +
+            "# v1.13.4\n" +
             "\n" +
             "### BUG修复\n" +
             "\n" +
