@@ -1,14 +1,11 @@
 package com.sly.coffer.ui.pages.main.settings.sub.media;
 
-import android.content.ContentResolver;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.core.app.ActivityOptionsCompat;
@@ -19,33 +16,20 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 
 import com.sly.coffer.R;
-import com.sly.coffer.auxiliary.enums.DirectoryPaths;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
-import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.auxiliary.enums.unique.TransitionName;
+import com.sly.coffer.auxiliary.interfaces.ImageCompressCallback;
 import com.sly.coffer.databinding.ActivityMediaListBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
-import com.sly.coffer.helpers.file.FileHelper;
 import com.sly.coffer.helpers.file.MediaHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.media.FullScreenMediaActivity;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Map;
-import java.util.Objects;
-
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import top.zibin.luban.api.Luban;
-import top.zibin.luban.api.OnCompressListener;
 
 public class MediaListActivity extends AppCompatActivity {
     private ActivityMediaListBinding binding;
@@ -125,7 +109,27 @@ public class MediaListActivity extends AppCompatActivity {
                                             "确认继续吗？"
                             )
                                     .setPositiveButton("确定", (dialogInterface, i) ->
-                                            compressImage(entity.getUri())
+                                            MediaHelper.compressImage(
+                                                    entity.getUri(),
+                                                    this,
+                                                    this,
+                                                    new ImageCompressCallback() {
+                                                        @Override
+                                                        public void failed(String message) {
+                                                            Toast.makeText(MediaListActivity.this, message, Toast.LENGTH_SHORT).show();
+                                                        }
+
+                                                        @Override
+                                                        public void succeed() {
+                                                            //更新列表
+                                                            MediaListViewModel viewModel = new ViewModelProvider(MediaListActivity.this)
+                                                                    .get(MediaListViewModel.class);
+                                                            viewModel.setInOrder(viewModel.isInOrder());
+
+                                                            Toast.makeText(MediaListActivity.this, "压缩成功", Toast.LENGTH_SHORT).show();
+                                                        }
+                                                    }
+                                            )
                                     )
                                     .setNegativeButton("取消", null)
                                     .show();
@@ -219,86 +223,5 @@ public class MediaListActivity extends AppCompatActivity {
 
         popupMenu.setOnDismissListener(menu -> binding.orderSelectBtn.setChecked(false));
         popupMenu.show();
-    }
-
-    /**
-     * 压缩图片
-     *
-     * @param uri 待压缩的图片（必须为 file 类型）
-     */
-    private void compressImage(Uri uri) {
-        //判断 Uri 类型
-        if (uri == null || !ContentResolver.SCHEME_FILE.equals(uri.getScheme())) {
-            Log.e(LogTags.MEDIA_LIST_ACTIVITY.n(), "Uri类型为空或不为file");
-            Toast.makeText(this, "压缩失败", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        //获取输出目录
-        File outputDir = DirectoryPaths.DATA_TEMP.getDir(this);
-        if (outputDir == null) {
-            Log.e(LogTags.MEDIA_LIST_ACTIVITY.n(), "无法获取压缩图片输出目录");
-            Toast.makeText(this, "压缩失败", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        //启动图片压缩
-        Luban.with(this)
-                .load(uri)
-                .bindLifecycle(this)
-                .setTargetDir(outputDir)
-                .setCompressListener(new OnCompressListener() {
-                    @Override
-                    public void onStart() {
-
-                    }
-
-                    @Override
-                    public void onSuccess(@NonNull File file) {
-                        try {
-                            //获取原始文件及其 EXIF 数据
-                            File originFile = new File(Objects.requireNonNull(uri.getPath()));
-                            Map<String, String> originExifMap = MediaHelper.getExifFromFile(originFile);
-
-                            //判断文件大小
-                            long originSize = Files.readAttributes(originFile.toPath(), BasicFileAttributes.class).size();
-                            long newSize = Files.readAttributes(file.toPath(), BasicFileAttributes.class).size();
-                            if (originSize <= newSize) {
-                                FileHelper.clearMediaTempDir(MediaListActivity.this);
-                                Log.w(LogTags.MEDIA_LIST_ACTIVITY.n(), "压缩后大小无变化或者更大");
-                                Toast.makeText(MediaListActivity.this, "压缩失败：压缩后体积没有变小", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-
-                            //替换文件并写回 EXIF 数据
-                            long originModifiedTime = originFile.lastModified();
-                            Path copiedPath = Files.copy(file.toPath(), originFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                            boolean isLastModifyTimeRestored = copiedPath.toFile().setLastModified(originModifiedTime);
-                            if (!isLastModifyTimeRestored) {
-                                Log.w(LogTags.MEDIA_LIST_ACTIVITY.n(), "无法恢复原来的最后编辑时间");
-                            }
-                            MediaHelper.writeExifToFile(copiedPath.toFile(), originExifMap);
-
-                            //更新列表
-                            MediaListViewModel viewModel = new ViewModelProvider(MediaListActivity.this)
-                                    .get(MediaListViewModel.class);
-                            viewModel.setInOrder(viewModel.isInOrder());
-
-                            //提示并清理
-                            Toast.makeText(MediaListActivity.this, "压缩成功", Toast.LENGTH_SHORT).show();
-                            FileHelper.clearMediaTempDir(MediaListActivity.this);
-                        } catch (IOException e) {
-                            FileHelper.clearMediaTempDir(MediaListActivity.this);
-                            ExceptionHelper.showExceptionDialog(MediaListActivity.this, e);
-                        }
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable throwable) {
-                        FileHelper.clearMediaTempDir(MediaListActivity.this);
-                        Toast.makeText(MediaListActivity.this, "压缩失败", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .launch();
     }
 }
