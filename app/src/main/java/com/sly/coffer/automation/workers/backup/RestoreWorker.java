@@ -63,7 +63,7 @@ public class RestoreWorker extends RxWorker {
         sendProgressNotification(context);  //发送通知
         Uri uri = Uri.parse(inputUriStr);
         List<ImportResult> resultFlagList = Arrays.stream(BackupDataType.values())
-                .map(type -> ImportResult.missed())
+                .map(type -> choices[type.ordinal()] ? ImportResult.missed() : ImportResult.success())
                 .collect(Collectors.toList());  //存有数据导入结果的列表
         AtomicReference<ImportDataVersionType> versionType = new AtomicReference<>();
         return Single.fromCallable(() -> ZipHelper.getDataInfoFromBackupFile(context, uri))
