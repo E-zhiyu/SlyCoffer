@@ -21,6 +21,7 @@ public enum LogTags {
     SCROLL_HELPER("ScrollHelper"),
     ZIP_HELPER("ZipHelper"),
     ALARM_HELPER("AlarmHelper"),
+    MEDIA_HELPER("MediaHelper"),
     APPLICATION("Application"),
     BUDGET_RESET_RECEIVER("BudgetResetReceiver"),
     BOOT_RECEIVER("BootReceiver"),

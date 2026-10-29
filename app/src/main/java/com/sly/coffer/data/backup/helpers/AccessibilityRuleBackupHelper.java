@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.classes.ImportResult;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
+import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
 import com.sly.coffer.data.backup.maps.AccessibilityRuleDataMap;
 import com.sly.coffer.data.backup.maps.old.extra_v80.ExtraAccessibilityRuleDataMap;
 import com.sly.coffer.data.backup.pojo.AccessibilityRuleKeywordGroupPojo;
@@ -19,7 +20,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class AccessibilityRuleBackupHelper extends BackupHelperBase<BookkeepingDb, AccessibilityRuleDataMap> {
+public class AccessibilityRuleBackupHelper extends BackupHelperBase<BookkeepingDb, AccessibilityRuleDataMap>
+        implements OldDataConverter<AccessibilityRuleDataMap> {
     public AccessibilityRuleBackupHelper(Context context) {
         super(context);
     }
@@ -50,13 +52,25 @@ public class AccessibilityRuleBackupHelper extends BackupHelperBase<BookkeepingD
     }
 
     @Override
-    protected AccessibilityRuleDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
+    protected AccessibilityRuleDataMap getDataMap(String json, ImportDataVersionType versionType) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        if (versionType == ImportDataVersionType.BEFORE_ROOM) {
+            return convertOldDataBeforeRoom(json);
+        } else if (versionType == ImportDataVersionType.BEFORE_EXTRA) {
+            return convertOldDataBeforeExtra(json);
+        } else {
+            return mapper.readValue(json, mapClass);
+        }
+    }
+
+    @Override
+    public AccessibilityRuleDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(json, mapClass);
     }
 
     @Override
-    protected AccessibilityRuleDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
+    public AccessibilityRuleDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
         ExtraAccessibilityRuleDataMap oldMap = mapper.readValue(json, ExtraAccessibilityRuleDataMap.class);

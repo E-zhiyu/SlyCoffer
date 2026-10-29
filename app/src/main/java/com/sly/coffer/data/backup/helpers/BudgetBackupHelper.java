@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.classes.ImportResult;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
+import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
 import com.sly.coffer.data.backup.maps.BudgetDataMap;
 import com.sly.coffer.data.backup.maps.old.extra_v80.ExtraBudgetDataMap;
 import com.sly.coffer.data.backup.maps.old.room_v62.RoomBudgetDataMap;
@@ -22,7 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDataMap> {
+public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDataMap>
+        implements OldDataConverter<BudgetDataMap> {
     public BudgetBackupHelper(Context context) {
         super(context);
     }
@@ -53,7 +55,19 @@ public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDa
     }
 
     @Override
-    protected BudgetDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
+    protected BudgetDataMap getDataMap(String json, ImportDataVersionType versionType) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        if (versionType == ImportDataVersionType.BEFORE_ROOM) {
+            return convertOldDataBeforeRoom(json);
+        } else if (versionType == ImportDataVersionType.BEFORE_EXTRA) {
+            return convertOldDataBeforeExtra(json);
+        } else {
+            return mapper.readValue(json, mapClass);
+        }
+    }
+
+    @Override
+    public BudgetDataMap convertOldDataBeforeRoom(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
         RoomBudgetDataMap oldMap = mapper.readValue(json, RoomBudgetDataMap.class);
@@ -97,7 +111,7 @@ public class BudgetBackupHelper extends BackupHelperBase<BookkeepingDb, BudgetDa
     }
 
     @Override
-    protected BudgetDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
+    public BudgetDataMap convertOldDataBeforeExtra(String json) throws JsonProcessingException {
         //获取旧数据的集合
         ObjectMapper mapper = new ObjectMapper();
         ExtraBudgetDataMap oldMap = mapper.readValue(json, ExtraBudgetDataMap.class);

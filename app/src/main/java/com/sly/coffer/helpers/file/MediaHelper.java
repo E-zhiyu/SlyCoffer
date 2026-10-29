@@ -9,16 +9,22 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.exifinterface.media.ExifInterface;
+import androidx.lifecycle.LifecycleOwner;
 
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.classes.file.MediaDetail;
 import com.sly.coffer.auxiliary.classes.file.MediaFileInfo;
 import com.sly.coffer.auxiliary.enums.DirectoryPaths;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
+import com.sly.coffer.auxiliary.interfaces.ImageCompressCallback;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
+import com.sly.coffer.helpers.ExceptionHelper;
 
 import org.jetbrains.annotations.Contract;
 
@@ -30,6 +36,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalDateTime;
@@ -41,10 +48,10 @@ import java.util.Map;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
+import top.zibin.luban.api.Luban;
+import top.zibin.luban.api.OnCompressListener;
 
 public class MediaHelper {
-    private final static List<String> ALL_EXIF_TAGS = getAllExifTags(); //包含所有 EXIF 标签的列表
-
     /**
      * 将媒体文件保存至相册
      *
@@ -365,11 +372,11 @@ public class MediaHelper {
      * @return 该目标文件的 EXIF 数据
      */
     @NonNull
-    public static Map<String, String> getExifFromFile(File target) throws IOException {
+    private static Map<String, String> getExifFromFile(File target) throws IOException {
         ExifInterface sourceExif = new ExifInterface(target);
         Map<String, String> exifMap = new HashMap<>();
 
-        for (String tag : ALL_EXIF_TAGS) {
+        for (String tag : getAllExifTags()) {
             String value = sourceExif.getAttribute(tag);
             if (value != null) {
                 exifMap.put(tag, value);
@@ -384,7 +391,7 @@ public class MediaHelper {
      * @param target  需要写入 EXIF 的文件
      * @param exifMap 包含 EXIF 数据的 {@link Map}对象
      */
-    public static void writeExifToFile(File target, Map<String, String> exifMap) throws IOException {
+    private static void writeExifToFile(File target, Map<String, String> exifMap) throws IOException {
         if (exifMap == null || exifMap.isEmpty()) {
             return;
         }
@@ -421,5 +428,101 @@ public class MediaHelper {
             }
         }
         return tags;
+    }
+
+    /**
+     * 压缩图片并替换原图
+     *
+     * @param uri            图片文件的 Uri
+     * @param context        上下文
+     * @param lifecycleOwner 图片压缩流程的生命周期持有者，用于防止内存泄漏
+     * @param callback       图片压缩结果回调
+     */
+    public static void compressImage(@Nullable Uri uri, Context context, LifecycleOwner lifecycleOwner, @Nullable ImageCompressCallback callback) {
+        //判断 Uri 类型
+        if (uri == null || !ContentResolver.SCHEME_FILE.equals(uri.getScheme())) {
+            Log.e(LogTags.MEDIA_HELPER.n(), "Uri类型为空或不为file");
+            if (callback != null) {
+                callback.failed("无法获取原图文件");
+            }
+            return;
+        }
+
+        //获取输出目录
+        File outputDir = DirectoryPaths.MEDIA_TEMP.getDir(context);
+        if (outputDir == null) {
+            Log.e(LogTags.MEDIA_HELPER.n(), "无法获取压缩图片输出目录");
+            if (callback != null) {
+                callback.failed("无法获取图片输出目录");
+            }
+            return;
+        }
+
+        //启动图片压缩
+        Luban.with(context)
+                .load(uri)
+                .bindLifecycle(lifecycleOwner)
+                .setTargetDir(outputDir)
+                .setCompressListener(new OnCompressListener() {
+                    @Override
+                    public void onStart() {
+
+                    }
+
+                    @Override
+                    public void onSuccess(@NonNull File file) {
+                        try {
+                            if (uri.getPath() == null) {
+                                Log.e(LogTags.MEDIA_HELPER.n(), "无法从Uri中获取路径");
+                                if (callback != null) {
+                                    callback.failed("无法获取原图文件");
+                                }
+                                return;
+                            }
+
+                            //获取原始文件及其 EXIF 数据
+                            File originFile = new File(uri.getPath());
+                            Map<String, String> originExifMap = getExifFromFile(originFile);
+
+                            //判断文件大小
+                            long originSize = Files.readAttributes(originFile.toPath(), BasicFileAttributes.class).size();
+                            long newSize = Files.readAttributes(file.toPath(), BasicFileAttributes.class).size();
+                            if (originSize <= newSize) {
+                                Log.w(LogTags.MEDIA_HELPER.n(), "压缩后大小无变化或者更大");
+                                if (callback != null) {
+                                    callback.failed("图片已无法继续压缩");
+                                }
+                                return;
+                            }
+
+                            //替换文件并写回 EXIF 数据
+                            long originModifiedTime = originFile.lastModified();
+                            Path copiedPath = Files.copy(file.toPath(), originFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            boolean isLastModifyTimeRestored = copiedPath.toFile().setLastModified(originModifiedTime);
+                            if (!isLastModifyTimeRestored) {
+                                Log.w(LogTags.MEDIA_HELPER.n(), "无法恢复原来的最后编辑时间");
+                            }
+                            writeExifToFile(copiedPath.toFile(), originExifMap);
+
+                            //调用成功回调
+                            if (callback != null) {
+                                callback.succeed();
+                            }
+                        } catch (IOException e) {
+                            ExceptionHelper.showExceptionDialog(context, e);
+                        } finally {
+                            FileHelper.clearMediaTempDir(context);
+                        }
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable throwable) {
+                        FileHelper.clearMediaTempDir(context);
+                        if (callback != null) {
+                            callback.failed("图片压缩失败");
+                        }
+                    }
+                })
+                .launch();
     }
 }

@@ -1,5 +1,6 @@
 package com.sly.coffer.data.save.db.daos;
 
+import androidx.annotation.Nullable;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -102,7 +103,7 @@ public interface TagDao {
      * @return 与传入的名称匹配的分组编号
      */
     @Query("SELECT groupId FROM tagGroups WHERE name = :groupName")
-    Optional<Long> getGroupIdByName(String groupName);
+    Long getGroupIdByName(String groupName);
 
     /**
      * 通过分组名称获取分组编号，并在没有同名分组时自动创建分组
@@ -111,16 +112,17 @@ public interface TagDao {
      * @return 与传入的名称匹配的分组编号
      */
     @Transaction
-    default long getGroupIdByNameOrCreate(String groupName) {
-        if (groupName == null) return -1;
-        if (groupName.isEmpty()) return -1;
+    @Nullable
+    default Long getGroupIdByNameOrCreate(String groupName) {
+        if (groupName == null) return null;
+        if (groupName.isEmpty()) return null;
 
-        Optional<Long> groupIdOptional = getGroupIdByName(groupName);
-        if (groupIdOptional.isEmpty()) {
+        Long groupId = getGroupIdByName(groupName);
+        if (groupId == null) {
             TagGroupEntity newGroup = new TagGroupEntity(groupName);
             return insertTagGroup(newGroup);
         } else {
-            return groupIdOptional.get();
+            return groupId;
         }
     }
 
@@ -141,7 +143,7 @@ public interface TagDao {
     @Transaction
     default void addTag(TagEntity tag, String groupName) {
         if (tag == null) return;
-        long groupId = getGroupIdByNameOrCreate(groupName);
+        Long groupId = getGroupIdByNameOrCreate(groupName);
         tag.setGroupId(groupId);
         insertTag(tag);
     }
@@ -171,7 +173,7 @@ public interface TagDao {
      */
     default void modifyTag(TagEntity tag, String groupName) {
         if (tag == null) return;
-        long groupId = getGroupIdByNameOrCreate(groupName);
+        Long groupId = getGroupIdByNameOrCreate(groupName);
         tag.setGroupId(groupId);
         updateTag(tag);
     }
@@ -229,6 +231,12 @@ public interface TagDao {
         }
     }
 
+    /**
+     * 替换流水记录和标签映射的标签编号
+     *
+     * @param originTag   原来的标签编号
+     * @param targetTagId 修改后的标签编号
+     */
     @Query("UPDATE OR REPLACE accountTagRef SET tagId = :targetTagId WHERE tagId = :originTag")
     void changeAccountTag(long originTag, long targetTagId);
 

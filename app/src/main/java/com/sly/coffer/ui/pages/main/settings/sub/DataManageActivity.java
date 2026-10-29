@@ -27,11 +27,11 @@ import com.sly.coffer.automation.workers.WorkerScheduler;
 import com.sly.coffer.automation.workers.backup.BackupWorker;
 import com.sly.coffer.automation.workers.backup.RestoreWorker;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
-import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.NotificationID;
 import com.sly.coffer.auxiliary.enums.RadiusStyle;
 import com.sly.coffer.auxiliary.enums.unique.TagStrings;
+import com.sly.coffer.data.backup.maps.DataInfoMap;
 import com.sly.coffer.data.save.preference.AutoBackupPreference;
 import com.sly.coffer.databinding.ActivityDataManageBinding;
 import com.sly.coffer.auxiliary.enums.settings.BackupFrequency;
@@ -54,6 +54,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -116,18 +117,7 @@ public class DataManageActivity extends AppCompatActivity {
                         return;
                     }
 
-                    //显示数据版本选择对话框
-                    String[] titles = Arrays.stream(ImportDataVersionType.values())
-                            .map(ImportDataVersionType::getTitle)
-                            .toArray(String[]::new);
-                    new MaterialAlertDialogBuilder(this)
-                            .setTitle(R.string.select_data_version)
-                            .setItems(titles, (dialog, which) ->
-                                    showImportChoiceDialog(data.getData(), ImportDataVersionType.values()[which])
-                            )
-                            .setNegativeButton("取消", null)
-                            .show();
-
+                    showImportChoiceDialog(data.getData());
                 }
         );
 
@@ -391,10 +381,9 @@ public class DataManageActivity extends AppCompatActivity {
     /**
      * 扫描备份文件并显示多选对话框
      *
-     * @param uri         SAF 返回的 Uri 实例
-     * @param versionType 导入的数据的版本种类
+     * @param uri SAF 返回的 Uri 实例
      */
-    private void showImportChoiceDialog(Uri uri, ImportDataVersionType versionType) {
+    private void showImportChoiceDialog(Uri uri) {
         //显示扫描文件的进度条对话框
         AlertDialog progressDialog = new ProgressDialogBuilder(this, "扫描文件", "正在扫描文件……")
                 .setNegativeButton("取消", (dialogInterface, i) -> {
@@ -404,16 +393,19 @@ public class DataManageActivity extends AppCompatActivity {
                 .show();
 
         //扫描压缩包并显示多选对话框
-        disposables.add(ZipHelper.scanBackupFile(uri, this)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeOn(Schedulers.io())
-                .subscribe(fileNameSet -> {
-                    progressDialog.dismiss();
+        disposables.add(Single
+                .fromCallable(() -> {
+                    //读取备份文件信息
+                    DataInfoMap infoMap = ZipHelper.getDataInfoFromBackupFile(this, uri);
+                    if (infoMap == null) {
+                        throw new RuntimeException("无法读取备份文件信息，请选择正确的备份文件");
+                    }
+                    List<String> exportedFileNames = infoMap.getFileNames();
 
                     //实例化选项列表
-                    List<MultiChoiceDialogBuilder.ChoiceItem> itemList = Arrays.stream(BackupDataType.values())
+                    return Arrays.stream(BackupDataType.values())
                             .map(backupDataType -> {
-                                if (fileNameSet.contains(backupDataType.getFileNameByVersionType(versionType))) {
+                                if (exportedFileNames.get(backupDataType.ordinal()) != null) {
                                     return new MultiChoiceDialogBuilder.ChoiceItem(
                                             true,
                                             backupDataType.getTitle(),
@@ -428,11 +420,16 @@ public class DataManageActivity extends AppCompatActivity {
                                 }
                             })
                             .collect(Collectors.toList());
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe(itemList -> {
+                    progressDialog.dismiss();
 
                     //显示多选对话框
                     new MultiChoiceDialogBuilder(this, "导入数据", itemList)
                             .setPositiveButton("确认", checkedStatList ->
-                                    importData(uri, checkedStatList, versionType)
+                                    importData(uri, checkedStatList)
                             )
                             .setNegativeButton("取消", null)
                             .show();
@@ -448,9 +445,8 @@ public class DataManageActivity extends AppCompatActivity {
      *
      * @param uri          备份文件的 Uri
      * @param checkedStats 用户选择的选项状态，选项的下标与{@link BackupDataType}的枚举序数一一对应
-     * @param versionType  导入数据的版本种类
      */
-    private void importData(Uri uri, @NonNull List<Boolean> checkedStats, ImportDataVersionType versionType) {
+    private void importData(Uri uri, @NonNull List<Boolean> checkedStats) {
         //构建传递给 Worker 的 Data
         boolean[] choices = new boolean[checkedStats.size()];
         for (int i = 0; i < checkedStats.size(); i++) {
@@ -459,7 +455,6 @@ public class DataManageActivity extends AppCompatActivity {
         Data data = new Data.Builder()
                 .putString(KeyStrings.BACKUP_TARGET.v(), uri.toString())
                 .putBooleanArray(KeyStrings.BACKUP_CHOICES.v(), choices)
-                .putInt(KeyStrings.IMPORT_DATA_VERSION_TYPE.v(), versionType.ordinal())
                 .build();
 
         //执行一次任务

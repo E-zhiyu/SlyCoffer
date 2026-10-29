@@ -146,23 +146,30 @@ public interface DataBackupDao {
         try {
             List<TagGroupPojo> tagGroupPojoList = data.getTagGroupList();
             if (tagGroupPojoList != null && !tagGroupPojoList.isEmpty()) {
-                //保存分组编号
-                for (TagGroupPojo pojo : tagGroupPojoList) {
-                    groupIdSet.add(pojo.getGroupId());
-                }
+                List<TagGroupPojo> filteredTagGroupPojoList = tagGroupPojoList.stream()
+                        .filter(pojo -> pojo.getGroupId() >= 0)
+                        .collect(Collectors.toList());
 
-                writeTagGroup(mapper.toTagGroupEntityList(tagGroupPojoList));
+                //保存分组编号
+                groupIdSet.addAll(filteredTagGroupPojoList.stream()
+                        .map(TagGroupPojo::getGroupId)
+                        .collect(Collectors.toSet())
+                );
+
+                writeTagGroup(mapper.toTagGroupEntityList(filteredTagGroupPojoList));
             }
         } catch (Exception e) {
             exceptionList.add(e);
         }
 
         //标签数据
+        Set<Long> tagIdSet = new HashSet<>();
         try {
             List<TagPojo> tagPojoList = data.getTagList();
             if (tagPojoList != null && !tagPojoList.isEmpty()) {
-                //将无效的外键改为 null
+                //将无效的外键改为 null，并保存标签的编号
                 for (TagPojo pojo : tagPojoList) {
+                    tagIdSet.add(pojo.getTagId());
                     if (!groupIdSet.contains(pojo.getGroupId())) {
                         pojo.setGroupId(null);
                     }
@@ -246,11 +253,14 @@ public interface DataBackupDao {
             exceptionList.add(e);
         }
 
-        //流水标签数据
+        //流水标签映射
         try {
             List<AccountTagRefPojo> accountTagRefPojoList = data.getAccountTagRefList();
             if (accountTagRefPojoList != null && !accountTagRefPojoList.isEmpty()) {
-                writeAccountTagRef(mapper.toAccountTagRefEntityList(accountTagRefPojoList));
+                List<AccountTagRefPojo> effectiveTagRefPojoList = accountTagRefPojoList.stream()
+                        .filter(pojo -> tagIdSet.contains(pojo.getTagId()))
+                        .collect(Collectors.toList());
+                writeAccountTagRef(mapper.toAccountTagRefEntityList(effectiveTagRefPojoList));
             }
         } catch (Exception e) {
             exceptionList.add(e);

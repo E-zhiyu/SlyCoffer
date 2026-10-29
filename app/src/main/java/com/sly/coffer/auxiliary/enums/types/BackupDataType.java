@@ -69,17 +69,6 @@ public enum BackupDataType {
     }
 
     /**
-     * 根据数据版本获取其对应的备份文件名称
-     *
-     * @param versionType 备份数据的版本种类
-     * @return 与数据版本对应的备份文件名称
-     */
-    @Contract(pure = true)
-    public String getFileNameByVersionType(@NonNull ImportDataVersionType versionType) {
-        return fileNames[versionType.ordinal()];
-    }
-
-    /**
      * 创建备份帮助器
      *
      * @param context 上下文

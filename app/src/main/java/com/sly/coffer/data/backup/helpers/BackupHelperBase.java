@@ -1,17 +1,25 @@
 package com.sly.coffer.data.backup.helpers;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 
+import androidx.annotation.NonNull;
 import androidx.room.RoomDatabase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.auxiliary.classes.ImportResult;
+import com.sly.coffer.auxiliary.enums.types.BackupDataType;
 import com.sly.coffer.auxiliary.enums.types.ImportDataVersionType;
+import com.sly.coffer.data.backup.maps.DataInfoMap;
+import com.sly.coffer.helpers.AboutHelper;
 import com.sly.coffer.helpers.file.FileHelper;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
@@ -23,6 +31,7 @@ import io.reactivex.rxjava3.core.Single;
  * @param <M> 数据字典类型
  */
 abstract public class BackupHelperBase<D extends RoomDatabase, M> {
+    public final static String DATA_INFO_JSON = "DataInfo.json";
     protected D db;                     //数据库帮助器
     protected Class<M> mapClass;        //数据字典类型
     protected String tempDataFileName;  //临时数据文件名称
@@ -71,27 +80,18 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
     protected abstract String getTempDataFileName();
 
     /**
-     * 将 Room（v1.9.0）重构之前的旧数据的 JSON 文本转换为新数据集合
+     * 将 JSON 文本反序列化为数据集合
      *
-     * @param json v1.9.0之前旧数据的 JSON 文本
-     * @return 现有的数据集合
-     * @throws JsonProcessingException JSON 反序列化出错时引发的异常
+     * @param json        需要反序列化的 JSON 文本
+     * @param versionType 数据版本种类
+     * @return 数据集合
      */
-    protected abstract M convertOldDataBeforeRoom(String json) throws JsonProcessingException;
-
-    /**
-     * 将 Extra（v1.13.0）重构之前的旧数据的 JSON 文本转换为新的数据集合
-     *
-     * @param json v1.13.0之前旧数据的 JSON 文本
-     * @return 现有的数据集合
-     * @throws JsonProcessingException JSON 反序列化出错时引发的异常
-     */
-    protected abstract M convertOldDataBeforeExtra(String json) throws JsonProcessingException;
+    protected abstract M getDataMap(String json, ImportDataVersionType versionType) throws JsonProcessingException;
 
     /**
      * 从临时文件中导入数据
      *
-     * @param context 上下文
+     * @param context     上下文
      * @param file        临时文件对象
      * @param versionType 导入数据的版本种类
      * @return 带有导入结果的{@link Single}对象
@@ -103,15 +103,7 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
                 String json = FileHelper.readContent(file);
 
                 //得到数据字典实例
-                ObjectMapper mapper = new ObjectMapper();
-                M dataMap;
-                if (versionType == ImportDataVersionType.BEFORE_ROOM) {
-                    dataMap = convertOldDataBeforeRoom(json);
-                } else if (versionType == ImportDataVersionType.BEFORE_EXTRA) {
-                    dataMap = convertOldDataBeforeExtra(json);
-                } else {
-                    dataMap = mapper.readValue(json, mapClass);
-                }
+                M dataMap = getDataMap(json, versionType);
 
                 //将对应的数据写入数据库
                 ImportResult result = saveDataInMapToDb(context, dataMap);
@@ -151,5 +143,23 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
                 return Completable.error(e);
             }
         });
+    }
+
+    /**
+     * 生成备份数据信息集合
+     *
+     * @param context 上下文
+     * @param choice  备份数据选择情况
+     * @return 备份数据信息集合
+     * @throws PackageManager.NameNotFoundException 当前包名未找到时引发的异常
+     */
+    @NonNull
+    public static DataInfoMap generateDataInfo(Context context, boolean[] choice) throws PackageManager.NameNotFoundException {
+        long versionCode = AboutHelper.getVersionCode(context);
+        List<String> fileNameList = Arrays.stream(BackupDataType.values())
+                .map(type -> choice[type.ordinal()] ? type.getLatestVersionFileName() : null)
+                .collect(Collectors.toList());
+
+        return new DataInfoMap(fileNameList, versionCode);
     }
 }

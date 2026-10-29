@@ -11,6 +11,7 @@ import androidx.work.Data;
 import androidx.work.WorkerParameters;
 import androidx.work.rxjava3.RxWorker;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.enums.ChannelInfo;
 import com.sly.coffer.auxiliary.enums.types.BackupDataType;
@@ -18,11 +19,13 @@ import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.auxiliary.enums.unique.NotificationID;
 import com.sly.coffer.data.backup.helpers.BackupHelperBase;
+import com.sly.coffer.data.backup.maps.DataInfoMap;
 import com.sly.coffer.data.save.preference.AutoBackupPreference;
 import com.sly.coffer.helpers.NotificationHelper;
 import com.sly.coffer.helpers.file.FileHelper;
 import com.sly.coffer.helpers.file.ZipHelper;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +56,7 @@ public class BackupWorker extends RxWorker {
                 taskList.add(backupHelper.exportDataToTempFile(context));
             }
         } else {
+            //处理自动备份不传递选择状态的情况
             for (BackupDataType type : BackupDataType.values()) {
                 BackupHelperBase<?, ?> backupHelper = type.createBackupHelper(context);
                 taskList.add(backupHelper.exportDataToTempFile(context));
@@ -87,7 +91,8 @@ public class BackupWorker extends RxWorker {
         //执行备份逻辑
         sendProgressNotification(context);  //发送通知
         boolean includeMedia = choices == null || choices[BackupDataType.RUNNING_ACCOUNT.ordinal()];
-        return Completable.merge(taskList)
+        return writeDataInfoToFile(context, choices)
+                .andThen(Completable.merge(taskList))
                 .andThen(ZipHelper.createBackupFile(finalBackupFileUri, context, includeMedia))
                 .subscribeOn(Schedulers.io())
                 .toSingleDefault(Result.success())
@@ -108,6 +113,28 @@ public class BackupWorker extends RxWorker {
                             .setAutoCancel(true);
                     NotificationHelper.sendNotification(NotificationID.BACKUP_AND_RESTORE.ordinal(), notificationBuilder, context);
                 });
+    }
+
+    /**
+     * 将备份数据信息写入到 JSON 文件中
+     *
+     * @param context 上下文
+     * @param choice  备份数据类型的选择状况
+     * @return 是否成功
+     */
+    public Completable writeDataInfoToFile(Context context, boolean[] choice) {
+        return Completable.defer(() -> {
+            try {
+                DataInfoMap infoMap = BackupHelperBase.generateDataInfo(context, choice);
+                ObjectMapper mapper = new ObjectMapper();
+                String content = mapper.writeValueAsString(infoMap);
+                FileHelper.writeContentToTempDataFile(context, BackupHelperBase.DATA_INFO_JSON, content);
+
+                return Completable.complete();
+            } catch (IOException e) {
+                return Completable.error(e);
+            }
+        });
     }
 
     /**

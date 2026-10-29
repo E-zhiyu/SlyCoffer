@@ -10,7 +10,16 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.13.4\n" +
+    private static final String UPDATE_LOG_MD = "# v1.13.5\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复收入类型的流水记录也会减少预算余额的BUG\n" +
+            "- 修复修改流水记录后预算余额并不能更新到正确数值的BUG\n" +
+            "- 修复从1.13.3之前的版本升级到最新版本后流水记录与标签的映射出错的BUG\n" +
+            "- 修复压缩图片后立刻备份，会导致备份文件最顶层出现压缩后的图片的BUG\n" +
+            "\n" +
+            "# v1.13.4\n" +
             "\n" +
             "### BUG修复\n" +
             "\n" +
