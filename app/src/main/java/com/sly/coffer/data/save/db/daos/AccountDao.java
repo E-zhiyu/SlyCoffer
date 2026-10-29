@@ -267,6 +267,7 @@ public interface AccountDao {
      * @param accountId 流水编号
      * @return 该编号对应的流水记录
      */
+    @Nullable
     @Query("SELECT * FROM accounts WHERE accountId = :accountId")
     AccountEntity getAccountById(long accountId);
 
@@ -298,21 +299,17 @@ public interface AccountDao {
         long accountId = account.getAccountId();
 
         //获取旧数据
-        LocalDateTime oldDateTime;  //原来的日期和时间
-        AccountEntity old = getAccountById(accountId);
-        if (old != null) {
-            oldDateTime = old.getDateTime();
-            account.setAutoTag(old.getAutoTag());    //恢复自动记账标记
+        AccountEntity oldAccount = getAccountById(accountId);
+        if (oldAccount != null) {
+            account.setAutoTag(oldAccount.getAutoTag());    //恢复自动记账标记
 
             //删除额外数据
-            if (old.getTransferId() != null) {
-                extraDataDao.deleteExtraTransferById(old.getTransferId());
+            if (oldAccount.getTransferId() != null) {
+                extraDataDao.deleteExtraTransferById(oldAccount.getTransferId());
             }
-            if (old.getLoanId() != null) {
-                extraDataDao.deleteExtraLoanById(old.getLoanId());
+            if (oldAccount.getLoanId() != null) {
+                extraDataDao.deleteExtraLoanById(oldAccount.getLoanId());
             }
-        } else {
-            oldDateTime = account.getDateTime();
         }
 
         //获取在数据库中的媒体文件 Uri，并计算需要删除的媒体文件的 Uri
@@ -337,16 +334,28 @@ public interface AccountDao {
         deleteMediaByAccountId(accountId);
         insertMedia(mediaEntityList);
 
-        //更新预算余额
-        AccountType type = AccountType.values()[account.getType()];
-        if (type.isIncomeType() || type.isExpenseType()) {
-            double amountIncrement = type.isExpenseType() ? -account.getAmount() : account.getAmount();
-            LocalDateTime dateTime = account.getDateTime();
-            increaseBudgetBalanceByTagId(-amountIncrement, oldTagIdList, oldDateTime);
-            increaseBudgetBalanceByTagId(amountIncrement, tagIdList, dateTime);
-            limitBudgetBalanceByTagId(oldTagIdList, oldDateTime);
-            limitBudgetBalanceByTagId(tagIdList, dateTime);
+        //恢复旧数据对预算的影响
+        AccountType[] types = AccountType.values();
+        if (oldAccount != null) {
+            AccountType oldType = types[oldAccount.getType()];
+            if (oldType.isIncomeType() || oldType.isExpenseType()) {
+                double amountIncrement = oldType.isExpenseType() ? oldAccount.getAmount() : -oldAccount.getAmount();
+                increaseBudgetBalanceByTagId(amountIncrement, oldTagIdList, oldAccount.getDateTime());
+            }
         }
+
+        //应用新的数据对预算的影响
+        AccountType type = types[account.getType()];
+        if (type.isExpenseType() || type.isIncomeType()) {
+            double amountIncrement = type.isExpenseType() ? -account.getAmount() : account.getAmount();
+            increaseBudgetBalanceByTagId(amountIncrement, tagIdList, account.getDateTime());
+        }
+
+        //将预算余额限制在0~初始金额之间
+        if (oldAccount != null) {
+            limitBudgetBalanceByTagId(oldTagIdList, oldAccount.getDateTime());
+        }
+        limitBudgetBalanceByTagId(tagIdList, account.getDateTime());
 
         return oldMediaUriSet;
     }
