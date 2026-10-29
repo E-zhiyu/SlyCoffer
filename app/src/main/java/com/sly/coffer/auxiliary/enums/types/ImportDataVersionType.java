@@ -6,19 +6,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public enum ImportDataVersionType {
-    BEFORE_ROOM("v1.9.0之前", 62),
-    BEFORE_EXTRA("v1.9.0 ~ v1.12.8", 81),
-    LATEST("v1.13.0之后", Long.MAX_VALUE);
-    private final String title;
+    BEFORE_ROOM(62),
+    BEFORE_EXTRA(81),
+    LATEST(Long.MAX_VALUE);
     private final long versionCode; //该数据版本在哪个应用版本代码之前
 
-    ImportDataVersionType(String title, long versionCode) {
-        this.title = title;
+    ImportDataVersionType(long versionCode) {
         this.versionCode = versionCode;
-    }
-
-    public String getTitle() {
-        return title;
     }
 
     /**
