@@ -53,17 +53,13 @@ public class RestoreWorker extends RxWorker {
             return Single.just(Result.failure());
         }
 
-        //判断选择结果
-        if (choices == null) {
-            Log.e(LogTags.RESTORE_WORKER.n(), "无法获取需要导入的数据类型");
-            return Single.just(Result.failure());
-        }
-
         //解压文件并写入数据
         sendProgressNotification(context);  //发送通知
         Uri uri = Uri.parse(inputUriStr);
         List<ImportResult> resultFlagList = Arrays.stream(BackupDataType.values())
-                .map(type -> choices[type.ordinal()] ? ImportResult.missed() : ImportResult.success())
+                .map(type -> choices == null || choices[type.ordinal()] ?
+                        ImportResult.missed() : ImportResult.success()
+                )
                 .collect(Collectors.toList());  //存有数据导入结果的列表
         AtomicReference<ImportDataVersionType> versionType = new AtomicReference<>();
         return Single.fromCallable(() -> ZipHelper.getDataInfoFromBackupFile(context, uri))
@@ -80,12 +76,12 @@ public class RestoreWorker extends RxWorker {
                     List<String> fileNameList = infoMap.getFileNames();
                     for (int i = 0; i < fileNameList.size(); i++) {
                         String fileName = fileNameList.get(i);
-                        if (choices[i] && fileName != null) {
+                        if (choices == null || choices[i] && fileName != null) {
                             allowedFileNameSet.add(fileName);
                         }
                     }
 
-                    boolean includeMedia = choices[BackupDataType.RUNNING_ACCOUNT.ordinal()] &&
+                    boolean includeMedia = choices == null || choices[BackupDataType.RUNNING_ACCOUNT.ordinal()] &&
                             fileNameList.get(BackupDataType.RUNNING_ACCOUNT.ordinal()) != null;
                     return ZipHelper.unpackBackupFileWithFilter(context, uri, allowedFileNameSet, includeMedia);
                 })
