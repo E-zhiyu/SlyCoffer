@@ -103,7 +103,7 @@
     <string name="notification_permission">通知权限</string>
     <string name="notification_listener_permission">通知使用权限</string>
     <string name="auto_start_permission">自启动权限</string>
-    <string name="battery_optimization">电池优化</string>
+    <string name="ignore_battery_optimization">电池优化</string>
     <string name="alarm_permission">精确闹钟权限</string>
     <string name="app_list_permission">应用列表权限</string>
     <string name="camera_permission">相机权限</string>

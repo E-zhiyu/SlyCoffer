@@ -3,9 +3,12 @@ package com.sly.coffer.helpers.permission;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.PermissionInfo;
 import android.provider.Settings;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -49,6 +52,24 @@ public class PermissionHelper {
 
         //判断系统名称是否为空，为空说明为类原生系统，否则为拥有自启动设置的定制安卓
         return !DeviceOs.getOsName().isEmpty();
+    }
+
+    /**
+     * 判断应用列表权限是否定义
+     *
+     * @param context    上下文
+     * @return 权限在系统中是否定义
+     */
+    public static boolean isAppListPermissionDefined(@NonNull Context context) {
+        PackageManager pm = context.getPackageManager();
+        try {
+            PermissionInfo permissionInfo = pm.getPermissionInfo(
+                    "com.android.permission.GET_INSTALLED_APPS", 0
+            );
+            return permissionInfo != null; // 判断系统是否支持该权限
+        } catch (PackageManager.NameNotFoundException e) {
+            return false; // 权限未定义，通常是因为系统版本太低或该权限属于特定厂商
+        }
     }
 
     /**

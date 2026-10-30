@@ -71,7 +71,7 @@
 
             <!-- 电池优化 -->
             <include
-                android:id="@+id/battery_optimizations_option"
+                android:id="@+id/battery_option"
                 layout="@layout/view_setting_option" />
 
             <!-- 精确闹钟 -->
