@@ -185,6 +185,10 @@ public class PermissionManageActivity extends AppCompatActivity {
                 REQUEST_CALLBACK,
                 PermissionLists.getNotificationServicePermission()
         ));
+        notificationListener.setOnLongClickListener(v -> {
+            XXPermissions.startPermissionActivity(this, PermissionLists.getNotificationServicePermission());
+            return true;
+        });
 
         //自启动权限
         if (PermissionHelper.isAutoStartDefined()) {
@@ -282,6 +286,10 @@ public class PermissionManageActivity extends AppCompatActivity {
                 REQUEST_CALLBACK,
                 PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class)
         ));
+        autoBookkeeping.setOnLongClickListener(v -> {
+            XXPermissions.startPermissionActivity(this, PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class));
+            return true;
+        });
 
         //无障碍视图拾取
         pick = new SettingClickableTextView(
@@ -300,6 +308,10 @@ public class PermissionManageActivity extends AppCompatActivity {
                 REQUEST_CALLBACK,
                 PermissionLists.getBindAccessibilityServicePermission(PickAccessibilityService.class)
         ));
+        pick.setOnLongClickListener(v -> {
+            XXPermissions.startPermissionActivity(this, PermissionLists.getBindAccessibilityServicePermission(PickAccessibilityService.class));
+            return true;
+        });
     }
 
     /**

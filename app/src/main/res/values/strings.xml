@@ -254,6 +254,9 @@
     <string name="add_budget">新建预算</string>
     <string name="remaining_debt">剩余欠款</string>
     <string name="no_repayment">无还款记录</string>
+    <string name="income_expense_card_click_tip">点击收支卡片可以查看详细金额</string>
+    <string name="home_page_card_long_click_tip">长按报表卡片和债务卡片可以查看详细金额</string>
+    <string name="permission_long_click_tip">可长按进入对应权限的设置界面</string>
     <string name="troubleshooting">问题解答</string>
     <string name="help_solve_some_common_problems">帮助解决一些常见的问题</string>
     <string name="floating_notification_question">Q : 为什么授予通知权限后不会弹出悬浮通知？</string>
@@ -272,8 +275,6 @@
     <string name="data_save_answer">A : 您在使用过程中产生的所有数据都保存在本地，不会上传至互联网。如果您需要迁移应用数据，请前往数据管理界面导出您需要的数据。</string>
     <string name="update_question">Q : 我要如何更新软件版本？</string>
     <string name="update_answer">A : 您可以直接访问项目仓库，从发行版(Release)中下载安装包。更推荐的方式是通过APP内的更新检测功能，APP会自动从仓库中下载最新版安装包，下载完成后点击立刻更新即可安装新版本。部分用户可能在安装时出现问题，此时您可以尝试进入手机上的文件管理应用，进入Downloads文件夹并手动安装新版本。</string>
-    <string name="income_expense_card_click_tip">点击收支卡片可以查看详细金额</string>
-    <string name="home_page_card_long_click_tip">长按报表卡片和债务卡片可以查看详细金额</string>
 
     <string-array name="tips_array">
         <item>如果设置了自动备份目录，进行软件更新时会自动备份一次。</item>
