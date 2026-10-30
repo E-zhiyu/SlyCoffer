@@ -281,7 +281,8 @@ public class PermissionManageActivity extends AppCompatActivity {
         autoBookkeeping.setFunctionListener(view -> PermissionHelper.requestPermission(
                 this,
                 new PermissionDialogDescription(permissionList ->
-                        "该服务用于识别屏幕内容实现自动记账。"
+                        "此权限为无障碍权限，开启后将允许APP识别并操作屏幕，该服务的作用如下：\n" +
+                                "- 识别屏幕内容实现自动记账。\n"
                 ),
                 REQUEST_CALLBACK,
                 PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class)
@@ -303,7 +304,8 @@ public class PermissionManageActivity extends AppCompatActivity {
         pick.setFunctionListener(view -> PermissionHelper.requestPermission(
                 this,
                 new PermissionDialogDescription(permissionList ->
-                        "该服务用于记录显示过的界面信息，用于在添加无障碍规则时选择。"
+                        "此权限为无障碍权限，开启后将允许APP识别并操作屏幕，该服务的作用如下：\n" +
+                                "- 该服务用于记录显示过的界面信息，用于在添加无障碍规则时选择。"
                 ),
                 REQUEST_CALLBACK,
                 PermissionLists.getBindAccessibilityServicePermission(PickAccessibilityService.class)
