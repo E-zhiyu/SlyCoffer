@@ -121,7 +121,7 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
                         .setTitle("需要权限")
                         .setMessage("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。")
                         .setPositiveButton("去授权", (dialog, which) -> {
-                            SlyCoffer.lockLifecycleObserver();
+                            SlyCoffer.lockLifecycleObserver(true);
                             Intent intent = PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.getIntent(this);
                             startActivity(intent);
                         })
@@ -163,7 +163,7 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
                         .setTitle("需要权限")
                         .setMessage("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。")
                         .setPositiveButton("去授权", (dialog, which) -> {
-                            SlyCoffer.lockLifecycleObserver();
+                            SlyCoffer.lockLifecycleObserver(true);
                             Intent intent = PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.getIntent(this);
                             startActivity(intent);
                         })
@@ -223,7 +223,7 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
                         .setTitle("需要权限")
                         .setMessage(content)
                         .setPositiveButton("去设置", (dialog, which) -> {
-                            SlyCoffer.lockLifecycleObserver();
+                            SlyCoffer.lockLifecycleObserver(true);
                             Intent intent = PermissionHelper.SpecialPermissionType.ACCESSIBILITY_BOOKKEEPING.getIntent(this);
                             startActivity(intent);
                         })

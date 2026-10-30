@@ -835,7 +835,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             );
 
             //启动相机
-            SlyCoffer.lockLifecycleObserver();
+            SlyCoffer.lockLifecycleObserver(true);
             takePictureLauncher.launch(contentUri);
         } catch (IOException e) {
             Toast.makeText(this, "无法创建相片文件", Toast.LENGTH_SHORT).show();

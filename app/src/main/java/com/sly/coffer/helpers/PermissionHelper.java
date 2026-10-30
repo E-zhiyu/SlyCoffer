@@ -294,7 +294,7 @@ public class PermissionHelper {
                     .setPositiveButton("去设置", (d, w) -> {
                         isProcessing = false;    //未直接调用processNextSpecial()，需要标记为未处理
 
-                        SlyCoffer.lockLifecycleObserver();
+                        SlyCoffer.lockLifecycleObserver(true);
                         activity.startActivity(type.getIntent(activity));
                     })
                     .setNegativeButton("取消", (d, w) -> processNextSpecial())

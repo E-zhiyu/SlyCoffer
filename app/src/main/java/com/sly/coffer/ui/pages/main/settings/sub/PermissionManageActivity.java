@@ -97,7 +97,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                 () -> requestRuntimePermission(Manifest.permission.CAMERA)
         ));
         camera.setOnLongClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver();
+            SlyCoffer.lockLifecycleObserver(true);
             Intent skip2Settings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             Uri uri = Uri.fromParts("package", getPackageName(), null);
             skip2Settings.setData(uri);
@@ -122,7 +122,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                     () -> requestRuntimePermission("com.android.permission.GET_INSTALLED_APPS")
             ));
             appList.setOnLongClickListener(view -> {
-                SlyCoffer.lockLifecycleObserver();
+                SlyCoffer.lockLifecycleObserver(true);
                 Intent skip2Settings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                 Uri uri = Uri.fromParts("package", getPackageName(), null);
                 skip2Settings.setData(uri);
@@ -157,7 +157,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                 )
         );
         notification.setOnLongClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver();
+            SlyCoffer.lockLifecycleObserver(true);
             Intent skip2Settings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             Uri uri = Uri.fromParts("package", getPackageName(), null);
             skip2Settings.setData(uri);
@@ -180,7 +180,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                         "- 读取其他应用的通知实现自动记账\n" +
                         "- 捕获其他应用发送的通知用于快速生成通知规则\n",
                 () -> {
-                    SlyCoffer.lockLifecycleObserver();
+                    SlyCoffer.lockLifecycleObserver(true);
                     Intent skip2NotificationListener = PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.getIntent(this);
                     startActivity(skip2NotificationListener);
                 }
@@ -201,7 +201,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                             "该权限是定制安卓中特有的权限，其允许应用在后台启动服务，应用范围如下：\n" +
                                     "- 在退出应用后自动启动通知监听服务，确保自动记账功能能够运行\n",
                             () -> {
-                                SlyCoffer.lockLifecycleObserver();
+                                SlyCoffer.lockLifecycleObserver(true);
                                 Intent skip2AutoStartPermission = PermissionHelper.SpecialPermissionType.AUTO_START.getIntent(this);
                                 startActivity(skip2AutoStartPermission);
                             }
@@ -237,12 +237,12 @@ public class PermissionManageActivity extends AppCompatActivity {
                     if (Objects.equals(intent.getAction(), Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) {
                         Toast.makeText(this, "请找到本应用并设置电池优化策略为“无限制”", Toast.LENGTH_SHORT).show();
                     }
-                    SlyCoffer.lockLifecycleObserver();
+                    SlyCoffer.lockLifecycleObserver(true);
                     startActivity(intent);
                 }
         ));
         battery.setOnLongClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver();
+            SlyCoffer.lockLifecycleObserver(true);
             Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
             startActivity(intent);
             return true;
@@ -262,7 +262,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                 "该权限允许应用执行某些定时任务，以实现一些自动化功能，应用范围如下：\n" +
                         "- 每日0点自动检查并重置预算\n",
                 () -> {
-                    SlyCoffer.lockLifecycleObserver();
+                    SlyCoffer.lockLifecycleObserver(true);
                     Intent skip2ExactAlarm = PermissionHelper.SpecialPermissionType.ALARM.getIntent(this);
                     startActivity(skip2ExactAlarm);
                 }
@@ -281,7 +281,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                 R.string.auto_bookkeeping,
                 "该服务用于识别屏幕内容实现自动记账。",
                 () -> {
-                    SlyCoffer.lockLifecycleObserver();
+                    SlyCoffer.lockLifecycleObserver(true);
                     Intent intent = PermissionHelper.SpecialPermissionType.ACCESSIBILITY_BOOKKEEPING.getIntent(this);
                     startActivity(intent);
                 }
@@ -300,7 +300,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                 R.string.page_pick,
                 "该服务用于输入无障碍规则时获取屏幕点击位置，以此得到点击的视图信息作为金额来源。",
                 () -> {
-                    SlyCoffer.lockLifecycleObserver();
+                    SlyCoffer.lockLifecycleObserver(true);
                     Intent intent = PermissionHelper.SpecialPermissionType.ACCESSIBILITY_BOOKKEEPING.getIntent(this);
                     startActivity(intent);
                 }
