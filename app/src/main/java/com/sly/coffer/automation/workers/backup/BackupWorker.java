@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.work.Data;
@@ -122,7 +123,7 @@ public class BackupWorker extends RxWorker {
      * @param choice  备份数据类型的选择状况
      * @return 是否成功
      */
-    public Completable writeDataInfoToFile(Context context, boolean[] choice) {
+    public Completable writeDataInfoToFile(Context context, @Nullable boolean[] choice) {
         return Completable.defer(() -> {
             try {
                 DataInfoMap infoMap = BackupHelperBase.generateDataInfo(context, choice);

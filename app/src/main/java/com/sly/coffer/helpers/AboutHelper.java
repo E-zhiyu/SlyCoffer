@@ -12,6 +12,10 @@ import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 public class AboutHelper {
     private static final String UPDATE_LOG_MD = "# v1.13.6\n" +
             "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复自动备份只能生成空备份文件的BUG\n" +
+            "\n" +
             "### 优化的内容\n" +
             "\n" +
             "- 优化权限申请流程\n" +
