@@ -33,11 +33,11 @@ import com.sly.coffer.helpers.ImmHelper;
 import com.sly.coffer.helpers.SearchHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
-import com.sly.coffer.helpers.permission.PermissionDialogDescription;
 import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 import java.util.List;
+import java.util.function.Function;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -155,7 +155,7 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
                 //若没有权限则跳转到权限设置界面
                 PermissionHelper.requestPermission(
                         this,
-                        new PermissionDialogDescription(permissionList -> {
+                        permissionList -> {
                             StringBuilder message = new StringBuilder();
 
                             //逐个权限添加通知
@@ -164,7 +164,7 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
                             }
 
                             return message.toString();
-                        }),
+                        },
                         new PermissionHelper.PermissionCallback() {
                             @Override
                             public void allGranted(List<IPermission> permissionList) {
@@ -174,21 +174,14 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
                             }
 
                             @Override
-                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
                                 boolean noDenied = deniedList.isEmpty();
                                 boolean noGranted = grantedList.isEmpty();
 
                                 if (noGranted && !noDenied) {
-                                    StringBuilder message = new StringBuilder();
-
-                                    //逐个权限添加通知
-                                    if (XXPermissions.containsPermission(deniedList, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class))) {
-                                        message.append("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。\n");
-                                    }
-
                                     new MaterialAlertDialogBuilder(NotificationCaptureListActivity.this)
                                             .setTitle("请求被拒绝")
-                                            .setMessage(message)
+                                            .setMessage(descriptionFun.apply(deniedList))
                                             .setPositiveButton("前往设置", (dialog, which) ->
                                                     XXPermissions.startPermissionActivity(NotificationCaptureListActivity.this, deniedList)
                                             )

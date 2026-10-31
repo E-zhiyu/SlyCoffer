@@ -26,7 +26,6 @@ import com.sly.coffer.databinding.ActivityAutoBookkeepingBinding;
 import com.sly.coffer.auxiliary.enums.settings.NotificationCancelBehaviour;
 import com.sly.coffer.auxiliary.enums.settings.NotificationClickBehaviour;
 import com.sly.coffer.helpers.ExceptionHelper;
-import com.sly.coffer.helpers.permission.PermissionDialogDescription;
 import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.pages.accessibility.rule.AccessibilityRuleListActivity;
@@ -38,6 +37,7 @@ import com.sly.coffer.ui.pages.main.settings.components.SettingSwitchView;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -124,7 +124,7 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
             if (isChecked) {
                 PermissionHelper.requestPermission(
                         this,
-                        new PermissionDialogDescription(permissionList -> {
+                        permissionList -> {
                             StringBuilder message = new StringBuilder();
 
                             //逐个权限添加通知
@@ -133,27 +133,20 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
                             }
 
                             return message.toString();
-                        }),
+                        },
                         new PermissionHelper.PermissionCallback() {
                             @Override
                             public void allGranted(List<IPermission> permissionList) {
                             }
 
                             @Override
-                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
                                 boolean noDenied = deniedList.isEmpty();
 
                                 if (!noDenied) {
-                                    StringBuilder message = new StringBuilder();
-
-                                    //逐个权限添加通知
-                                    if (XXPermissions.containsPermission(deniedList, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class))) {
-                                        message.append("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。\n");
-                                    }
-
                                     new MaterialAlertDialogBuilder(AutoBookkeepingActivity.this)
                                             .setTitle("请求被拒绝")
-                                            .setMessage(message)
+                                            .setMessage(descriptionFun.apply(deniedList))
                                             .setPositiveButton("前往设置", (dialog, which) ->
                                                     XXPermissions.startPermissionActivity(AutoBookkeepingActivity.this, deniedList)
                                             )
@@ -197,7 +190,7 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
             if (isChecked) {
                 PermissionHelper.requestPermission(
                         this,
-                        new PermissionDialogDescription(permissionList -> {
+                        permissionList -> {
                             StringBuilder message = new StringBuilder();
 
                             //逐个权限添加通知
@@ -206,27 +199,20 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
                             }
 
                             return message.toString();
-                        }),
+                        },
                         new PermissionHelper.PermissionCallback() {
                             @Override
                             public void allGranted(List<IPermission> permissionList) {
                             }
 
                             @Override
-                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
                                 boolean noDenied = deniedList.isEmpty();
 
                                 if (!noDenied) {
-                                    StringBuilder message = new StringBuilder();
-
-                                    //逐个权限添加通知
-                                    if (XXPermissions.containsPermission(deniedList, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class))) {
-                                        message.append("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。\n");
-                                    }
-
                                     new MaterialAlertDialogBuilder(AutoBookkeepingActivity.this)
                                             .setTitle("请求被拒绝")
-                                            .setMessage(message)
+                                            .setMessage(descriptionFun.apply(deniedList))
                                             .setPositiveButton("前往设置", (dialog, which) ->
                                                     XXPermissions.startPermissionActivity(AutoBookkeepingActivity.this, deniedList)
                                             )
@@ -283,7 +269,7 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
             if (b) {
                 PermissionHelper.requestPermission(
                         this,
-                        new PermissionDialogDescription(permissionList -> {
+                        permissionList -> {
                             StringBuilder message = new StringBuilder();
 
                             //逐个权限添加通知
@@ -296,31 +282,20 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
                             }
 
                             return message.toString();
-                        }),
+                        },
                         new PermissionHelper.PermissionCallback() {
                             @Override
                             public void allGranted(List<IPermission> permissionList) {
                             }
 
                             @Override
-                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
                                 boolean noDenied = deniedList.isEmpty();
 
                                 if (!noDenied) {
-                                    StringBuilder message = new StringBuilder();
-
-                                    //逐个权限添加通知
-                                    if (XXPermissions.containsPermission(deniedList, PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class))) {
-                                        message.append(String.format(
-                                                Locale.getDefault(),
-                                                "此功能需要启动无障碍服务以识别屏幕内容，请开启“%s”服务。",
-                                                getString(R.string.accessibility_title_auto_bookkeeping)
-                                        ));
-                                    }
-
                                     new MaterialAlertDialogBuilder(AutoBookkeepingActivity.this)
                                             .setTitle("请求被拒绝")
-                                            .setMessage(message)
+                                            .setMessage(descriptionFun.apply(deniedList))
                                             .setPositiveButton("前往设置", (dialog, which) ->
                                                     XXPermissions.startPermissionActivity(AutoBookkeepingActivity.this, deniedList)
                                             )

@@ -26,10 +26,10 @@ import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.SearchHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
-import com.sly.coffer.helpers.permission.PermissionDialogDescription;
 import com.sly.coffer.helpers.permission.PermissionHelper;
 
 import java.util.List;
+import java.util.function.Function;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -70,7 +70,7 @@ public class AppSelectActivity extends AppCompatActivity {
         //申请权限
         PermissionHelper.requestPermission(
                 this,
-                new PermissionDialogDescription(permissionList -> {
+                permissionList -> {
                     StringBuilder message = new StringBuilder();
 
                     //逐个权限添加通知
@@ -79,28 +79,21 @@ public class AppSelectActivity extends AppCompatActivity {
                     }
 
                     return message.toString();
-                }),
+                },
                 new PermissionHelper.PermissionCallback() {
                     @Override
                     public void allGranted(List<IPermission> permissionList) {
                     }
 
                     @Override
-                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
                         boolean noDenied = deniedList.isEmpty();
                         boolean noGranted = grantedList.isEmpty();
 
                         if (noGranted && !noDenied) {
-                            StringBuilder message = new StringBuilder();
-
-                            //逐个权限添加通知
-                            if (XXPermissions.containsPermission(deniedList, PermissionLists.getGetInstalledAppsPermission())) {
-                                message.append("请授予应用列表权限以允许APP获取已安装的应用。\n");
-                            }
-
                             new MaterialAlertDialogBuilder(AppSelectActivity.this)
                                     .setTitle("请求被拒绝")
-                                    .setMessage(message)
+                                    .setMessage(descriptionFun.apply(deniedList))
                                     .setPositiveButton("前往设置", (dialog, which) ->
                                             XXPermissions.startPermissionActivity(AppSelectActivity.this, deniedList)
                                     )

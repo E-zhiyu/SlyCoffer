@@ -24,13 +24,13 @@ import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.databinding.ActivityAccessibilityRuleListBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
-import com.sly.coffer.helpers.permission.PermissionDialogDescription;
 import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -59,7 +59,7 @@ public class AccessibilityRuleListActivity extends AppCompatActivity {
         //申请权限
         PermissionHelper.requestPermission(
                 this,
-                new PermissionDialogDescription(permissionList -> {
+                permissionList -> {
                     StringBuilder message = new StringBuilder();
 
                     //逐个权限添加通知
@@ -68,27 +68,20 @@ public class AccessibilityRuleListActivity extends AppCompatActivity {
                     }
 
                     return message.toString();
-                }),
+                },
                 new PermissionHelper.PermissionCallback() {
                     @Override
                     public void allGranted(List<IPermission> permissionList) {
                     }
 
                     @Override
-                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
                         boolean noDenied = deniedList.isEmpty();
 
                         if (!noDenied) {
-                            StringBuilder message = new StringBuilder();
-
-                            //逐个权限添加通知
-                            if (XXPermissions.containsPermission(deniedList, PermissionLists.getPostNotificationsPermission())) {
-                                message.append("请授予通知权限用于触发自动记账后发送通知。\n");
-                            }
-
                             new MaterialAlertDialogBuilder(AccessibilityRuleListActivity.this)
                                     .setTitle("请求被拒绝")
-                                    .setMessage(message)
+                                    .setMessage(descriptionFun.apply(deniedList))
                                     .setPositiveButton("前往设置", (dialog, which) ->
                                             XXPermissions.startPermissionActivity(AccessibilityRuleListActivity.this, deniedList)
                                     )

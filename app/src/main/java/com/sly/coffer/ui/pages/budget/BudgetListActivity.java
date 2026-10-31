@@ -28,7 +28,6 @@ import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
-import com.sly.coffer.helpers.permission.PermissionDialogDescription;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.common.account.AccountListActivity;
 
@@ -36,6 +35,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -66,7 +66,7 @@ public class BudgetListActivity extends AppCompatActivity {
         //申请权限
         PermissionHelper.requestPermission(
                 this,
-                new PermissionDialogDescription(permissionList -> {
+                permissionList -> {
                     StringBuilder message = new StringBuilder();
 
                     //逐个权限添加通知
@@ -78,30 +78,20 @@ public class BudgetListActivity extends AppCompatActivity {
                     }
 
                     return message.toString();
-                }),
+                },
                 new PermissionHelper.PermissionCallback() {
                     @Override
                     public void allGranted(List<IPermission> permissionList) {
                     }
 
                     @Override
-                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
                         boolean noDenied = deniedList.isEmpty();
 
                         if (!noDenied) {
-                            StringBuilder message = new StringBuilder();
-
-                            //逐个权限添加通知
-                            if (XXPermissions.containsPermission(deniedList, PermissionLists.getPostNotificationsPermission())) {
-                                message.append("请授予通知权限用于在预算余额不足时发送通知。\n");
-                            }
-                            if (XXPermissions.containsPermission(deniedList, PermissionLists.getScheduleExactAlarmPermission())) {
-                                message.append("自动重置预算需要精确闹钟权限，以确保每天0点能够检查并重置预算。\n");
-                            }
-
                             new MaterialAlertDialogBuilder(BudgetListActivity.this)
                                     .setTitle("请求被拒绝")
-                                    .setMessage(message)
+                                    .setMessage(descriptionFun.apply(deniedList))
                                     .setPositiveButton("前往设置", (dialog, which) ->
                                             XXPermissions.startPermissionActivity(BudgetListActivity.this, deniedList)
                                     )
