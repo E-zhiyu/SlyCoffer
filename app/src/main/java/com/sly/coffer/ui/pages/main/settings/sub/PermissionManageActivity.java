@@ -18,6 +18,7 @@ import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.SlyCoffer;
 import com.sly.coffer.R;
 import com.sly.coffer.automation.services.AccessibilityAbService;
+import com.sly.coffer.automation.services.NotificationAbService;
 import com.sly.coffer.automation.services.PickAccessibilityService;
 import com.sly.coffer.auxiliary.enums.RadiusStyle;
 import com.sly.coffer.databinding.ActivityPermissionManageBinding;
@@ -183,10 +184,10 @@ public class PermissionManageActivity extends AppCompatActivity {
                                 "- 捕获其他应用发送的通知用于快速生成通知规则\n"
                 ),
                 REQUEST_CALLBACK,
-                PermissionLists.getNotificationServicePermission()
+                PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class)
         ));
         notificationListener.setOnLongClickListener(v -> {
-            XXPermissions.startPermissionActivity(this, PermissionLists.getNotificationServicePermission());
+            XXPermissions.startPermissionActivity(this, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class));
             return true;
         });
 
@@ -340,7 +341,7 @@ public class PermissionManageActivity extends AppCompatActivity {
         notification.getFunctionComponent().setText(isNotificationGranted ? GRANTED : NOT_GRANTED);
 
         //通知监听
-        boolean isNotificationListenerGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getNotificationServicePermission());
+        boolean isNotificationListenerGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class));
         notificationListener.getFunctionComponent().setText(isNotificationListenerGranted ? GRANTED : NOT_GRANTED);
 
         //电池优化

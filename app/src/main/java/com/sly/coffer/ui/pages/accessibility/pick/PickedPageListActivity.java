@@ -16,8 +16,13 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.R;
 import com.sly.coffer.automation.broadcast.BroadcastActions;
+import com.sly.coffer.automation.services.AccessibilityAbService;
+import com.sly.coffer.automation.services.PickAccessibilityService;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.PickedPageEntity;
@@ -26,13 +31,15 @@ import com.sly.coffer.data.save.preference.SearchHistoryPreference;
 import com.sly.coffer.databinding.ActivityPickedPageListBinding;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
-import com.sly.coffer.helpers.PermissionHelper;
 import com.sly.coffer.helpers.SearchHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
+import com.sly.coffer.helpers.permission.PermissionDialogDescription;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.ui.others.dialogs.EditTextDialogBuilder;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
+import java.util.List;
 import java.util.Locale;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -170,21 +177,64 @@ public class PickedPageListActivity extends AppCompatActivity {
 
                 Toast.makeText(this, "已关闭界面拾取", Toast.LENGTH_SHORT).show();
             } else {
-                if (!PermissionHelper.SpecialPermissionType.ACCESSIBILITY_PICK.isGranted(this)) {
-                    String tip = String.format(
-                            Locale.getDefault(),
-                            "请开启无障碍中的“%s”服务",
-                            getString(R.string.accessibility_title_page_pick)
-                    );
-                    Toast.makeText(this, tip, Toast.LENGTH_SHORT).show();
-                    Intent intent = PermissionHelper.SpecialPermissionType.ACCESSIBILITY_PICK.getIntent(this);
-                    startActivity(intent);
-                    return;
-                }
+                PermissionHelper.requestPermission(
+                        this,
+                        new PermissionDialogDescription(permissionList -> {
+                            StringBuilder message = new StringBuilder();
 
-                AutoBookKeepingPreference.setPagePickStat(this, true);
-                binding.startStopFab.setImageResource(R.drawable.outline_pause_24);
-                Toast.makeText(this, "界面拾取已开始，将在5分钟后关闭", Toast.LENGTH_SHORT).show();
+                            //逐个权限添加通知
+                            if (XXPermissions.containsPermission(permissionList, PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class))) {
+                                message.append(String.format(
+                                        Locale.getDefault(),
+                                        "此功能需要启动无障碍服务以识别屏幕内容，请开启“%s”服务。",
+                                        getString(R.string.accessibility_title_page_pick)
+                                ));
+                            }
+
+                            return message.toString();
+                        }),
+                        new PermissionHelper.PermissionCallback() {
+                            @Override
+                            public void allGranted(List<IPermission> permissionList) {
+                                AutoBookKeepingPreference.setPagePickStat(PickedPageListActivity.this, true);
+                                binding.startStopFab.setImageResource(R.drawable.outline_pause_24);
+                                Toast.makeText(PickedPageListActivity.this, "界面拾取已开始，将在5分钟后关闭", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                                boolean noDenied = deniedList.isEmpty();
+                                boolean noGranted = grantedList.isEmpty();
+
+                                if (noGranted && !noDenied) {
+                                    StringBuilder message = new StringBuilder();
+
+                                    //逐个权限添加通知
+                                    if (XXPermissions.containsPermission(deniedList, PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class))) {
+                                        message.append(String.format(
+                                                Locale.getDefault(),
+                                                "此功能需要启动无障碍服务以识别屏幕内容，请开启“%s”服务。",
+                                                getString(R.string.accessibility_title_auto_bookkeeping)
+                                        ));
+                                    }
+
+                                    new MaterialAlertDialogBuilder(PickedPageListActivity.this)
+                                            .setTitle("请求被拒绝")
+                                            .setMessage(message)
+                                            .setPositiveButton("前往设置", (dialog, which) ->
+                                                    XXPermissions.startPermissionActivity(PickedPageListActivity.this, deniedList)
+                                            )
+                                            .setNegativeButton("取消", null)
+                                            .show();
+                                } else if (noDenied && !noGranted) {
+                                    AutoBookKeepingPreference.setPagePickStat(PickedPageListActivity.this, true);
+                                    binding.startStopFab.setImageResource(R.drawable.outline_pause_24);
+                                    Toast.makeText(PickedPageListActivity.this, "界面拾取已开始，将在5分钟后关闭", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        },
+                        PermissionLists.getBindAccessibilityServicePermission(PickAccessibilityService.class)
+                );
             }
         });
         AppearanceHelper.attachMorphAnimation(binding.startStopFab);

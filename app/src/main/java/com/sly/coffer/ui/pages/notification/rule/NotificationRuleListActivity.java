@@ -1,8 +1,6 @@
 package com.sly.coffer.ui.pages.notification.rule;
 
-import android.Manifest;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -17,6 +15,9 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.R;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
@@ -24,12 +25,14 @@ import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityNotificationRuleListBinding;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.helpers.ExceptionHelper;
-import com.sly.coffer.helpers.PermissionHelper;
+import com.sly.coffer.helpers.permission.PermissionDialogDescription;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.notification.capture.NotificationCaptureListActivity;
 import com.sly.coffer.ui.pages.notification.group.NotificationRuleGroupListActivity;
 
+import java.util.List;
 import java.util.Locale;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -56,7 +59,50 @@ public class NotificationRuleListActivity extends AppCompatActivity {
 
         initViews();
         initGuide();
-        addPermissionRequests();
+
+        //申请权限
+        PermissionHelper.requestPermission(
+                this,
+                new PermissionDialogDescription(permissionList -> {
+                    StringBuilder message = new StringBuilder();
+
+                    //逐个权限添加通知
+                    if (XXPermissions.containsPermission(permissionList, PermissionLists.getPostNotificationsPermission())) {
+                        message.append("请授予通知权限用于触发自动记账后发送通知。\n");
+                    }
+
+                    return message.toString();
+                }),
+                new PermissionHelper.PermissionCallback() {
+                    @Override
+                    public void allGranted(List<IPermission> permissionList) {
+                    }
+
+                    @Override
+                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                        boolean noDenied = deniedList.isEmpty();
+
+                        if (!noDenied) {
+                            StringBuilder message = new StringBuilder();
+
+                            //逐个权限添加通知
+                            if (XXPermissions.containsPermission(deniedList, PermissionLists.getPostNotificationsPermission())) {
+                                message.append("请授予通知权限用于触发自动记账后发送通知。\n");
+                            }
+
+                            new MaterialAlertDialogBuilder(NotificationRuleListActivity.this)
+                                    .setTitle("请求被拒绝")
+                                    .setMessage(message)
+                                    .setPositiveButton("前往设置", (dialog, which) ->
+                                            XXPermissions.startPermissionActivity(NotificationRuleListActivity.this, deniedList)
+                                    )
+                                    .setNegativeButton("取消", null)
+                                    .show();
+                        }
+                    }
+                },
+                PermissionLists.getPostNotificationsPermission()
+        );
     }
 
     @Override
@@ -208,29 +254,6 @@ public class NotificationRuleListActivity extends AppCompatActivity {
                 ADD_LONG_CLICK_TIP,
                 TipPreference.KEY_NOTIFICATION_RULE_LIST,
                 3
-        );
-    }
-
-    /**
-     * 添加权限申请
-     */
-    private void addPermissionRequests() {
-        PermissionHelper permissionHelper = new PermissionHelper(this);   //权限申请帮助器
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissionHelper.addPermission(
-                    Manifest.permission.POST_NOTIFICATIONS,
-                    "请授予通知权限用于触发自动记账后发送通知。"
-            );
-        }
-        permissionHelper.addPermission(
-                PermissionHelper.SpecialPermissionType.AUTO_START,
-                "自启动权限",
-                "通知监听服务需要常驻后台，请允许应用自启动，否则该功能可能无法正常运行。为了进一步保障在后台正常运行，建议您在最近任务锁定本应用。"
-        );
-        permissionHelper.addPermission(
-                PermissionHelper.SpecialPermissionType.BATTERY,
-                "电池优化",
-                "为保证软件在后台也可以监听通知，请将本应用的电池优化策略改为“无限制”。"
         );
     }
 

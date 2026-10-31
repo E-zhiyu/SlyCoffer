@@ -39,6 +39,8 @@ import androidx.transition.TransitionManager;
 import androidx.transition.TransitionSet;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
 import com.sly.coffer.R;
 import com.sly.coffer.SlyCoffer;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
@@ -64,7 +66,6 @@ import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
 import com.sly.coffer.helpers.time.DateTimePickerHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
-import com.sly.coffer.helpers.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
 import com.sly.coffer.helpers.file.FileHelper;
@@ -675,10 +676,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             MediaAddOption option = MediaAddOption.values()[integer];
 
             if (option == MediaAddOption.TAKE_PICTURE) {
-                if (PermissionHelper.isRuntimePermissionGranted(
-                        Manifest.permission.CAMERA,
-                        this
-                )) {
+                if (XXPermissions.isGrantedPermission(this, PermissionLists.getCameraPermission())) {
                     launchSystemCamera();
                 } else {
                     permissionLauncher.launch(Manifest.permission.CAMERA);

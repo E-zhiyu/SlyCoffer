@@ -7,26 +7,29 @@ import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.R;
 import com.sly.coffer.data.save.preference.SearchHistoryPreference;
 import com.sly.coffer.databinding.ActivityPackageNameSelectBinding;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
-import com.sly.coffer.helpers.PermissionHelper;
 import com.sly.coffer.helpers.SearchHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
+import com.sly.coffer.helpers.permission.PermissionDialogDescription;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 
-import java.util.Map;
+import java.util.List;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -63,7 +66,55 @@ public class AppSelectActivity extends AppCompatActivity {
         initViews();
         observeLiveData();
         initBackHandlers();
-        addPermissionRequests();
+
+        //申请权限
+        PermissionHelper.requestPermission(
+                this,
+                new PermissionDialogDescription(permissionList -> {
+                    StringBuilder message = new StringBuilder();
+
+                    //逐个权限添加通知
+                    if (XXPermissions.containsPermission(permissionList, PermissionLists.getGetInstalledAppsPermission())) {
+                        message.append("请授予应用列表权限以允许APP获取已安装的应用。\n");
+                    }
+
+                    return message.toString();
+                }),
+                new PermissionHelper.PermissionCallback() {
+                    @Override
+                    public void allGranted(List<IPermission> permissionList) {
+                    }
+
+                    @Override
+                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                        boolean noDenied = deniedList.isEmpty();
+                        boolean noGranted = grantedList.isEmpty();
+
+                        if (noGranted && !noDenied) {
+                            StringBuilder message = new StringBuilder();
+
+                            //逐个权限添加通知
+                            if (XXPermissions.containsPermission(deniedList, PermissionLists.getGetInstalledAppsPermission())) {
+                                message.append("请授予应用列表权限以允许APP获取已安装的应用。\n");
+                            }
+
+                            new MaterialAlertDialogBuilder(AppSelectActivity.this)
+                                    .setTitle("请求被拒绝")
+                                    .setMessage(message)
+                                    .setPositiveButton("前往设置", (dialog, which) ->
+                                            XXPermissions.startPermissionActivity(AppSelectActivity.this, deniedList)
+                                    )
+                                    .setNegativeButton("取消", null)
+                                    .show();
+                        } else if (noDenied && !noGranted) {
+                            VisibilityHelper.toggleVisibilityWithFade(binding.loadingIndicator, true);
+                            AppListViewModel viewModel = new ViewModelProvider(AppSelectActivity.this).get(AppListViewModel.class);
+                            viewModel.executeSearch("");
+                        }
+                    }
+                },
+                PermissionLists.getGetInstalledAppsPermission()
+        );
     }
 
     @Override
@@ -176,41 +227,6 @@ public class AppSelectActivity extends AppCompatActivity {
                 return 1;
             }
         };
-    }
-
-    /**
-     * 添加权限申请
-     */
-    private void addPermissionRequests() {
-        ActivityResultLauncher<String[]> requestPermissionLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestMultiplePermissions(),
-                permissionMap -> {
-                    boolean allGranted = true;
-                    for (Map.Entry<String, Boolean> entry : permissionMap.entrySet()) {
-                        if (!entry.getValue()) {
-                            allGranted = false;
-                            break;
-                        }
-                    }
-
-                    if (allGranted) {
-                        VisibilityHelper.toggleVisibilityWithFade(binding.loadingIndicator, true);
-                        AppListViewModel viewModel1 = new ViewModelProvider(this).get(AppListViewModel.class);
-                        viewModel1.executeSearch("");
-                    }
-                }
-        );
-
-        //权限申请器
-        PermissionHelper permissionHelper = new PermissionHelper(    //权限申请器
-                this,
-                requestPermissionLauncher
-        );
-
-        permissionHelper.addPermission(
-                "com.android.permission.GET_INSTALLED_APPS",
-                "请授予应用列表权限以允许APP获取已安装的应用。"
-        );
     }
 
     /**

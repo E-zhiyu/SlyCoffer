@@ -16,7 +16,11 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.R;
+import com.sly.coffer.automation.services.NotificationAbService;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.CapturedNotificationEntity;
@@ -26,11 +30,14 @@ import com.sly.coffer.databinding.ActivityCapturedNotificationListBinding;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.ImmHelper;
-import com.sly.coffer.helpers.PermissionHelper;
 import com.sly.coffer.helpers.SearchHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.appearence.VisibilityHelper;
+import com.sly.coffer.helpers.permission.PermissionDialogDescription;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
+
+import java.util.List;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -67,8 +74,8 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (!PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.isGranted(this)) {
-            AutoBookKeepingPreference.setNotificationCapture(this,false);
+        if (!XXPermissions.isGrantedPermission(this, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class))) {
+            AutoBookKeepingPreference.setNotificationCapture(this, false);
             binding.startStopFab.setImageResource(R.drawable.outline_play_arrow_24);
         }
     }
@@ -145,18 +152,57 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
                 binding.startStopFab.setImageResource(R.drawable.outline_play_arrow_24);
                 Toast.makeText(this, "已关闭通知捕获", Toast.LENGTH_SHORT).show();
             } else {
-                binding.startStopFab.setImageResource(R.drawable.outline_pause_24);
-                AutoBookKeepingPreference.setNotificationCapture(this, true);
-
                 //若没有权限则跳转到权限设置界面
-                if (!PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.isGranted(this)) {
-                    Toast.makeText(this, "请开启通知监听服务", Toast.LENGTH_SHORT).show();
-                    Intent intent = PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.getIntent(this);
-                    startActivity(intent);
-                    return;
-                }
+                PermissionHelper.requestPermission(
+                        this,
+                        new PermissionDialogDescription(permissionList -> {
+                            StringBuilder message = new StringBuilder();
 
-                Toast.makeText(this, "通知捕获已开始，将在24小时后关闭", Toast.LENGTH_SHORT).show();
+                            //逐个权限添加通知
+                            if (XXPermissions.containsPermission(permissionList, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class))) {
+                                message.append("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。\n");
+                            }
+
+                            return message.toString();
+                        }),
+                        new PermissionHelper.PermissionCallback() {
+                            @Override
+                            public void allGranted(List<IPermission> permissionList) {
+                                Toast.makeText(NotificationCaptureListActivity.this, "通知捕获已开始，将在24小时后关闭", Toast.LENGTH_SHORT).show();
+                                binding.startStopFab.setImageResource(R.drawable.outline_pause_24);
+                                AutoBookKeepingPreference.setNotificationCapture(NotificationCaptureListActivity.this, true);
+                            }
+
+                            @Override
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList) {
+                                boolean noDenied = deniedList.isEmpty();
+                                boolean noGranted = grantedList.isEmpty();
+
+                                if (noGranted && !noDenied) {
+                                    StringBuilder message = new StringBuilder();
+
+                                    //逐个权限添加通知
+                                    if (XXPermissions.containsPermission(deniedList, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class))) {
+                                        message.append("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。\n");
+                                    }
+
+                                    new MaterialAlertDialogBuilder(NotificationCaptureListActivity.this)
+                                            .setTitle("请求被拒绝")
+                                            .setMessage(message)
+                                            .setPositiveButton("前往设置", (dialog, which) ->
+                                                    XXPermissions.startPermissionActivity(NotificationCaptureListActivity.this, deniedList)
+                                            )
+                                            .setNegativeButton("取消", null)
+                                            .show();
+                                } else if (noDenied && !noGranted) {
+                                    Toast.makeText(NotificationCaptureListActivity.this, "通知捕获已开始，将在24小时后关闭", Toast.LENGTH_SHORT).show();
+                                    binding.startStopFab.setImageResource(R.drawable.outline_pause_24);
+                                    AutoBookKeepingPreference.setNotificationCapture(NotificationCaptureListActivity.this, true);
+                                }
+                            }
+                        },
+                        PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class)
+                );
             }
         });
         AppearanceHelper.attachMorphAnimation(binding.startStopFab);
