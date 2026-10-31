@@ -1,8 +1,6 @@
 package com.sly.coffer.ui.pages.accessibility.rule;
 
-import android.Manifest;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -17,17 +15,22 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccessibilityRuleEntity;
 import com.sly.coffer.databinding.ActivityAccessibilityRuleListBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
-import com.sly.coffer.helpers.PermissionHelper;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -52,7 +55,43 @@ public class AccessibilityRuleListActivity extends AppCompatActivity {
         });
 
         initViews();
-        addPermissionRequests();
+
+        //申请权限
+        PermissionHelper.requestPermission(
+                this,
+                permissionList -> {
+                    StringBuilder message = new StringBuilder();
+
+                    //逐个权限添加通知
+                    if (XXPermissions.containsPermission(permissionList, PermissionLists.getPostNotificationsPermission())) {
+                        message.append("请授予通知权限用于触发自动记账后发送通知。\n");
+                    }
+
+                    return message.toString();
+                },
+                new PermissionHelper.PermissionCallback() {
+                    @Override
+                    public void allGranted(List<IPermission> permissionList) {
+                    }
+
+                    @Override
+                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
+                        boolean noDenied = deniedList.isEmpty();
+
+                        if (!noDenied) {
+                            new MaterialAlertDialogBuilder(AccessibilityRuleListActivity.this)
+                                    .setTitle("请求被拒绝")
+                                    .setMessage(descriptionFun.apply(deniedList))
+                                    .setPositiveButton("前往设置", (dialog, which) ->
+                                            XXPermissions.startPermissionActivity(AccessibilityRuleListActivity.this, deniedList)
+                                    )
+                                    .setNegativeButton("取消", null)
+                                    .show();
+                        }
+                    }
+                },
+                PermissionLists.getPostNotificationsPermission()
+        );
     }
 
     @Override
@@ -165,29 +204,6 @@ public class AccessibilityRuleListActivity extends AppCompatActivity {
                         },
                         e -> ExceptionHelper.showExceptionDialog(this, e)
                 )
-        );
-    }
-
-    /**
-     * 添加权限请求
-     */
-    private void addPermissionRequests() {
-        PermissionHelper helper = new PermissionHelper(this);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            helper.addPermission(
-                    Manifest.permission.POST_NOTIFICATIONS,
-                    "请授予通知权限用于触发自动记账后发送通知。"
-            );
-        }
-        helper.addPermission(
-                PermissionHelper.SpecialPermissionType.BATTERY,
-                "电池优化",
-                "为保证软件在后台也可以识别屏幕内容，请将本应用的电池优化策略改为“无限制”。"
-        );
-        helper.addPermission(
-                PermissionHelper.SpecialPermissionType.AUTO_START,
-                "自启动权限",
-                "通知监听服务需要常驻后台，请允许应用自启动，否则该功能可能无法正常运行。为了进一步保障在后台正常运行，建议您在最近任务锁定本应用。"
         );
     }
 

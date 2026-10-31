@@ -1,10 +1,8 @@
 package com.sly.coffer.ui.pages.main.settings.sub;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -22,6 +20,9 @@ import androidx.work.Data;
 import androidx.work.WorkManager;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.R;
 import com.sly.coffer.automation.workers.WorkerScheduler;
 import com.sly.coffer.automation.workers.backup.BackupWorker;
@@ -37,7 +38,7 @@ import com.sly.coffer.databinding.ActivityDataManageBinding;
 import com.sly.coffer.auxiliary.enums.settings.BackupFrequency;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.NotificationHelper;
-import com.sly.coffer.helpers.PermissionHelper;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.helpers.file.FileHelper;
 import com.sly.coffer.helpers.file.SAFHelper;
@@ -51,6 +52,7 @@ import com.sly.coffer.ui.pages.main.settings.components.SettingSwitchView;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -86,7 +88,43 @@ public class DataManageActivity extends AppCompatActivity {
 
         initLaunchers();
         initViews();
-        initPermissionRequests();
+
+        //申请权限
+        PermissionHelper.requestPermission(
+                this,
+                permissionList -> {
+                    StringBuilder message = new StringBuilder();
+
+                    //逐个权限添加通知
+                    if (XXPermissions.containsPermission(permissionList, PermissionLists.getPostNotificationsPermission())) {
+                        message.append("请授予通知权限用于发送操作进度通知。\n");
+                    }
+
+                    return message.toString();
+                },
+                new PermissionHelper.PermissionCallback() {
+                    @Override
+                    public void allGranted(List<IPermission> permissionList) {
+                    }
+
+                    @Override
+                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
+                        boolean noDenied = deniedList.isEmpty();
+
+                        if (!noDenied) {
+                            new MaterialAlertDialogBuilder(DataManageActivity.this)
+                                    .setTitle("请求被拒绝")
+                                    .setMessage(descriptionFun.apply(deniedList))
+                                    .setPositiveButton("前往设置", (dialog, which) ->
+                                            XXPermissions.startPermissionActivity(DataManageActivity.this, deniedList)
+                                    )
+                                    .setNegativeButton("取消", null)
+                                    .show();
+                        }
+                    }
+                },
+                PermissionLists.getPostNotificationsPermission()
+        );
     }
 
     /**
@@ -297,16 +335,6 @@ public class DataManageActivity extends AppCompatActivity {
         if (!uriStr.isEmpty()) {
             String path = SAFHelper.getReadablePathFromSafUri(this, Uri.parse(uriStr));
             binding.backupDirectoryOption.descriptionText.setText(path);
-        }
-    }
-
-    /**
-     * 初始化权限请求
-     */
-    private void initPermissionRequests() {
-        PermissionHelper helper = new PermissionHelper(this);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            helper.addPermission(Manifest.permission.POST_NOTIFICATIONS, "请授予通知权限以发送操作进度通知");
         }
     }
 

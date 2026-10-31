@@ -12,9 +12,13 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.sly.coffer.SlyCoffer;
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.R;
 import com.sly.coffer.automation.broadcast.BroadcastActions;
+import com.sly.coffer.automation.services.AccessibilityAbService;
+import com.sly.coffer.automation.services.NotificationAbService;
 import com.sly.coffer.auxiliary.enums.RadiusStyle;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.preference.AutoBookKeepingPreference;
@@ -22,7 +26,7 @@ import com.sly.coffer.databinding.ActivityAutoBookkeepingBinding;
 import com.sly.coffer.auxiliary.enums.settings.NotificationCancelBehaviour;
 import com.sly.coffer.auxiliary.enums.settings.NotificationClickBehaviour;
 import com.sly.coffer.helpers.ExceptionHelper;
-import com.sly.coffer.helpers.PermissionHelper;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.pages.accessibility.rule.AccessibilityRuleListActivity;
 import com.sly.coffer.ui.pages.notification.rule.NotificationRuleListActivity;
@@ -33,6 +37,7 @@ import com.sly.coffer.ui.pages.main.settings.components.SettingSwitchView;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -106,7 +111,7 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
                 RadiusStyle.TOP
         );
         boolean isNotificationAnalysisOpened = AutoBookKeepingPreference.getSwitchStat(this);
-        if (isNotificationAnalysisOpened && PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.isGranted(this)) {
+        if (isNotificationAnalysisOpened && XXPermissions.isGrantedPermission(this, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class))) {
             notificationBookkeepingSwitch.setChecked(true);
         } else {
             notificationBookkeepingSwitch.setChecked(false);
@@ -115,19 +120,43 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
             AutoBookKeepingPreference.setSwitchStat(false, this);
         }
         notificationBookkeepingSwitch.setFunctionListener((buttonView, isChecked) -> {
-            //没有权限时提示授权
-            if (isChecked && !PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.isGranted(this)) {
-                new MaterialAlertDialogBuilder(this)
-                        .setTitle("需要权限")
-                        .setMessage("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。")
-                        .setPositiveButton("去授权", (dialog, which) -> {
-                            SlyCoffer.lockLifecycleObserver();
-                            Intent intent = PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.getIntent(this);
-                            startActivity(intent);
-                        })
-                        .setNegativeButton("取消", (dialogInterface, i) -> dialogInterface.cancel())
-                        .setOnCancelListener(dialogInterface -> buttonView.setChecked(false))
-                        .show();
+            //开关打开时尝试申请权限
+            if (isChecked) {
+                PermissionHelper.requestPermission(
+                        this,
+                        permissionList -> {
+                            StringBuilder message = new StringBuilder();
+
+                            //逐个权限添加通知
+                            if (XXPermissions.containsPermission(permissionList, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class))) {
+                                message.append("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。\n");
+                            }
+
+                            return message.toString();
+                        },
+                        new PermissionHelper.PermissionCallback() {
+                            @Override
+                            public void allGranted(List<IPermission> permissionList) {
+                            }
+
+                            @Override
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
+                                boolean noDenied = deniedList.isEmpty();
+
+                                if (!noDenied) {
+                                    new MaterialAlertDialogBuilder(AutoBookkeepingActivity.this)
+                                            .setTitle("请求被拒绝")
+                                            .setMessage(descriptionFun.apply(deniedList))
+                                            .setPositiveButton("前往设置", (dialog, which) ->
+                                                    XXPermissions.startPermissionActivity(AutoBookkeepingActivity.this, deniedList)
+                                            )
+                                            .setNegativeButton("取消", null)
+                                            .show();
+                                }
+                            }
+                        },
+                        PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class)
+                );
             }
             AutoBookKeepingPreference.setSwitchStat(isChecked, this);
         });
@@ -157,19 +186,43 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
         );
         notificationCaptureSwitch.setChecked(AutoBookKeepingPreference.getNotificationCapture(this));
         notificationCaptureSwitch.setFunctionListener((compoundButton, isChecked) -> {
-            //没有权限时提示授权
-            if (isChecked && !PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.isGranted(this)) {
-                new MaterialAlertDialogBuilder(this)
-                        .setTitle("需要权限")
-                        .setMessage("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。")
-                        .setPositiveButton("去授权", (dialog, which) -> {
-                            SlyCoffer.lockLifecycleObserver();
-                            Intent intent = PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.getIntent(this);
-                            startActivity(intent);
-                        })
-                        .setNegativeButton("取消", (dialogInterface, i) -> dialogInterface.cancel())
-                        .setOnCancelListener(dialogInterface -> compoundButton.setChecked(false))
-                        .show();
+            //打开开关时申请权限
+            if (isChecked) {
+                PermissionHelper.requestPermission(
+                        this,
+                        permissionList -> {
+                            StringBuilder message = new StringBuilder();
+
+                            //逐个权限添加通知
+                            if (XXPermissions.containsPermission(permissionList, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class))) {
+                                message.append("此功能需要读取其他应用发送的通知，请授予“通知使用”权限。\n");
+                            }
+
+                            return message.toString();
+                        },
+                        new PermissionHelper.PermissionCallback() {
+                            @Override
+                            public void allGranted(List<IPermission> permissionList) {
+                            }
+
+                            @Override
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
+                                boolean noDenied = deniedList.isEmpty();
+
+                                if (!noDenied) {
+                                    new MaterialAlertDialogBuilder(AutoBookkeepingActivity.this)
+                                            .setTitle("请求被拒绝")
+                                            .setMessage(descriptionFun.apply(deniedList))
+                                            .setPositiveButton("前往设置", (dialog, which) ->
+                                                    XXPermissions.startPermissionActivity(AutoBookkeepingActivity.this, deniedList)
+                                            )
+                                            .setNegativeButton("取消", null)
+                                            .show();
+                                }
+                            }
+                        },
+                        PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class)
+                );
             }
             AutoBookKeepingPreference.setNotificationCapture(this, isChecked);
         });
@@ -210,26 +263,49 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
                 RadiusStyle.TOP
         );
         accessibilityBookkeepingSwitch.setChecked(
-                PermissionHelper.SpecialPermissionType.ACCESSIBILITY_BOOKKEEPING.isGranted(this)
+                XXPermissions.isGrantedPermission(this, PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class))
         );
         accessibilityBookkeepingSwitch.setFunctionListener((compoundButton, b) -> {
             if (b) {
-                String content = String.format(
-                        Locale.getDefault(),
-                        "此功能需要启动无障碍服务以识别屏幕内容，请开启“%s”服务。",
-                        getString(R.string.accessibility_title_auto_bookkeeping)
+                PermissionHelper.requestPermission(
+                        this,
+                        permissionList -> {
+                            StringBuilder message = new StringBuilder();
+
+                            //逐个权限添加通知
+                            if (XXPermissions.containsPermission(permissionList, PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class))) {
+                                message.append(String.format(
+                                        Locale.getDefault(),
+                                        "此功能需要启动无障碍服务以识别屏幕内容，请开启“%s”服务。",
+                                        getString(R.string.accessibility_title_auto_bookkeeping)
+                                ));
+                            }
+
+                            return message.toString();
+                        },
+                        new PermissionHelper.PermissionCallback() {
+                            @Override
+                            public void allGranted(List<IPermission> permissionList) {
+                            }
+
+                            @Override
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
+                                boolean noDenied = deniedList.isEmpty();
+
+                                if (!noDenied) {
+                                    new MaterialAlertDialogBuilder(AutoBookkeepingActivity.this)
+                                            .setTitle("请求被拒绝")
+                                            .setMessage(descriptionFun.apply(deniedList))
+                                            .setPositiveButton("前往设置", (dialog, which) ->
+                                                    XXPermissions.startPermissionActivity(AutoBookkeepingActivity.this, deniedList)
+                                            )
+                                            .setNegativeButton("取消", null)
+                                            .show();
+                                }
+                            }
+                        },
+                        PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class)
                 );
-                new MaterialAlertDialogBuilder(this)
-                        .setTitle("需要权限")
-                        .setMessage(content)
-                        .setPositiveButton("去设置", (dialog, which) -> {
-                            SlyCoffer.lockLifecycleObserver();
-                            Intent intent = PermissionHelper.SpecialPermissionType.ACCESSIBILITY_BOOKKEEPING.getIntent(this);
-                            startActivity(intent);
-                        })
-                        .setNegativeButton("取消", (dialogInterface, i) -> dialogInterface.cancel())
-                        .setOnCancelListener(dialogInterface -> compoundButton.setChecked(false))
-                        .show();
             } else {
                 Intent shutDown = new Intent(BroadcastActions.ACTION_SHUT_DOWN_ACCESSIBILITY_BOOKKEEPING.toString());
                 shutDown.setPackage(getPackageName());
@@ -367,7 +443,7 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
      * 刷新设置项状态
      */
     private void refreshSettingsStat() {
-        if (!PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.isGranted(this)) {
+        if (!XXPermissions.isGrantedPermission(this, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class))) {
             //通知记账开关
             if (notificationBookkeepingSwitch != null && notificationBookkeepingSwitch.getFunctionComponent().isChecked()) {
                 notificationBookkeepingSwitch.setChecked(false);
@@ -380,7 +456,7 @@ public class AutoBookkeepingActivity extends AppCompatActivity {
         }
 
         //无障碍记账开关
-        if (!PermissionHelper.SpecialPermissionType.ACCESSIBILITY_BOOKKEEPING.isGranted(this) &&
+        if (!XXPermissions.isGrantedPermission(this, PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class)) &&
                 accessibilityBookkeepingSwitch.getFunctionComponent().isChecked()) {
             accessibilityBookkeepingSwitch.setChecked(false);
         }

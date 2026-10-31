@@ -56,7 +56,7 @@ public class AboutActivity extends AppCompatActivity {
 
         //作者卡片
         binding.authorCard.setOnClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver();
+            SlyCoffer.lockLifecycleObserver(true);
             Uri uri = Uri.parse("https://github.com/E-zhiyu");
             Intent skip2GitHub = new Intent(Intent.ACTION_VIEW, uri);
             startActivity(skip2GitHub);
@@ -89,7 +89,7 @@ public class AboutActivity extends AppCompatActivity {
         new MaterialAlertDialogBuilder(this)
                 .setTitle("选择项目仓库")
                 .setItems(addressTitles, (dialogInterface, i) -> {
-                    SlyCoffer.lockLifecycleObserver();
+                    SlyCoffer.lockLifecycleObserver(true);
                     Uri uri = Uri.parse(addresses[i].getAddress());
                     Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                     startActivity(intent);

@@ -20,8 +20,8 @@ android {
         applicationId 'com.sly.coffer'
         minSdk 28
         targetSdk 37
-        versionCode 86
-        versionName '1.13.5'
+        versionCode 87
+        versionName '1.13.6'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -83,7 +83,6 @@ dependencies {
     implementation libs.photoview
     implementation libs.dynamicanimation
     implementation libs.flexbox                     //Web上的Flex布局
-    implementation libs.devicecompat                //系统名称判断
     implementation libs.room.runtime                // Room 核心库
     annotationProcessor libs.room.compiler          // Room 注解处理器
     implementation libs.room.rxjava3                // Room的 RxJava 支持
@@ -92,4 +91,6 @@ dependencies {
     implementation libs.lifecycle.process           // 生命周期监听
     implementation libs.zibin.luban                 //图片压缩
     implementation libs.text.recognition.chinese    //中文 OCR 识别
+    implementation libs.devicecompat                //系统判断
+    implementation libs.xxpermissions               //权限申请框架
 }

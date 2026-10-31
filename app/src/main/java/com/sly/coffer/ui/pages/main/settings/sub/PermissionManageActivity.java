@@ -1,49 +1,60 @@
 package com.sly.coffer.ui.pages.main.settings.sub;
 
-import android.Manifest;
 import android.content.Intent;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.StringRes;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.SlyCoffer;
 import com.sly.coffer.R;
+import com.sly.coffer.automation.services.AccessibilityAbService;
+import com.sly.coffer.automation.services.NotificationAbService;
+import com.sly.coffer.automation.services.PickAccessibilityService;
 import com.sly.coffer.auxiliary.enums.RadiusStyle;
 import com.sly.coffer.databinding.ActivityPermissionManageBinding;
-import com.sly.coffer.helpers.PermissionHelper;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.main.settings.components.SettingClickableTextView;
 
-import java.util.Objects;
+import java.util.List;
+import java.util.function.Function;
 
 public class PermissionManageActivity extends AppCompatActivity {
     private ActivityPermissionManageBinding binding;                //绑定的XML视图
-    private final ActivityResultLauncher<String> runtimeLauncher =  //申请运行时权限的启动器
-            registerForActivityResult(
-                    new ActivityResultContracts.RequestPermission(),
-                    o -> {
-                        if (o) {
-                            Toast.makeText(this, "权限授予成功", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(this, "权限被拒绝", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-            );
     private SettingClickableTextView camera, appList, notification, notificationListener, battery, alarm;
     private SettingClickableTextView autoBookkeeping, pick;
+    private final PermissionHelper.PermissionCallback REQUEST_CALLBACK = new PermissionHelper.PermissionCallback() {
+        @Override
+        public void allGranted(List<IPermission> permissionList) {
+            Toast.makeText(PermissionManageActivity.this, "权限已授予", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public void requested(@NonNull List<IPermission> grantedList, @NonNull List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
+            boolean noDenied = deniedList.isEmpty();
+            boolean noGranted = grantedList.isEmpty();
+            if (noDenied && !noGranted) {
+                Toast.makeText(PermissionManageActivity.this, "权限已授予", Toast.LENGTH_SHORT).show();
+            } else if (!XXPermissions.isDoNotAskAgainPermissions(PermissionManageActivity.this, deniedList)) {
+                Toast.makeText(PermissionManageActivity.this, "请求被拒绝", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(PermissionManageActivity.this, "请手动开启权限", Toast.LENGTH_SHORT).show();
+                XXPermissions.startPermissionActivity(PermissionManageActivity.this, deniedList);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,23 +101,21 @@ public class PermissionManageActivity extends AppCompatActivity {
                 R.drawable.baseline_photo_camera_24,
                 RadiusStyle.TOP
         );
-        camera.setFunctionListener(v -> showExplanationDialog(
-                R.string.camera_permission,
-                "该权限允许应用调用摄像头，应用范围如下：\n" +
-                        "- 添加流水记录图片时使用内置拍照功能拍照\n",
-                () -> requestRuntimePermission(Manifest.permission.CAMERA)
+        camera.setFunctionListener(v -> PermissionHelper.requestPermission(
+                this,
+                permissionList ->
+                        "该权限允许应用调用摄像头，应用范围如下：\n- 写日记时使用系统相机添加媒体文件\n",
+                REQUEST_CALLBACK,
+                PermissionLists.getCameraPermission()
         ));
         camera.setOnLongClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver();
-            Intent skip2Settings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            Uri uri = Uri.fromParts("package", getPackageName(), null);
-            skip2Settings.setData(uri);
-            startActivity(skip2Settings);
+            SlyCoffer.lockLifecycleObserver(true);
+            XXPermissions.startPermissionActivity(this, PermissionLists.getCameraPermission());
             return true;
         });
 
         //应用列表权限
-        if (PermissionHelper.isRuntimePermissionDefined("com.android.permission.GET_INSTALLED_APPS", this)) {
+        if (PermissionHelper.isAppListPermissionDefined(this)) {
             appList = new SettingClickableTextView(
                     this,
                     binding.appListOption,
@@ -115,18 +124,17 @@ public class PermissionManageActivity extends AppCompatActivity {
                     R.drawable.outline_apps_24,
                     RadiusStyle.MIDDLE
             );
-            appList.setFunctionListener(v -> showExplanationDialog(
-                    R.string.app_list_permission,
-                    "该权限允许应用读取应用列表，应用范围如下：\n" +
-                            "- 在输入通知解析规则时读取应用列表以便快速输入包名\n",
-                    () -> requestRuntimePermission("com.android.permission.GET_INSTALLED_APPS")
+            appList.setFunctionListener(v -> PermissionHelper.requestPermission(
+                    this,
+                    permissionList ->
+                            "该权限允许应用读取应用列表，应用范围如下：\n" +
+                                    "- 在输入自动记账规则时读取应用列表以便快速输入包名\n",
+                    REQUEST_CALLBACK,
+                    PermissionLists.getGetInstalledAppsPermission()
             ));
             appList.setOnLongClickListener(view -> {
-                SlyCoffer.lockLifecycleObserver();
-                Intent skip2Settings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                Uri uri = Uri.fromParts("package", getPackageName(), null);
-                skip2Settings.setData(uri);
-                startActivity(skip2Settings);
+                SlyCoffer.lockLifecycleObserver(true);
+                XXPermissions.startPermissionActivity(this, PermissionLists.getGetInstalledAppsPermission());
                 return true;
             });
         } else {
@@ -142,26 +150,18 @@ public class PermissionManageActivity extends AppCompatActivity {
                 R.drawable.outline_notification_settings_24,
                 RadiusStyle.MIDDLE
         );
-        notification.setFunctionListener(v -> showExplanationDialog(
-                        R.string.notification_permission,
+        notification.setFunctionListener(v -> PermissionHelper.requestPermission(
+                this,
+                permissionList ->
                         "该权限允许应用发送通知，应用范围如下：\n" +
                                 "- 预算余额低时发送提醒通知\n" +
                                 "- 触发自动记账后发送确认通知\n",
-                        () -> {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                requestRuntimePermission(Manifest.permission.POST_NOTIFICATIONS);
-                            } else {
-                                Toast.makeText(this, "权限已授予", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                )
-        );
+                REQUEST_CALLBACK,
+                PermissionLists.getPostNotificationsPermission()
+        ));
         notification.setOnLongClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver();
-            Intent skip2Settings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            Uri uri = Uri.fromParts("package", getPackageName(), null);
-            skip2Settings.setData(uri);
-            startActivity(skip2Settings);
+            SlyCoffer.lockLifecycleObserver(true);
+            XXPermissions.startPermissionActivity(this, PermissionLists.getPostNotificationsPermission());
             return true;
         });
 
@@ -174,17 +174,19 @@ public class PermissionManageActivity extends AppCompatActivity {
                 R.drawable.outline_notifications_active_24,
                 RadiusStyle.MIDDLE
         );
-        notificationListener.setFunctionListener(v -> showExplanationDialog(
-                R.string.notification_listener_permission,
-                "该权限允许应用读取其他应用发送的通知，应用范围如下：\n" +
-                        "- 读取其他应用的通知实现自动记账\n" +
-                        "- 捕获其他应用发送的通知用于快速生成通知规则\n",
-                () -> {
-                    SlyCoffer.lockLifecycleObserver();
-                    Intent skip2NotificationListener = PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.getIntent(this);
-                    startActivity(skip2NotificationListener);
-                }
+        notificationListener.setFunctionListener(v -> PermissionHelper.requestPermission(
+                this,
+                permissionList ->
+                        "该权限允许应用读取其他应用发送的通知，应用范围如下：\n" +
+                                "- 读取其他应用的通知实现自动记账\n" +
+                                "- 捕获其他应用发送的通知用于快速生成通知规则\n",
+                REQUEST_CALLBACK,
+                PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class)
         ));
+        notificationListener.setOnLongClickListener(v -> {
+            XXPermissions.startPermissionActivity(this, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class));
+            return true;
+        });
 
         //自启动权限
         if (PermissionHelper.isAutoStartDefined()) {
@@ -196,17 +198,21 @@ public class PermissionManageActivity extends AppCompatActivity {
                     R.drawable.outline_autorenew_24,
                     RadiusStyle.MIDDLE
             );
-            autoStart.setFunctionListener(v -> showExplanationDialog(
-                            R.string.auto_start_permission,
-                            "该权限是定制安卓中特有的权限，其允许应用在后台启动服务，应用范围如下：\n" +
-                                    "- 在退出应用后自动启动通知监听服务，确保自动记账功能能够运行\n",
-                            () -> {
-                                SlyCoffer.lockLifecycleObserver();
-                                Intent skip2AutoStartPermission = PermissionHelper.SpecialPermissionType.AUTO_START.getIntent(this);
-                                startActivity(skip2AutoStartPermission);
-                            }
+            autoStart.setFunctionListener(v -> new MarkdownDialogBuilder(
+                    this,
+                    getString(R.string.auto_start_permission),
+                    "该权限是定制安卓中特有的权限，其允许应用在后台启动服务，应用范围如下：\n" +
+                            "- 确保定时任务能够在后台自动执行\n" +
+                            "- 在退出应用后自动启动通知监听服务，确保自动记账功能能够运行\n")
+                    .setPositiveButton("前往设置", (dialogInterface, i) ->
+                            PermissionHelper.requestAutoStartPermission(this)
                     )
-            );
+                    .setNegativeButton("取消", null)
+                    .show());
+            autoStart.setOnLongClickListener(v -> {
+                PermissionHelper.requestAutoStartPermission(this);
+                return true;
+            });
         } else {
             binding.autoStartOption.getRoot().setVisibility(View.GONE);
         }
@@ -214,35 +220,23 @@ public class PermissionManageActivity extends AppCompatActivity {
         //电池优化策略
         battery = new SettingClickableTextView(
                 this,
-                binding.batteryOptimizationsOption,
-                R.string.battery_optimization,
+                binding.batteryOption,
+                R.string.ignore_battery_optimization,
                 "设置安卓原生的电池优化策略",
                 R.drawable.outline_battery_android_frame_3_24,
                 RadiusStyle.MIDDLE
         );
-        battery.setFunctionListener(v -> showExplanationDialog(
-                R.string.battery_optimization,
-                "该设置项是原生安卓的一个重要设置项，可以更加底层地调整应用的省电策略。" +
-                        "如果需要确保应用在后台能够运行，请在电池优化设置界面找到对应应用，点击开关左侧的文本并勾选“无限制”。" +
-                        "影响范围如下：\n" +
-                        "- 自动记账的通知监听服务能否在后台保持运行\n" +
-                        "- 自动记账触发后能否第一时间发送通知\n",
-                () -> {
-                    if (PermissionHelper.SpecialPermissionType.BATTERY.isGranted(this)) {
-                        Toast.makeText(this, "已忽略电池优化，长按强制跳转电池优化界面", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    Intent intent = PermissionHelper.SpecialPermissionType.BATTERY.getIntent(this);
-                    if (Objects.equals(intent.getAction(), Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) {
-                        Toast.makeText(this, "请找到本应用并设置电池优化策略为“无限制”", Toast.LENGTH_SHORT).show();
-                    }
-                    SlyCoffer.lockLifecycleObserver();
-                    startActivity(intent);
-                }
+        battery.setFunctionListener(v -> PermissionHelper.requestBatteryIgnoration(
+                this,
+                permissionList ->
+                        "该设置项是原生安卓的一个重要设置项，可以更加底层地调整应用的省电策略。" +
+                                "如果需要确保应用在后台能够运行，请在电池优化设置界面找到对应应用，点击开关左侧的文本并勾选“无限制”。" +
+                                "影响范围如下：\n" +
+                                "- 自动记账的通知监听服务能否在后台保持运行\n" +
+                                "- 自动记账触发后能否第一时间发送通知\n"
         ));
         battery.setOnLongClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver();
+            SlyCoffer.lockLifecycleObserver(true);
             Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
             startActivity(intent);
             return true;
@@ -257,16 +251,19 @@ public class PermissionManageActivity extends AppCompatActivity {
                 R.drawable.outline_alarm_24,
                 RadiusStyle.BOTTOM
         );
-        alarm.setFunctionListener(v -> showExplanationDialog(
-                R.string.alarm_permission,
-                "该权限允许应用执行某些定时任务，以实现一些自动化功能，应用范围如下：\n" +
-                        "- 每日0点自动检查并重置预算\n",
-                () -> {
-                    SlyCoffer.lockLifecycleObserver();
-                    Intent skip2ExactAlarm = PermissionHelper.SpecialPermissionType.ALARM.getIntent(this);
-                    startActivity(skip2ExactAlarm);
-                }
+        alarm.setFunctionListener(v -> PermissionHelper.requestPermission(
+                this,
+                permissionList ->
+                        "该权限允许应用执行某些定时任务，以实现一些自动化功能，应用范围如下：\n" +
+                                "- 根据用户设置自动检测当天是否有日记并发送通知提醒\n",
+                REQUEST_CALLBACK,
+                PermissionLists.getScheduleExactAlarmPermission()
         ));
+        alarm.setOnLongClickListener(view -> {
+            SlyCoffer.lockLifecycleObserver(true);
+            XXPermissions.startPermissionActivity(this, PermissionLists.getScheduleExactAlarmPermission());
+            return true;
+        });
 
         //无障碍自动记账
         autoBookkeeping = new SettingClickableTextView(
@@ -277,15 +274,18 @@ public class PermissionManageActivity extends AppCompatActivity {
                 R.drawable.outline_checkbook_24,
                 RadiusStyle.TOP
         );
-        autoBookkeeping.setFunctionListener(view -> showExplanationDialog(
-                R.string.auto_bookkeeping,
-                "该服务用于识别屏幕内容实现自动记账。",
-                () -> {
-                    SlyCoffer.lockLifecycleObserver();
-                    Intent intent = PermissionHelper.SpecialPermissionType.ACCESSIBILITY_BOOKKEEPING.getIntent(this);
-                    startActivity(intent);
-                }
+        autoBookkeeping.setFunctionListener(view -> PermissionHelper.requestPermission(
+                this,
+                permissionList ->
+                        "此权限为无障碍权限，开启后将允许APP识别并操作屏幕，该服务的作用如下：\n" +
+                                "- 识别屏幕内容实现自动记账。\n",
+                REQUEST_CALLBACK,
+                PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class)
         ));
+        autoBookkeeping.setOnLongClickListener(v -> {
+            XXPermissions.startPermissionActivity(this, PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class));
+            return true;
+        });
 
         //无障碍视图拾取
         pick = new SettingClickableTextView(
@@ -296,42 +296,18 @@ public class PermissionManageActivity extends AppCompatActivity {
                 R.drawable.outline_screenshot_monitor_24,
                 RadiusStyle.BOTTOM
         );
-        pick.setFunctionListener(view -> showExplanationDialog(
-                R.string.page_pick,
-                "该服务用于输入无障碍规则时获取屏幕点击位置，以此得到点击的视图信息作为金额来源。",
-                () -> {
-                    SlyCoffer.lockLifecycleObserver();
-                    Intent intent = PermissionHelper.SpecialPermissionType.ACCESSIBILITY_BOOKKEEPING.getIntent(this);
-                    startActivity(intent);
-                }
+        pick.setFunctionListener(view -> PermissionHelper.requestPermission(
+                this,
+                permissionList ->
+                        "此权限为无障碍权限，开启后将允许APP识别并操作屏幕，该服务的作用如下：\n" +
+                                "- 该服务用于记录显示过的界面信息，用于在添加无障碍规则时选择。",
+                REQUEST_CALLBACK,
+                PermissionLists.getBindAccessibilityServicePermission(PickAccessibilityService.class)
         ));
-    }
-
-    /**
-     * 显示权限解释对话框
-     *
-     * @param title   对话框标题
-     * @param message 对话框内容，支持Markdown格式
-     * @param action  点击确定按钮后执行的操作
-     */
-    private void showExplanationDialog(@StringRes int title, String message, Runnable action) {
-        new MarkdownDialogBuilder(this, getString(title), message)
-                .setPositiveButton("前往设置", (dialogInterface, i) -> action.run())
-                .setNegativeButton("取消", null)
-                .show();
-    }
-
-    /**
-     * 申请运行时权限
-     *
-     * @param permission 运行时权限
-     */
-    private void requestRuntimePermission(String permission) {
-        if (PermissionHelper.isRuntimePermissionGranted(permission, this)) {
-            Toast.makeText(this, "权限已授予", Toast.LENGTH_SHORT).show();
-        } else {
-            runtimeLauncher.launch(permission);
-        }
+        pick.setOnLongClickListener(v -> {
+            XXPermissions.startPermissionActivity(this, PermissionLists.getBindAccessibilityServicePermission(PickAccessibilityService.class));
+            return true;
+        });
     }
 
     /**
@@ -344,41 +320,37 @@ public class PermissionManageActivity extends AppCompatActivity {
         final String NOT_ENABLED = "未启用";
 
         //相机权限
-        boolean isCameraGranted = PermissionHelper.isRuntimePermissionGranted(Manifest.permission.CAMERA, this);
+        boolean isCameraGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getCameraPermission());
         camera.getFunctionComponent().setText(isCameraGranted ? GRANTED : NOT_GRANTED);
 
         //应用列表权限
         if (appList != null) {
-            boolean isAppListGranted = PermissionHelper.isRuntimePermissionGranted(
-                    "com.android.permission.GET_INSTALLED_APPS",
-                    this
-            );
+            boolean isAppListGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getGetInstalledAppsPermission());
             appList.getFunctionComponent().setText(isAppListGranted ? GRANTED : NOT_GRANTED);
         }
 
         //通知权限
-        boolean isNotificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                PermissionHelper.isRuntimePermissionGranted(Manifest.permission.POST_NOTIFICATIONS, this);
+        boolean isNotificationGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getPostNotificationsPermission());
         notification.getFunctionComponent().setText(isNotificationGranted ? GRANTED : NOT_GRANTED);
 
         //通知监听
-        boolean isNotificationListenerGranted = PermissionHelper.SpecialPermissionType.NOTIFICATION_LISTENER.isGranted(this);
+        boolean isNotificationListenerGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getBindNotificationListenerServicePermission(NotificationAbService.class));
         notificationListener.getFunctionComponent().setText(isNotificationListenerGranted ? GRANTED : NOT_GRANTED);
 
         //电池优化
-        boolean isBatteryIgnored = PermissionHelper.SpecialPermissionType.BATTERY.isGranted(this);
+        boolean isBatteryIgnored = XXPermissions.isGrantedPermission(this, PermissionLists.getRequestIgnoreBatteryOptimizationsPermission());
         battery.getFunctionComponent().setText(isBatteryIgnored ? "已忽略" : "未忽略");
 
         //精确闹钟权限
-        boolean isAlarmGranted = PermissionHelper.SpecialPermissionType.ALARM.isGranted(this);
+        boolean isAlarmGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getScheduleExactAlarmPermission());
         alarm.getFunctionComponent().setText(isAlarmGranted ? GRANTED : NOT_GRANTED);
 
         //无障碍自动记账服务
-        boolean isAccessibilityBookkeepingGranted = PermissionHelper.SpecialPermissionType.ACCESSIBILITY_BOOKKEEPING.isGranted(this);
+        boolean isAccessibilityBookkeepingGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getBindAccessibilityServicePermission(AccessibilityAbService.class));
         autoBookkeeping.getFunctionComponent().setText(isAccessibilityBookkeepingGranted ? ENABLED : NOT_ENABLED);
 
         //无障碍视图拾取服务
-        boolean isAccessibilityPickGranted = PermissionHelper.SpecialPermissionType.ACCESSIBILITY_PICK.isGranted(this);
+        boolean isAccessibilityPickGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getBindAccessibilityServicePermission(PickAccessibilityService.class));
         pick.getFunctionComponent().setText(isAccessibilityPickGranted ? ENABLED : NOT_ENABLED);
     }
 }

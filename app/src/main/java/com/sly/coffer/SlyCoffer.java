@@ -2,6 +2,7 @@ package com.sly.coffer;
 
 import android.app.ActivityManager;
 import android.app.Application;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
@@ -41,6 +42,9 @@ public class SlyCoffer extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        //是否需要隐藏最近任务
+        hideTaskFromRecents(this, SecurityPreference.getHideRecentTask(this));
 
         //注册预算重置检查闹钟
         AlarmHelper.setBudgetCheckAlarm(this);
@@ -104,16 +108,6 @@ public class SlyCoffer extends Application {
                         startActivity(intent);
                     }
                 }
-
-                @Override
-                public void onStop(@NonNull LifecycleOwner owner) {
-                    if (isLifecycleObserverLocked) return;  //如果生命周期观察者被锁定，不执行任何操作
-
-                    if (SecurityPreference.getHideRecentTask(SlyCoffer.this)) {
-                        // 这里的 onStop 是跟随 Activity 的，会立刻执行，不会拖延到下次启动
-                        removeTaskFromRecents();
-                    }
-                }
             });
 
             //启动时检测是否有需要删除的安装包
@@ -127,26 +121,34 @@ public class SlyCoffer extends Application {
     }
 
     /**
-     * 从最近任务中隐藏
+     * 设置是否在最近任务中隐藏任务卡片
+     *
+     * @param context  上下文
+     * @param isHidden 是否隐藏
      */
-    private void removeTaskFromRecents() {
+    public static void hideTaskFromRecents(@NonNull Context context, boolean isHidden) {
         Log.d(LogTags.APPLICATION.n(), "触发最近任务隐藏");
-        ActivityManager am = getSystemService(ActivityManager.class);
-        if (am != null) {
-            List<ActivityManager.AppTask> taskList = am.getAppTasks();
-            if (taskList != null) {
-                for (ActivityManager.AppTask task : taskList) {
-                    // 立刻移除
-                    task.finishAndRemoveTask();
-                }
-            }
+        ActivityManager am = context.getSystemService(ActivityManager.class);
+        if (am == null) {
+            return;
+        }
+
+        //获取任务列表
+        List<ActivityManager.AppTask> taskList = am.getAppTasks();
+        if (taskList == null) {
+            return;
+        }
+
+        //将所有任务都标记为排除
+        for (ActivityManager.AppTask task : taskList) {
+            task.setExcludeFromRecents(isHidden);
         }
     }
 
     /**
      * 锁定生命周期观察者
      */
-    public static void lockLifecycleObserver() {
-        isLifecycleObserverLocked = true;
+    public static void lockLifecycleObserver(boolean isLocked) {
+        isLifecycleObserverLocked = isLocked;
     }
 }

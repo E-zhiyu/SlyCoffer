@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.room.RoomDatabase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -154,10 +155,10 @@ abstract public class BackupHelperBase<D extends RoomDatabase, M> {
      * @throws PackageManager.NameNotFoundException 当前包名未找到时引发的异常
      */
     @NonNull
-    public static DataInfoMap generateDataInfo(Context context, boolean[] choice) throws PackageManager.NameNotFoundException {
+    public static DataInfoMap generateDataInfo(Context context, @Nullable boolean[] choice) throws PackageManager.NameNotFoundException {
         long versionCode = AboutHelper.getVersionCode(context);
         List<String> fileNameList = Arrays.stream(BackupDataType.values())
-                .map(type -> choice[type.ordinal()] ? type.getLatestVersionFileName() : null)
+                .map(type -> choice == null || choice[type.ordinal()] ? type.getLatestVersionFileName() : null)
                 .collect(Collectors.toList());
 
         return new DataInfoMap(fileNameList, versionCode);

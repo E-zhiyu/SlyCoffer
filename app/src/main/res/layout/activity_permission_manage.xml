@@ -71,7 +71,7 @@
 
             <!-- 电池优化 -->
             <include
-                android:id="@+id/battery_optimizations_option"
+                android:id="@+id/battery_option"
                 layout="@layout/view_setting_option" />
 
             <!-- 精确闹钟 -->
@@ -97,6 +97,16 @@
             <include
                 android:id="@+id/page_pick_service"
                 layout="@layout/view_setting_option" />
+
+            <!-- 提示文本 -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/long_click_tip_text"
+                style="@style/TipTextViewStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="10dp"
+                android:text="@string/permission_long_click_tip" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

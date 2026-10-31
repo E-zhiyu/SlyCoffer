@@ -10,7 +10,18 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.13.5\n" +
+    private static final String UPDATE_LOG_MD = "# v1.13.6\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复自动备份只能生成空备份文件的BUG\n" +
+            "\n" +
+            "### 优化的内容\n" +
+            "\n" +
+            "- 优化权限申请流程\n" +
+            "- 优化最近任务隐藏的效果，现在息屏不再会隐藏，且隐藏后再次进入APP能够回到退出前的界面\n" +
+            "\n" +
+            "# v1.13.5\n" +
             "\n" +
             "### BUG修复\n" +
             "\n" +

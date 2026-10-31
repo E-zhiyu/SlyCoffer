@@ -1,8 +1,6 @@
 package com.sly.coffer.ui.pages.budget;
 
-import android.Manifest;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -17,6 +15,9 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.R;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
@@ -25,14 +26,16 @@ import com.sly.coffer.data.save.db.services.BudgetService;
 import com.sly.coffer.databinding.ActivityBudgetListBinding;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.helpers.ExceptionHelper;
-import com.sly.coffer.helpers.PermissionHelper;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.common.account.AccountListActivity;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -59,31 +62,53 @@ public class BudgetListActivity extends AppCompatActivity {
         });
 
         initViews();
-        addPermissionRequests();
+
+        //申请权限
+        PermissionHelper.requestPermission(
+                this,
+                permissionList -> {
+                    StringBuilder message = new StringBuilder();
+
+                    //逐个权限添加通知
+                    if (XXPermissions.containsPermission(permissionList, PermissionLists.getPostNotificationsPermission())) {
+                        message.append("请授予通知权限用于在预算余额不足时发送通知。\n");
+                    }
+                    if (XXPermissions.containsPermission(permissionList, PermissionLists.getScheduleExactAlarmPermission())) {
+                        message.append("自动重置预算需要精确闹钟权限，以确保每天0点能够检查并重置预算。\n");
+                    }
+
+                    return message.toString();
+                },
+                new PermissionHelper.PermissionCallback() {
+                    @Override
+                    public void allGranted(List<IPermission> permissionList) {
+                    }
+
+                    @Override
+                    public void requested(List<IPermission> grantedList, List<IPermission> deniedList, Function<List<IPermission>, String> descriptionFun) {
+                        boolean noDenied = deniedList.isEmpty();
+
+                        if (!noDenied) {
+                            new MaterialAlertDialogBuilder(BudgetListActivity.this)
+                                    .setTitle("请求被拒绝")
+                                    .setMessage(descriptionFun.apply(deniedList))
+                                    .setPositiveButton("前往设置", (dialog, which) ->
+                                            XXPermissions.startPermissionActivity(BudgetListActivity.this, deniedList)
+                                    )
+                                    .setNegativeButton("取消", null)
+                                    .show();
+                        }
+                    }
+                },
+                PermissionLists.getPostNotificationsPermission(),
+                PermissionLists.getScheduleExactAlarmPermission()
+        );
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
-    }
-
-    /**
-     * 申请一些必要的权限
-     */
-    private void addPermissionRequests() {
-        PermissionHelper permissionHelper = new PermissionHelper(this);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissionHelper.addPermission(
-                    Manifest.permission.POST_NOTIFICATIONS,
-                    "通知权限：预算不足时发送提醒"
-            );
-        }
-        permissionHelper.addPermission(
-                PermissionHelper.SpecialPermissionType.ALARM,
-                "精确闹钟权限",
-                "自动重置预算需要精确闹钟权限，以确保每天0点能够检查并重置预算"
-        );
     }
 
     /**
