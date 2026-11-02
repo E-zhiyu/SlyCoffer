@@ -43,9 +43,6 @@ public class SlyCoffer extends Application {
     public void onCreate() {
         super.onCreate();
 
-        //是否需要隐藏最近任务
-        hideTaskFromRecents(this, SecurityPreference.getHideRecentTask(this));
-
         //注册预算重置检查闹钟
         AlarmHelper.setBudgetCheckAlarm(this);
 
@@ -57,7 +54,7 @@ public class SlyCoffer extends Application {
             //初始化动态配色
             if (AppSettingsPreference.getDynamicColorStat(this)) {
                 DynamicColorsOptions options = new DynamicColorsOptions.Builder()
-                        .setThemeOverlay(R.style.Theme_ManagerAssistant_Dynamic)
+                        .setThemeOverlay(R.style.Theme_SlyCoffer_Dynamic)
                         .build();
                 DynamicColors.applyToActivitiesIfAvailable(this, options);
             }
@@ -85,6 +82,10 @@ public class SlyCoffer extends Application {
             ProcessLifecycleOwner.get().getLifecycle().addObserver(new DefaultLifecycleObserver() {
                 @Override
                 public void onStart(@NonNull LifecycleOwner owner) {
+                    //是否需要隐藏最近任务
+                    Context context = SlyCoffer.this;
+                    hideTaskFromRecents(context, SecurityPreference.getHideRecentTask(context));
+
                     Log.d(LogTags.APPLICATION.n(), "触发全局生命周期观察者的onStart()");
                     if (isLifecycleObserverLocked) {
                         Log.d(LogTags.APPLICATION.n(), "消费掉生命周期观察者的锁");
@@ -96,14 +97,11 @@ public class SlyCoffer extends Application {
                     long currentTimeMillis = System.currentTimeMillis();
                     long lastSuccessTimeMillis = AuthActivity.getLastSuccessTimeMillis();
                     long minDifference = AuthOpportunity.values()[
-                            SecurityPreference.getAuthOpportunity(SlyCoffer.this)
+                            SecurityPreference.getAuthOpportunity(context)
                             ].getTimeMilli();
-                    if (
-                            SecurityPreference.getAuthSwitchStat(SlyCoffer.this) &&
-                                    currentTimeMillis - lastSuccessTimeMillis >= minDifference
-                    ) {
-                        Intent intent = new Intent(SlyCoffer.this, AuthActivity.class);
-                        // FLAG_ACTIVITY_NEW_TASK 是从 Application 启动 Activity 必须带的
+                    if (SecurityPreference.getAuthSwitchStat(context) &&
+                            currentTimeMillis - lastSuccessTimeMillis >= minDifference) {
+                        Intent intent = new Intent(context, AuthActivity.class);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(intent);
                     }

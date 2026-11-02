@@ -33,16 +33,6 @@ import io.reactivex.rxjava3.core.Single;
 @Dao
 public interface AccountDao {
     /**
-     * 获取在指定日期后的流水记录和日期分隔符数量
-     *
-     * @param date 指定的日期
-     * @return 在指定日期后的流水记录和日期分隔符数量
-     */
-    @Query("SELECT COUNT(*) + COUNT(DISTINCT DATE(dateTime / 1000, 'unixepoch'))" +
-            "FROM accounts WHERE dateTime > :date")
-    Single<Integer> getAccountCountAfterDateSingle(LocalDate date);
-
-    /**
      * 获取最早的记账日期
      *
      * @return 最早的记账日期

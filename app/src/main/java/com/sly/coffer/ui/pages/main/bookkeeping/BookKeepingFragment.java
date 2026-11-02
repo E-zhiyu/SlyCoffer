@@ -22,7 +22,6 @@ import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.interfaces.RecyclerViewScrollListener;
 import com.sly.coffer.data.save.db.BookkeepingDb;
-import com.sly.coffer.data.save.db.daos.AccountDao;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.AccountUiModel;
 import com.sly.coffer.data.save.db.services.AccountService;
@@ -102,42 +101,8 @@ public class BookKeepingFragment extends Fragment {
                             bottomSheet.show(getParentFragmentManager(), TagStrings.ACCOUNT_FILTER_BOTTOM.t());
                             return true;
                         } else if (id == R.id.action_skip_date) {
-                            //获取初始日期
-                            LocalDate initDate = null;
-                            if (binding.accountRecycler.getLayoutManager() instanceof LinearLayoutManager) {
-                                int firstViewPosition = ((LinearLayoutManager) binding.accountRecycler.getLayoutManager())
-                                        .findFirstVisibleItemPosition();
-                                if (binding.accountRecycler.getAdapter() instanceof AccountListAdapter &&
-                                        firstViewPosition != RecyclerView.NO_POSITION) {
-                                    AccountUiModel model = ((AccountListAdapter) binding.accountRecycler.getAdapter())
-                                            .getCurrentList().get(firstViewPosition);
-                                    if (model instanceof AccountUiModel.Item) {
-                                        initDate = ((AccountUiModel.Item) model).entity.getDateTime().toLocalDate();
-                                    } else if (model instanceof AccountUiModel.Separator) {
-                                        initDate = LocalDate.parse(((AccountUiModel.Separator) model).text, CustomDateTimeFormatter.DATE_WITH_WEEK);
-                                    }
-                                }
-                            }
-
-                            //弹出日期选择对话框
-                            DateTimePickerHelper.selectDate(
-                                    initDate,
-                                    new Pair<>(null, LocalDate.now()),
-                                    getParentFragmentManager(),
-                                    "选择跳转到的日期",
-                                    selection -> {
-                                        LocalDate selectedDate = DateTimePickerHelper.getLocalDateFromTimeMilli(selection);
-                                        AccountDao dao = BookkeepingDb.getInstance(requireContext()).accountDao();
-                                        disposable.add(dao.getAccountCountAfterDateSingle(selectedDate.plusDays(1))
-                                                .observeOn(AndroidSchedulers.mainThread())
-                                                .subscribeOn(Schedulers.io())
-                                                .subscribe(
-                                                        count -> scrollToTargetPosition(count, selectedDate),
-                                                        e -> ExceptionHelper.showExceptionDialog(requireContext(), e)
-                                                )
-                                        );
-                                    }
-                            );
+                            skipDate();
+                            return true;
                         }
                         return false;
                     }
@@ -242,6 +207,57 @@ public class BookKeepingFragment extends Fragment {
     }
 
     /**
+     * 跳转到指定的日期
+     */
+    private void skipDate() {
+        //获取初始日期
+        LocalDate initDate = null;
+        if (binding.accountRecycler.getLayoutManager() instanceof LinearLayoutManager) {
+            int firstViewPosition = ((LinearLayoutManager) binding.accountRecycler.getLayoutManager())
+                    .findFirstVisibleItemPosition();
+            if (binding.accountRecycler.getAdapter() instanceof AccountListAdapter &&
+                    firstViewPosition != RecyclerView.NO_POSITION) {
+                AccountUiModel model = ((AccountListAdapter) binding.accountRecycler.getAdapter())
+                        .getCurrentList().get(firstViewPosition);
+                if (model instanceof AccountUiModel.Item) {
+                    initDate = ((AccountUiModel.Item) model).entity.getDateTime().toLocalDate();
+                } else if (model instanceof AccountUiModel.Separator) {
+                    initDate = LocalDate.parse(((AccountUiModel.Separator) model).text, CustomDateTimeFormatter.DATE_WITH_WEEK);
+                }
+            }
+        }
+
+        //弹出日期选择对话框
+        DateTimePickerHelper.selectDate(
+                initDate,
+                new Pair<>(null, LocalDate.now()),
+                getParentFragmentManager(),
+                "选择跳转到的日期",
+                selection -> {
+                    LocalDate selectedDate = DateTimePickerHelper.getLocalDateFromTimeMilli(selection);
+                    RecyclerView.Adapter<?> adapter = binding.accountRecycler.getAdapter();
+                    if (!(adapter instanceof AccountListAdapter)) {
+                        return;
+                    }
+
+                    int i = 0;
+                    for (AccountUiModel uiModel : ((AccountListAdapter) adapter).getCurrentList()) {
+                        if (uiModel instanceof AccountUiModel.Item) {
+                            LocalDate uiDate = ((AccountUiModel.Item) uiModel).entity.getDateTime().toLocalDate();
+                            if (!selectedDate.isBefore(uiDate)) {
+                                break;
+                            }
+                        }
+
+                        i++;
+                    }
+
+                    scrollToTargetPosition(i - 1, selectedDate);
+                }
+        );
+    }
+
+    /**
      * 跳转到指定位置
      *
      * @param targetPosition 目标下标，实际为大于目标日期的日记数量
@@ -250,24 +266,25 @@ public class BookKeepingFragment extends Fragment {
     private void scrollToTargetPosition(int targetPosition, LocalDate targetDate) {
         //判断位置是否在有效范围内
         RecyclerView.Adapter<?> adapter = binding.accountRecycler.getAdapter();
-        if (adapter == null || targetPosition >= adapter.getItemCount()) {
-            targetPosition -= 1;    //防止超出范围
+        if (!(adapter instanceof AccountListAdapter)) return;
+
+        if (targetPosition >= adapter.getItemCount()) {
+            targetPosition = adapter.getItemCount() - 1;    //防止超出范围
             Toast.makeText(requireContext(), "已跳转至最早的日期", Toast.LENGTH_SHORT).show();
-        } else if (targetPosition == 0) {
+        } else if (targetPosition <= 0) {
+            targetPosition = 0;
             Toast.makeText(requireContext(), "已跳转至最晚的日期", Toast.LENGTH_SHORT).show();
         } else {
             //判断跳转到的位置是否是目标日期
-            if (adapter instanceof AccountListAdapter) {
-                AccountUiModel model = ((AccountListAdapter) adapter).getCurrentList().get(targetPosition);
-                LocalDate exactDate = null;
-                if (model instanceof AccountUiModel.Item) {
-                    exactDate = ((AccountUiModel.Item) model).entity.getDateTime().toLocalDate();
-                } else if (model instanceof AccountUiModel.Separator) {
-                    exactDate = LocalDate.parse(((AccountUiModel.Separator) model).text, CustomDateTimeFormatter.DATE_WITH_WEEK);
-                }
-                if (exactDate == null || !exactDate.isEqual(targetDate)) {
-                    Toast.makeText(requireContext(), "当天未记账，已跳转至相邻日期", Toast.LENGTH_SHORT).show();
-                }
+            AccountUiModel model = ((AccountListAdapter) adapter).getCurrentList().get(targetPosition);
+            LocalDate exactDate = null;
+            if (model instanceof AccountUiModel.Item) {
+                exactDate = ((AccountUiModel.Item) model).entity.getDateTime().toLocalDate();
+            } else if (model instanceof AccountUiModel.Separator) {
+                exactDate = LocalDate.parse(((AccountUiModel.Separator) model).text, CustomDateTimeFormatter.DATE_WITH_WEEK);
+            }
+            if (exactDate == null || !exactDate.isEqual(targetDate)) {
+                Toast.makeText(requireContext(), "已跳转至相邻日期", Toast.LENGTH_SHORT).show();
             }
         }
 

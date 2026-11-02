@@ -87,7 +87,9 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
         //工具栏
         binding.toolbar.setNavigationOnClickListener(view -> finish());
         if (initBundle != null) {
+            binding.toolbar.setTitle(R.string.modify_rule_group);
             long groupId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_GROUP_ID.v());
+
             BookkeepingDb db = BookkeepingDb.getInstance(this);
             disposable.add(NotificationRuleService.getRuleGroupAndRuleByGroupId(groupId, db)
                     .subscribeOn(Schedulers.io())

@@ -10,7 +10,21 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.13.6\n" +
+    private static final String UPDATE_LOG_MD = "# v1.13.7\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复开启后台隐藏后无法长久隐藏后台的BUG\n" +
+            "- 修复流水列表界面有搜索条件时无法正确跳转到指定日期的BUG\n" +
+            "- 修复修改通知规则分组时界面标题错误的BUG\n" +
+            "- 修复报表界面会显示金额为0的“其他”类别的收支来源的BUG\n" +
+            "\n" +
+            "### 优化和修改的内容\n" +
+            "\n" +
+            "- 预算余额低时发送的提醒通知能够展开查看全部文本\n" +
+            "- 搜索历史修改为保存最近15个\n" +
+            "\n" +
+            "# v1.13.6\n" +
             "\n" +
             "### BUG修复\n" +
             "\n" +
