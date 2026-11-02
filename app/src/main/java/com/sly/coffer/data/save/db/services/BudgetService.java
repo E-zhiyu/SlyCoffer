@@ -112,7 +112,7 @@ public class BudgetService {
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("预算提醒")
                 .setContentText(contentBuilder.toString())
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(contentBuilder.toString()))
                 .setContentIntent(clickPendingIntent)
                 .setAutoCancel(true);
         NotificationHelper.sendNotification(notificationId, notificationBuilder, context);
