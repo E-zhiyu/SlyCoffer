@@ -22,7 +22,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:layout_collapseMode="pin"
-                app:title="@string/add_notification_rule_group">
+                app:title="@string/add_rule_group">
 
                 <ImageButton
                     android:id="@+id/confirm_button"
