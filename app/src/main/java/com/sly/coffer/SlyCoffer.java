@@ -54,7 +54,7 @@ public class SlyCoffer extends Application {
             //初始化动态配色
             if (AppSettingsPreference.getDynamicColorStat(this)) {
                 DynamicColorsOptions options = new DynamicColorsOptions.Builder()
-                        .setThemeOverlay(R.style.Theme_ManagerAssistant_Dynamic)
+                        .setThemeOverlay(R.style.Theme_SlyCoffer_Dynamic)
                         .build();
                 DynamicColors.applyToActivitiesIfAvailable(this, options);
             }

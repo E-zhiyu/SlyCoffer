@@ -78,11 +78,11 @@ public class ThemeHelper {
         DynamicColorsOptions options;
         if (isOpened) {
             options = new DynamicColorsOptions.Builder()
-                    .setThemeOverlay(R.style.Theme_ManagerAssistant_Dynamic)
+                    .setThemeOverlay(R.style.Theme_SlyCoffer_Dynamic)
                     .build();
         } else {
             options = new DynamicColorsOptions.Builder()
-                    .setThemeOverlay(R.style.Theme_ManagerAssistant_Static)
+                    .setThemeOverlay(R.style.Theme_SlyCoffer_Static)
                     .build();
         }
         DynamicColors.applyToActivitiesIfAvailable(app, options);
