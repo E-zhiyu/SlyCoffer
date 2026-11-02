@@ -83,11 +83,14 @@ public class SearchHistoryPreference {
             return historyList;
         }
 
+        //移除旧的并插入到第一个
         historyList.remove(keyword.trim());
         historyList.add(0, keyword.trim());
-        setHistory(key, historyList, context);
 
-        return historyList;
+        //保存数据并返回列表
+        List<String> historySave = historyList.size() > 15 ? historyList.subList(0, 16) : new ArrayList<>(historyList);
+        setHistory(key, historySave, context);
+        return historySave;
     }
 
     /**
