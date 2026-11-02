@@ -453,7 +453,15 @@ public class ReportActivity extends AppCompatActivity {
         List<Long> otherAccountIdList = noTagAccountList.stream()
                 .map(AccountEntity::getAccountId)
                 .collect(Collectors.toList());
-        proportionList.add(new AmountProportionInfo(percentage, amount, getString(R.string.others), -1, otherAccountIdList));
+        if (amount != 0) {
+            proportionList.add(new AmountProportionInfo(
+                    percentage,
+                    amount,
+                    getString(R.string.others),
+                    -1,
+                    otherAccountIdList
+            ));
+        }
 
         proportionList.sort(Comparator.comparing(AmountProportionInfo::getAmount).reversed());  //从大到小排序
 
