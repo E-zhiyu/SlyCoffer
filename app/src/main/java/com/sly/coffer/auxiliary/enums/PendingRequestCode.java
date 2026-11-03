@@ -1,6 +1,7 @@
 package com.sly.coffer.auxiliary.enums;
 
 public enum PendingRequestCode {
+    BUDGET_LOW_RESET,                       //低预算通知的预算重置 Action
     BUDGET_RESET_ALARM,                     //设置预算重置闹钟
     BUDGET_LOW_BALANCE,                     //预算余额低提醒通知
     ACCOUNT_KEEP,                           //自动记账通知中保留按钮的请求代码
