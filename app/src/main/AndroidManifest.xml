@@ -220,12 +220,18 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
-        <!-- 通知内联回复监听器 -->
+        <!-- 自动记账通知 Action 的接收器 -->
         <receiver
             android:name=".automation.broadcast.AbActionsReceiver"
             android:enabled="true"
             android:exported="false"
             android:label="通过自动记账确认通知进行各种操作的接收器" />
+        <!-- 预算重置通知 Action 的接收器 -->
+        <receiver
+            android:name=".automation.broadcast.LowBudgetResetReceiver"
+            android:enabled="true"
+            android:exported="false"
+            android:label="预算余额低的通知的操作接收器" />
         <!-- 通知监听服务，用于实现自动记账 -->
         <service
             android:name=".automation.services.NotificationAbService"

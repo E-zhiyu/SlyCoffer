@@ -122,11 +122,11 @@ public class BudgetService {
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, ChannelInfo.BUDGET_BALANCE.getId())
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("预算提醒")
-                .addAction(resetAction)
                 .setContentText(contentBuilder.toString())
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(contentBuilder.toString()))
                 .setContentIntent(clickPendingIntent)
-                .setAutoCancel(true);
+                .setAutoCancel(true)
+                .addAction(resetAction);
         NotificationHelper.sendNotification(notificationId, notificationBuilder, context);
     }
 
