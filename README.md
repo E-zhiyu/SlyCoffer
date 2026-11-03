@@ -51,6 +51,7 @@
 - [Glide](https://github.com/bumptech/glide)
 - [PhotoView](https://github.com/Baseflow/PhotoView)
 - [DeviceCompat](https://github.com/getActivity/DeviceCompat)
+- [XXPermission](https://github.com/getActivity/XXPermissions)
 
 ## 📢免责声明
 
