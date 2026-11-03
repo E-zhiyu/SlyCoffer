@@ -23,5 +23,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Sly's Coffer"
+rootProject.name = "Sly's Account Book"
 include ':app'

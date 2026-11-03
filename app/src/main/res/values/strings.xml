@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">斯莱的金库</string>
+    <string name="app_name">斯莱的账本</string>
     <string name="bookkeeping">记账</string>
     <string name="title_setting">设置</string>
     <string name="report">报表统计</string>
