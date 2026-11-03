@@ -36,7 +36,7 @@ import com.sly.coffer.ui.pages.AuthActivity;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class SlyCoffer extends Application {
+public class SlyAccountBook extends Application {
     private static boolean isLifecycleObserverLocked = false;   //生命周期观察者是否被锁定
 
     @Override
@@ -54,7 +54,7 @@ public class SlyCoffer extends Application {
             //初始化动态配色
             if (AppSettingsPreference.getDynamicColorStat(this)) {
                 DynamicColorsOptions options = new DynamicColorsOptions.Builder()
-                        .setThemeOverlay(R.style.Theme_SlyCoffer_Dynamic)
+                        .setThemeOverlay(R.style.Theme_SlyAccountBook_Dynamic)
                         .build();
                 DynamicColors.applyToActivitiesIfAvailable(this, options);
             }
@@ -83,7 +83,7 @@ public class SlyCoffer extends Application {
                 @Override
                 public void onStart(@NonNull LifecycleOwner owner) {
                     //是否需要隐藏最近任务
-                    Context context = SlyCoffer.this;
+                    Context context = SlyAccountBook.this;
                     hideTaskFromRecents(context, SecurityPreference.getHideRecentTask(context));
 
                     Log.d(LogTags.APPLICATION.n(), "触发全局生命周期观察者的onStart()");

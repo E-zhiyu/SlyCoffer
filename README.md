@@ -1,6 +1,6 @@
-# 斯莱的账本
+# 斯莱账本
 
-> 这是一款Material You风格的极简的个人记账工具，功能干净纯粹，为您提供清爽的记账体验。
+> 一款Material You风格的极简的个人记账工具，功能干净纯粹，不收集任何用户数据，为您提供清爽的记账体验。
 
 ## ✨特性一览
 
@@ -51,6 +51,7 @@
 - [Glide](https://github.com/bumptech/glide)
 - [PhotoView](https://github.com/Baseflow/PhotoView)
 - [DeviceCompat](https://github.com/getActivity/DeviceCompat)
+- [XXPermission](https://github.com/getActivity/XXPermissions)
 
 ## 📢免责声明
 

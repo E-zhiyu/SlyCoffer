@@ -13,7 +13,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.sly.coffer.SlyCoffer;
+import com.sly.coffer.SlyAccountBook;
 import com.sly.coffer.auxiliary.enums.RadiusStyle;
 import com.sly.coffer.auxiliary.enums.settings.RepositoryAddress;
 import com.sly.coffer.databinding.ActivityAboutBinding;
@@ -56,7 +56,7 @@ public class AboutActivity extends AppCompatActivity {
 
         //作者卡片
         binding.authorCard.setOnClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver(true);
+            SlyAccountBook.lockLifecycleObserver(true);
             Uri uri = Uri.parse("https://github.com/E-zhiyu");
             Intent skip2GitHub = new Intent(Intent.ACTION_VIEW, uri);
             startActivity(skip2GitHub);
@@ -89,7 +89,7 @@ public class AboutActivity extends AppCompatActivity {
         new MaterialAlertDialogBuilder(this)
                 .setTitle("选择项目仓库")
                 .setItems(addressTitles, (dialogInterface, i) -> {
-                    SlyCoffer.lockLifecycleObserver(true);
+                    SlyAccountBook.lockLifecycleObserver(true);
                     Uri uri = Uri.parse(addresses[i].getAddress());
                     Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                     startActivity(intent);

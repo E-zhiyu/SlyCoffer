@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">斯莱的账本</string>
+    <string name="app_name">斯莱账本</string>
     <string name="bookkeeping">记账</string>
     <string name="title_setting">设置</string>
     <string name="report">报表统计</string>
@@ -170,16 +170,16 @@
     <string name="delete_captured_notification">删除通知</string>
     <string name="select_amount_text">选择金额文本</string>
     <string name="notification_content">通知内容</string>
-    <string name="bookkeeping_accessibility_service_description">用于实现自动记账的服务\n通过读取当前界面的名称和布局，根据已保存的规则实现自动记账\n\n提示：Sly\'s Coffer仅利用无障碍服务读取屏幕内容实现自动记账，不会执行任何可能侵害您利益的行为，请您放心使用</string>
-    <string name="pick_accessibility_service_description">用于拾取显示金额信息的界面的无障碍服务\n启用该服务后，Sly\'s Coffer才能使用以下功能：\n- 记录当前活动的界面并保存，以便无障碍规则输入时选择。\n\n提示：Sly\'s Coffer仅利用无障碍服务读取屏幕内容实现自动记账，不会执行任何可能侵害您利益的行为，请您放心使用</string>
+    <string name="bookkeeping_accessibility_service_description">用于实现自动记账的服务\n通过读取当前界面的名称和布局，根据已保存的规则实现自动记账\n\n提示：Sly\'s Account Book仅利用无障碍服务读取屏幕内容实现自动记账，不会执行任何可能侵害您利益的行为，请您放心使用</string>
+    <string name="pick_accessibility_service_description">用于拾取显示金额信息的界面的无障碍服务\n启用该服务后，Sly\'s Account Book才能使用以下功能：\n- 记录当前活动的界面并保存，以便无障碍规则输入时选择。\n\n提示：Sly\'s Account Book仅利用无障碍服务读取屏幕内容实现自动记账，不会执行任何可能侵害您利益的行为，请您放心使用</string>
     <string name="accessibility_rule">无障碍规则</string>
     <string name="no_accessibility_rule">没有无障碍规则</string>
     <string name="accessibility_service">无障碍服务</string>
     <string name="delete_notification_rule">删除通知规则</string>
     <string name="delete_accessibility_rule">删除无障碍规则</string>
     <string name="alert_window_permission">悬浮窗权限</string>
-    <string name="accessibility_title_page_pick">金库-界面拾取</string>
-    <string name="accessibility_title_auto_bookkeeping">金库-自动记账</string>
+    <string name="accessibility_title_page_pick">斯莱账本-界面拾取</string>
+    <string name="accessibility_title_auto_bookkeeping">斯莱账本-自动记账</string>
     <string name="page_pick">界面拾取</string>
     <string name="amount_page">金额界面</string>
     <string name="btn_select">选择按钮</string>

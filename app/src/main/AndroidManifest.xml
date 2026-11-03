@@ -40,7 +40,7 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
-        android:name=".SlyCoffer"
+        android:name=".SlyAccountBook"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
@@ -50,7 +50,7 @@
         android:resizeableActivity="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SlyCoffer.Static"
+        android:theme="@style/Theme.SlyAccountBook.Static"
         tools:targetApi="33">
         <activity
             android:name=".ui.pages.main.settings.sub.AboutActivity"

@@ -16,7 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.hjq.permissions.XXPermissions;
 import com.hjq.permissions.permission.PermissionLists;
 import com.hjq.permissions.permission.base.IPermission;
-import com.sly.coffer.SlyCoffer;
+import com.sly.coffer.SlyAccountBook;
 import com.sly.coffer.R;
 import com.sly.coffer.automation.services.AccessibilityAbService;
 import com.sly.coffer.automation.services.NotificationAbService;
@@ -109,7 +109,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                 PermissionLists.getCameraPermission()
         ));
         camera.setOnLongClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver(true);
+            SlyAccountBook.lockLifecycleObserver(true);
             XXPermissions.startPermissionActivity(this, PermissionLists.getCameraPermission());
             return true;
         });
@@ -133,7 +133,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                     PermissionLists.getGetInstalledAppsPermission()
             ));
             appList.setOnLongClickListener(view -> {
-                SlyCoffer.lockLifecycleObserver(true);
+                SlyAccountBook.lockLifecycleObserver(true);
                 XXPermissions.startPermissionActivity(this, PermissionLists.getGetInstalledAppsPermission());
                 return true;
             });
@@ -160,7 +160,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                 PermissionLists.getPostNotificationsPermission()
         ));
         notification.setOnLongClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver(true);
+            SlyAccountBook.lockLifecycleObserver(true);
             XXPermissions.startPermissionActivity(this, PermissionLists.getPostNotificationsPermission());
             return true;
         });
@@ -236,7 +236,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                                 "- 自动记账触发后能否第一时间发送通知\n"
         ));
         battery.setOnLongClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver(true);
+            SlyAccountBook.lockLifecycleObserver(true);
             Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
             startActivity(intent);
             return true;
@@ -260,7 +260,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                 PermissionLists.getScheduleExactAlarmPermission()
         ));
         alarm.setOnLongClickListener(view -> {
-            SlyCoffer.lockLifecycleObserver(true);
+            SlyAccountBook.lockLifecycleObserver(true);
             XXPermissions.startPermissionActivity(this, PermissionLists.getScheduleExactAlarmPermission());
             return true;
         });
