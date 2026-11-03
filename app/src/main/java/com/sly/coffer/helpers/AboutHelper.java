@@ -10,7 +10,13 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.13.7\n" +
+    private static final String UPDATE_LOG_MD = "# v1.13.8\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复媒体文件信息界面可能无法显示全部文本的BUG\n" +
+            "\n" +
+            "# v1.13.7\n" +
             "\n" +
             "### BUG修复\n" +
             "\n" +

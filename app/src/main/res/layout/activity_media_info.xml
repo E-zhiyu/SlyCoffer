@@ -92,21 +92,23 @@
                 <!-- 文件名称文本 -->
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/file_name_text"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
                     android:text="@string/file_info"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/file_info_title"
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <!-- 文件大小和像素尺寸文本 -->
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/size_text"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="@string/file_info"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="@id/file_name_text"
                     app:layout_constraintTop_toBottomOf="@id/file_name_text" />
             </androidx.constraintlayout.widget.ConstraintLayout>
@@ -116,8 +118,7 @@
                 android:id="@+id/media_param_info_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:visibility="gone">
+                android:layout_marginTop="20dp">
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/media_param_info_title"
@@ -132,32 +133,35 @@
                 <!-- 拍摄设备文本 -->
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/device_text"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
                     android:text="@string/media_param_info"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOutline"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/media_param_info_title"
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <!-- 焦距、快门、ISO文本 -->
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/params_1_text"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="@string/media_param_info"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="@id/device_text"
                     app:layout_constraintTop_toBottomOf="@id/device_text" />
 
                 <!-- 焦距、闪光灯文本 -->
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/params_2_text"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="@string/media_param_info"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="@id/params_1_text"
                     app:layout_constraintTop_toBottomOf="@id/params_1_text" />
             </androidx.constraintlayout.widget.ConstraintLayout>
