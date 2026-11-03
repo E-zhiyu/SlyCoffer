@@ -203,11 +203,7 @@
             android:name=".automation.broadcast.AutoBudgetResetReceiver"
             android:enabled="true"
             android:exported="false"
-            android:label="被每天0点检查预算的闹钟触发的预算重置接收器">
-            <intent-filter>
-                <action android:name="com.sly.coffer.BudgetResetReceiver" />
-            </intent-filter>
-        </receiver>
+            android:label="被每天0点检查预算的闹钟触发的预算重置接收器" />
         <!-- 开机启动监听器 -->
         <receiver
             android:name=".automation.broadcast.BootReceiver"
