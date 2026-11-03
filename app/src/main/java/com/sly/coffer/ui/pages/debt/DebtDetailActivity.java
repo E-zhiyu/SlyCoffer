@@ -17,7 +17,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
-import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
@@ -214,28 +213,17 @@ public class DebtDetailActivity extends AppCompatActivity {
             //借款流水记录信息
             {
                 String type = AccountType.values()[loanAccount.getType()].getTitle();
-                String datetime = loanAccount.getDateTime().format(CustomDateTimeFormatter.TIME);
+                String datetime = loanAccount.getDateTime().format(CustomDateTimeFormatter.DATE_TIME);
                 String remark = loanAccount.getRemark();
                 double amount = loanAccount.getAmount();
-
-                //生成自动记账种类字符串
-                String autoBookkeepingType;
-                int autoTag = loanAccount.getAutoTag();
-                if (autoTag == AutoBookkeepingType.NOTIFICATION.ordinal()) {
-                    autoBookkeepingType = "通知记账 · ";
-                } else if (autoTag == AutoBookkeepingType.ACCESSIBILITY.ordinal()) {
-                    autoBookkeepingType = "无障碍记账 · ";
-                } else {
-                    autoBookkeepingType = "";
-                }
 
                 //初始化文本视图
                 binding.amountText.setText(TextHelper.abbreviate(amount, 10000));
                 binding.remarkText.setText(remark.isEmpty() ? "<无备注>" : remark);
                 String typeTimeAutoTag = String.format(
                         Locale.getDefault(),
-                        "%s%s · %s",
-                        autoBookkeepingType, type, datetime
+                        "%s · %s",
+                        type, datetime
                 );
                 binding.typeTimeAutoTagText.setText(typeTimeAutoTag);
             }

@@ -3,13 +3,17 @@ package com.sly.coffer.data.save.db.services;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.TaskStackBuilder;
 
 import com.sly.coffer.R;
+import com.sly.coffer.automation.broadcast.BroadcastActions;
+import com.sly.coffer.automation.broadcast.LowBudgetResetReceiver;
 import com.sly.coffer.auxiliary.enums.ChannelInfo;
+import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.auxiliary.enums.unique.NotificationID;
 import com.sly.coffer.auxiliary.enums.PendingRequestCode;
 import com.sly.coffer.data.save.db.BookkeepingDb;
@@ -98,23 +102,31 @@ public class BudgetService {
         StringBuilder contentBuilder = getBudgetBalanceContentBuilder(lowBalanceBudgetList);
 
         //生成通知点击的 PendingIntent
-        Intent skip2BudgetList = new Intent(context, BudgetListActivity.class);
+        Intent clickIntent = new Intent(context, BudgetListActivity.class);
         PendingIntent clickPendingIntent = TaskStackBuilder.create(context)
-                .addNextIntentWithParentStack(skip2BudgetList)
+                .addNextIntentWithParentStack(clickIntent)
                 .getPendingIntent(
                         PendingRequestCode.BUDGET_LOW_BALANCE.ordinal(),
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                 );
 
+        //获取重置预算的 Action
+        long[] lowBudgetIds = lowBalanceBudgetList.stream()
+                .map(BudgetEntity::getBudgetId)
+                .mapToLong(Long::longValue)
+                .toArray();
+        NotificationCompat.Action resetAction = getResetBudgetAction(context, lowBudgetIds);
+
         //生成通知构建器
-        int notificationId = NotificationID.BUDGET_AMOUNT_WARNING.ordinal();
+        int notificationId = NotificationID.BUDGET_BALANCE_WARNING.ordinal();
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, ChannelInfo.BUDGET_BALANCE.getId())
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("预算提醒")
                 .setContentText(contentBuilder.toString())
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(contentBuilder.toString()))
                 .setContentIntent(clickPendingIntent)
-                .setAutoCancel(true);
+                .setAutoCancel(true)
+                .addAction(resetAction);
         NotificationHelper.sendNotification(notificationId, notificationBuilder, context);
     }
 
@@ -159,5 +171,39 @@ public class BudgetService {
             contentBuilder.append("等共").append(count).append("条预算余额低于设定的值。");
         }
         return contentBuilder;
+    }
+
+    /**
+     * 获取重置预算的 Action
+     *
+     * @param context 上下文
+     * @return 重置预算的 Action
+     */
+    @NonNull
+    private static NotificationCompat.Action getResetBudgetAction(Context context, long[] budgetIds) {
+        //生成意图
+        Intent resetIntent = new Intent(context, LowBudgetResetReceiver.class);
+        resetIntent.setAction(BroadcastActions.ACTION_RESET_LOW_BUDGET.name());
+
+        //放入需要重置的预算编号
+        Bundle bundle = new Bundle();
+        bundle.putLongArray(KeyStrings.BUDGET_ID.v(), budgetIds);
+        resetIntent.putExtras(bundle);
+
+        //创建 PendingIntent
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                PendingRequestCode.BUDGET_LOW_BALANCE.ordinal(),
+                resetIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
+        );
+
+        //构建 Action 并返回
+        NotificationCompat.Action.Builder builder = new NotificationCompat.Action.Builder(
+                R.mipmap.ic_launcher,
+                "一键重置",
+                pendingIntent
+        );
+        return builder.build();
     }
 }

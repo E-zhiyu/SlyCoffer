@@ -36,7 +36,7 @@ import java.util.Objects;
 import io.reactivex.rxjava3.core.Completable;
 
 public class FileHelper {
-    private final static String BACKUP_FILE_NAME = "Sly's Coffer Backup";
+    private final static String BACKUP_FILE_NAME = "Sly's Account Book Backup";
 
     /**
      * 获取文件扩展名

@@ -23,7 +23,8 @@ public enum LogTags {
     ALARM_HELPER("AlarmHelper"),
     MEDIA_HELPER("MediaHelper"),
     APPLICATION("Application"),
-    BUDGET_RESET_RECEIVER("BudgetResetReceiver"),
+    AUTO_BUDGET_RESET_RECEIVER("AutoBudgetResetReceiver"),
+    LOW_BUDGET_RESET_RECEIVER("LowBudgetResetReceiver"),
     BOOT_RECEIVER("BootReceiver"),
     PERMISSION_HELPER("PermissionHelper"),
     BIOMETRIC_HELPER("BiometricHelper");

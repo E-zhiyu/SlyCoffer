@@ -203,11 +203,7 @@
             android:name=".automation.broadcast.AutoBudgetResetReceiver"
             android:enabled="true"
             android:exported="false"
-            android:label="被每天0点检查预算的闹钟触发的预算重置接收器">
-            <intent-filter>
-                <action android:name="com.sly.coffer.BudgetResetReceiver" />
-            </intent-filter>
-        </receiver>
+            android:label="被每天0点检查预算的闹钟触发的预算重置接收器" />
         <!-- 开机启动监听器 -->
         <receiver
             android:name=".automation.broadcast.BootReceiver"
@@ -216,16 +212,20 @@
             android:label="开机完毕的监听器，用于自动安排第二天0点的预算重置闹钟">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <!-- 兼容旧版本 Android 需要添加以下权限 -->
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
-        <!-- 通知内联回复监听器 -->
+        <!-- 自动记账通知 Action 的接收器 -->
         <receiver
             android:name=".automation.broadcast.AbActionsReceiver"
             android:enabled="true"
             android:exported="false"
             android:label="通过自动记账确认通知进行各种操作的接收器" />
+        <!-- 预算重置通知 Action 的接收器 -->
+        <receiver
+            android:name=".automation.broadcast.LowBudgetResetReceiver"
+            android:enabled="true"
+            android:exported="false"
+            android:label="预算余额低的通知的操作接收器" />
         <!-- 通知监听服务，用于实现自动记账 -->
         <service
             android:name=".automation.services.NotificationAbService"

@@ -11,7 +11,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
-import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
 import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnClickListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.ViewHolderListener;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
@@ -116,28 +115,17 @@ public class RepaymentAccountListAdapter extends ListAdapter<AccountEntity, Repa
 
         //获取流水数据
         String type = AccountType.values()[account.getType()].getTitle();
-        String datetime = account.getDateTime().format(CustomDateTimeFormatter.TIME);
+        String datetime = account.getDateTime().format(CustomDateTimeFormatter.DATE_TIME);
         String remark = account.getRemark();
         double amount = account.getAmount();
-
-        //生成自动记账种类字符串
-        String autoBookkeepingType;
-        int autoTag = account.getAutoTag();
-        if (autoTag == AutoBookkeepingType.NOTIFICATION.ordinal()) {
-            autoBookkeepingType = "通知记账 · ";
-        } else if (autoTag == AutoBookkeepingType.ACCESSIBILITY.ordinal()) {
-            autoBookkeepingType = "无障碍记账 · ";
-        } else {
-            autoBookkeepingType = "";
-        }
 
         //初始化文本视图
         holder.binding.amountText.setText(TextHelper.abbreviate(amount, TextHelper.THRESHOLD_MILLION));
         holder.binding.remarkText.setText(remark.isEmpty() ? "<无备注>" : remark);
         String typeTimeAutoTag = String.format(
                 Locale.getDefault(),
-                "%s%s · %s",
-                autoBookkeepingType, type, datetime
+                "%s · %s",
+                type, datetime
         );
         holder.binding.typeTimeAutoTagText.setText(typeTimeAutoTag);
 

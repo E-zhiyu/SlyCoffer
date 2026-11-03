@@ -1,4 +1,4 @@
-name: Sly's Coffer Release CI
+name: Sly's Account Book Release CI
 
 on:
   push:

@@ -11,4 +11,5 @@ public enum BroadcastActions {
     ACTION_NOTIFICATION_CLICKED,    //自动记账确认通知被点击
     ACTION_SHUT_DOWN_ACCESSIBILITY_BOOKKEEPING, //关闭无障碍自动记账
     ACTION_SHUT_DOWN_PAGE_PICK,     //关闭界面拾取服务
+    ACTION_RESET_LOW_BUDGET,        //重置余额少的预算
 }
