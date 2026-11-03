@@ -59,9 +59,9 @@ public class DebtDetailActivity extends AppCompatActivity {
 
             //滚动视图的内部布局
             binding.scrollLayout.setPadding(
+                    0,
                     AppearanceHelper.dpToPx(this, 10),
-                    AppearanceHelper.dpToPx(this, 10),
-                    AppearanceHelper.dpToPx(this, 10),
+                    0,
                     AppearanceHelper.dpToPx(this, 10) + Math.max(ime.bottom, systemBars.bottom)
             );
 
@@ -230,7 +230,7 @@ public class DebtDetailActivity extends AppCompatActivity {
                 }
 
                 //初始化文本视图
-                binding.amountText.setText(TextHelper.abbreviate(amount,10000));
+                binding.amountText.setText(TextHelper.abbreviate(amount, 10000));
                 binding.remarkText.setText(remark.isEmpty() ? "<无备注>" : remark);
                 String typeTimeAutoTag = String.format(
                         Locale.getDefault(),

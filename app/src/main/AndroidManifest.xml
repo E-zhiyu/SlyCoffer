@@ -200,7 +200,7 @@
         </provider>
         <!-- 预算重置检查闹钟的接收器 -->
         <receiver
-            android:name=".automation.broadcast.BudgetResetReceiver"
+            android:name=".automation.broadcast.AutoBudgetResetReceiver"
             android:enabled="true"
             android:exported="false"
             android:label="被每天0点检查预算的闹钟触发的预算重置接收器">

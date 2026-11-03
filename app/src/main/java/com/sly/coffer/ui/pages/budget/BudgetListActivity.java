@@ -31,7 +31,6 @@ import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 import com.sly.coffer.ui.pages.common.account.AccountListActivity;
 
-import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -257,7 +256,7 @@ public class BudgetListActivity extends AppCompatActivity {
                 .setMessage(message)
                 .setPositiveButton("确定", (dialogInterface, i) -> {
                     BookkeepingDb db = BookkeepingDb.getInstance(this);
-                    disposable.add(db.budgetDao().resetBudgetById(budget.getBudgetId(), LocalDate.now())
+                    disposable.add(db.budgetDao().resetBudgetByIdCompletable(budget.getBudgetId())
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribeOn(Schedulers.io())
                             .subscribe(

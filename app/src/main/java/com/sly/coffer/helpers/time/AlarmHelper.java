@@ -9,7 +9,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.sly.coffer.automation.broadcast.BudgetResetReceiver;
+import com.sly.coffer.automation.broadcast.AutoBudgetResetReceiver;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.auxiliary.enums.PendingRequestCode;
 
@@ -70,7 +70,7 @@ public class AlarmHelper {
      * @param context 上下文
      */
     public static void setBudgetCheckAlarm(Context context) {
-        Intent intent = new Intent(context, BudgetResetReceiver.class);
+        Intent intent = new Intent(context, AutoBudgetResetReceiver.class);
         LocalDateTime tomorrowStart = LocalDate.now().plusDays(1).atStartOfDay();
         setAlarm(tomorrowStart, PendingRequestCode.BUDGET_RESET_ALARM.ordinal(), intent, context);
     }

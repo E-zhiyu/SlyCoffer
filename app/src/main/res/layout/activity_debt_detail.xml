@@ -39,7 +39,7 @@
             android:layout_height="wrap_content"
             android:clipToPadding="false"
             android:orientation="vertical"
-            android:padding="10dp">
+            android:paddingTop="10dp">
 
             <!-- 债务卡片 -->
             <com.google.android.material.card.MaterialCardView
@@ -171,7 +171,9 @@
                 style="@style/Widget.Material3.MaterialDivider"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
                 android:layout_marginTop="20dp"
+                android:layout_marginEnd="10dp"
                 android:layout_marginBottom="20dp" />
 
             <!-- 还款记录列表 -->
@@ -179,8 +181,6 @@
                 android:id="@+id/recycler"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_marginStart="-10dp"
-                android:layout_marginEnd="-10dp"
                 android:clipToPadding="false"
                 android:nestedScrollingEnabled="false"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />

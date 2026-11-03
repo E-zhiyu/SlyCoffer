@@ -131,6 +131,8 @@ public class MediaInfoActivity extends AppCompatActivity {
                                                 isFlashUsed ? "使用了闪光灯" : "未使用闪光灯"
                                         );
                                         binding.params2Text.setText(param2Display);
+                                    } else {
+                                        binding.mediaParamInfoLayout.setVisibility(View.GONE);
                                     }
                                 },
                                 e -> ExceptionHelper.showExceptionDialog(this, e)
