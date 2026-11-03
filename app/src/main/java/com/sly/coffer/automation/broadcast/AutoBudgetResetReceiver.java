@@ -10,7 +10,6 @@ import androidx.annotation.NonNull;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
-import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.time.AlarmHelper;
 import com.sly.coffer.ui.pages.budget.ResetFrequency;
 
@@ -23,7 +22,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
-public class BudgetResetReceiver extends BroadcastReceiver {
+public class AutoBudgetResetReceiver extends BroadcastReceiver {
     private final CompositeDisposable disposable = new CompositeDisposable();
 
     @Override
@@ -33,14 +32,22 @@ public class BudgetResetReceiver extends BroadcastReceiver {
         final PendingResult syncResult = goAsync();
         BookkeepingDb db = BookkeepingDb.getInstance(context);
         disposable.add(db.budgetDao().getAllBudgetSingle()
+                .flatMapCompletable(budgetList -> {
+                    List<Long> resetBudgetIdList = getResetBudgetIdList(budgetList);
+                    return db.budgetDao().resetBudgetByIdCompletable(resetBudgetIdList);
+                })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
-                        budgetList -> {
-                            List<Long> resetBudgetIdList = getResetBudgetIdList(budgetList);
-                            resetBudget(resetBudgetIdList, syncResult, context);
+                        () -> {
+                            syncResult.finish();
+                            disposable.dispose();
                         },
-                        e -> ExceptionHelper.showExceptionDialog(context, e)
+                        e -> {
+                            syncResult.finish();
+                            disposable.dispose();
+                            Log.e(LogTags.BUDGET_RESET_RECEIVER.n(), "预算重置出错\n" + e.getMessage());
+                        }
                 )
         );
 
@@ -83,27 +90,5 @@ public class BudgetResetReceiver extends BroadcastReceiver {
         }
 
         return result;
-    }
-
-    /**
-     * 重置指定编号的预算
-     *
-     * @param resetBudgetIdList 需要重置的预算的编号列表
-     * @param syncResult        用于维持该接收器不被回收的{@link PendingResult}对象
-     */
-    private void resetBudget(List<Long> resetBudgetIdList, PendingResult syncResult, Context context) {
-        BookkeepingDb db = BookkeepingDb.getInstance(context);
-        disposable.add(db.budgetDao().resetBudgetById(resetBudgetIdList, LocalDate.now())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeOn(Schedulers.io())
-                .doFinally(() -> {
-                    disposable.dispose();
-                    syncResult.finish();
-                })
-                .subscribe(
-                        () -> Log.d(LogTags.BUDGET_RESET_RECEIVER.n(), "已自动重置" + resetBudgetIdList.size() + "个预算"),
-                        e -> ExceptionHelper.showExceptionDialog(context, e)
-                )
-        );
     }
 }

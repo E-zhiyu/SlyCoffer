@@ -12,7 +12,6 @@ import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.BudgetUnionModel;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -59,21 +58,19 @@ public interface BudgetDao {
      * 通过预算 ID 重置预算
      *
      * @param budgetId    需要重置的预算的 ID
-     * @param currentDate 当前日期
      * @return 是否完成
      */
-    @Query("UPDATE budgets SET balance = initAmount, startDate = :currentDate WHERE budgetId = :budgetId")
-    Completable resetBudgetById(long budgetId, LocalDate currentDate);
+    @Query("UPDATE budgets SET balance = initAmount, startDate = unixepoch('subsec') * 1000 WHERE budgetId = :budgetId")
+    Completable resetBudgetByIdCompletable(long budgetId);
 
     /**
      * 通过预算 ID 重置预算
      *
      * @param budgetIdList 需要重置的预算的 ID
-     * @param currentDate  当前日期
      * @return 是否完成
      */
-    @Query("UPDATE budgets SET balance = initAmount, startDate = :currentDate WHERE budgetId IN (:budgetIdList)")
-    Completable resetBudgetById(List<Long> budgetIdList, LocalDate currentDate);
+    @Query("UPDATE budgets SET balance = initAmount, startDate = unixepoch('subsec') * 1000 WHERE budgetId IN (:budgetIdList)")
+    Completable resetBudgetByIdCompletable(List<Long> budgetIdList);
 
     /**
      * 通过预算 ID 获取预算数据
