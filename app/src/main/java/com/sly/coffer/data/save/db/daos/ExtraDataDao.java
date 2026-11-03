@@ -4,6 +4,7 @@ import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.Transaction;
 
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
@@ -64,8 +65,8 @@ public interface ExtraDataDao {
      *
      * @return 带有借款记录的流水记录
      */
-    @Query("SELECT * FROM accounts " +
-            "WHERE loanId IN (SELECT loanId FROM extraLoan)")
+    @Transaction
+    @Query("SELECT * FROM accounts WHERE loanId IN (SELECT loanId FROM extraLoan)")
     Flowable<List<AccountLoanUnionModel>> getAccountWithLoanFlowable();
 
     /**
@@ -74,8 +75,8 @@ public interface ExtraDataDao {
      * @param id 流水记录编号
      * @return 该编号对应的流水记录及其借款相关数据
      */
-    @Query("SELECT * FROM accounts " +
-            "WHERE accountId = :id")
+    @Transaction
+    @Query("SELECT * FROM accounts WHERE accountId = :id")
     Flowable<Optional<AccountLoanUnionModel>> getAccountWithLoanFlowableById(long id);
 
     /**
@@ -84,6 +85,7 @@ public interface ExtraDataDao {
      * @param keyword 搜索关键词
      * @return 带有借款记录的流水记录
      */
+    @Transaction
     @Query("SELECT * FROM accounts a " +
             "WHERE a.loanId IN (SELECT loanId FROM extraLoan) AND EXISTS(" +
             "   SELECT 1 FROM extraLoan e WHERE e.loanId = a.loanId AND e.loanTargetName LIKE '%' || :keyword || '%'" +
