@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 
 import com.google.android.material.color.DynamicColors;
 import com.google.android.material.color.DynamicColorsOptions;
-import com.sly.coffer.SlyCoffer;
+import com.sly.coffer.SlyAccountBook;
 import com.sly.coffer.R;
 import com.sly.coffer.auxiliary.enums.settings.ThemeMode;
 
@@ -34,7 +34,7 @@ public class ThemeHelper {
      * @param modeIndex {@link ThemeMode}的枚举序数
      */
     public static void switchNightModeWithAnimation(@NonNull Activity activity, int modeIndex) {
-        SlyCoffer.lockLifecycleObserver(true);
+        SlyAccountBook.lockLifecycleObserver(true);
 
         // 1. 获取根布局
         ViewGroup rootView = (ViewGroup) activity.getWindow().getDecorView().getRootView();
@@ -74,15 +74,15 @@ public class ThemeHelper {
      * @param isOpened 是否启用动态配色
      */
     public static void applyDynamicColor(@NonNull Activity activity, boolean isOpened) {
-        SlyCoffer app = (SlyCoffer) activity.getApplication();
+        SlyAccountBook app = (SlyAccountBook) activity.getApplication();
         DynamicColorsOptions options;
         if (isOpened) {
             options = new DynamicColorsOptions.Builder()
-                    .setThemeOverlay(R.style.Theme_SlyCoffer_Dynamic)
+                    .setThemeOverlay(R.style.Theme_SlyAccountBook_Dynamic)
                     .build();
         } else {
             options = new DynamicColorsOptions.Builder()
-                    .setThemeOverlay(R.style.Theme_SlyCoffer_Static)
+                    .setThemeOverlay(R.style.Theme_SlyAccountBook_Static)
                     .build();
         }
         DynamicColors.applyToActivitiesIfAvailable(app, options);
@@ -96,7 +96,7 @@ public class ThemeHelper {
      * @param isOpened 是否启用动态配色
      */
     public static void switchDynamicColorWithAnimation(@NonNull Activity activity, boolean isOpened) {
-        SlyCoffer.lockLifecycleObserver(true);
+        SlyAccountBook.lockLifecycleObserver(true);
 
         // 1. 获取根布局
         ViewGroup rootView = (ViewGroup) activity.getWindow().getDecorView().getRootView();

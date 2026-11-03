@@ -42,7 +42,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.hjq.permissions.XXPermissions;
 import com.hjq.permissions.permission.PermissionLists;
 import com.sly.coffer.R;
-import com.sly.coffer.SlyCoffer;
+import com.sly.coffer.SlyAccountBook;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
 import com.sly.coffer.auxiliary.enums.types.InterestPeriodType;
@@ -833,7 +833,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             );
 
             //启动相机
-            SlyCoffer.lockLifecycleObserver(true);
+            SlyAccountBook.lockLifecycleObserver(true);
             takePictureLauncher.launch(contentUri);
         } catch (IOException e) {
             Toast.makeText(this, "无法创建相片文件", Toast.LENGTH_SHORT).show();

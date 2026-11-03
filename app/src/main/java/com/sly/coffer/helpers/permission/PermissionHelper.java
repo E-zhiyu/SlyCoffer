@@ -17,7 +17,7 @@ import com.hjq.permissions.OnPermissionDescription;
 import com.hjq.permissions.XXPermissions;
 import com.hjq.permissions.permission.PermissionLists;
 import com.hjq.permissions.permission.base.IPermission;
-import com.sly.coffer.SlyCoffer;
+import com.sly.coffer.SlyAccountBook;
 
 import java.util.List;
 import java.util.function.Function;
@@ -96,7 +96,7 @@ public class PermissionHelper {
                     "com.miui.permcenter.autostart.AutoStartManagementActivity"));
         }
 
-        SlyCoffer.lockLifecycleObserver(true);
+        SlyAccountBook.lockLifecycleObserver(true);
         context.startActivity(intent);
     }
 
@@ -116,7 +116,7 @@ public class PermissionHelper {
                 permissionCallback.allGranted(List.of(permissions));
             }
         } else {
-            SlyCoffer.lockLifecycleObserver(true);
+            SlyAccountBook.lockLifecycleObserver(true);
             OnPermissionDescription description;
             if (descriptionFun == null) {
                 description = null;
@@ -127,7 +127,7 @@ public class PermissionHelper {
                     .permissions(permissions)
                     .description(description)
                     .request((grantedList, deniedList) -> {
-                        SlyCoffer.lockLifecycleObserver(false);
+                        SlyAccountBook.lockLifecycleObserver(false);
 
                         if (permissionCallback == null) {
                             boolean noDenied = deniedList.isEmpty();
@@ -164,7 +164,7 @@ public class PermissionHelper {
         if (XXPermissions.isGrantedPermission(context, batteryPermission)) {
             Toast.makeText(context, "已忽略电池优化", Toast.LENGTH_SHORT).show();
         } else {
-            SlyCoffer.lockLifecycleObserver(true);
+            SlyAccountBook.lockLifecycleObserver(true);
             if (!DeviceOs.isHyperOs() && !DeviceOs.isMiui()) {
                 OnPermissionDescription description;
                 if (descriptionFun == null) {
@@ -176,7 +176,7 @@ public class PermissionHelper {
                         .description(description)
                         .permission(batteryPermission)
                         .request((grantedList, deniedList) -> {
-                            SlyCoffer.lockLifecycleObserver(false);
+                            SlyAccountBook.lockLifecycleObserver(false);
 
                             boolean noDenied = deniedList.isEmpty();
                             boolean noGranted = grantedList.isEmpty();

@@ -12,7 +12,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.sly.coffer.SlyCoffer;
+import com.sly.coffer.SlyAccountBook;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
 
 public class SAFHelper {
@@ -26,7 +26,7 @@ public class SAFHelper {
             String[] fileTypes,
             @NonNull ActivityResultLauncher<Intent> launcher
     ) {
-        SlyCoffer.lockLifecycleObserver(true);
+        SlyAccountBook.lockLifecycleObserver(true);
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
@@ -47,7 +47,7 @@ public class SAFHelper {
             String fileName,
             @NonNull ActivityResultLauncher<Intent> launcher
     ) {
-        SlyCoffer.lockLifecycleObserver(true);
+        SlyAccountBook.lockLifecycleObserver(true);
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType(intentType);
@@ -65,7 +65,7 @@ public class SAFHelper {
             @Nullable String initialUri,
             ActivityResultLauncher<Intent> launcher
     ) {
-        SlyCoffer.lockLifecycleObserver(true);
+        SlyAccountBook.lockLifecycleObserver(true);
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
         if (initialUri != null) {
             intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, initialUri);

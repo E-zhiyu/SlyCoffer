@@ -16,7 +16,7 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.sly.coffer.R;
-import com.sly.coffer.SlyCoffer;
+import com.sly.coffer.SlyAccountBook;
 import com.sly.coffer.auxiliary.enums.RadiusStyle;
 import com.sly.coffer.data.save.preference.MediaPreference;
 import com.sly.coffer.data.save.preference.SecurityPreference;
@@ -378,7 +378,7 @@ public class SettingsFragment extends Fragment {
         hideRecentTask.setChecked(isHidden);
         hideRecentTask.setFunctionListener((compoundButton, checked) -> {
             SecurityPreference.setHideRecentTask(checked, requireContext());
-            SlyCoffer.hideTaskFromRecents(requireContext(), checked);
+            SlyAccountBook.hideTaskFromRecents(requireContext(), checked);
         });
     }
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 静态配色主题 -->
-    <style name="Theme.SlyCoffer.Static" parent="Theme.Material3.Dark.NoActionBar">
+    <style name="Theme.SlyAccountBook.Static" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/md_theme_primary</item>
         <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>
@@ -56,7 +56,7 @@
         <item name="android:windowLightNavigationBar">false</item>
     </style>
 
-    <style name="Theme.SlyCoffer.Dynamic" parent="Theme.Material3.DynamicColors.Dark.NoActionBar">
+    <style name="Theme.SlyAccountBook.Dynamic" parent="Theme.Material3.DynamicColors.Dark.NoActionBar">
         <!-- 自定义颜色和样式 -->
         <item name="toolbarStyle">@style/ToolBarStyle</item>
         <item name="colorControlActivated">?attr/colorPrimary</item>
