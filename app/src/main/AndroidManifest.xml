@@ -212,8 +212,6 @@
             android:label="开机完毕的监听器，用于自动安排第二天0点的预算重置闹钟">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <!-- 兼容旧版本 Android 需要添加以下权限 -->
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
         <!-- 自动记账通知 Action 的接收器 -->
