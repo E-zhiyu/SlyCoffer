@@ -135,8 +135,13 @@ public class PermissionHelper {
                             if (noDenied && !noGranted) {
                                 Toast.makeText(context, "权限已授予", Toast.LENGTH_SHORT).show();
                             } else {
-                                String message = noGranted ? "权限申请被拒绝，是否跳转至权限设置界面授予权限？" :
-                                        "有权限没有授予，是否跳转至权限设置界面授予权限？";
+                                String message;
+                                if (descriptionFun == null) {
+                                    message = noGranted ? "权限申请被拒绝，是否跳转至权限设置界面授予权限？" :
+                                            "有权限没有授予，是否跳转至权限设置界面授予权限？";
+                                } else {
+                                    message = descriptionFun.apply(deniedList);
+                                }
                                 new MaterialAlertDialogBuilder(context)
                                         .setTitle("请求被拒绝")
                                         .setMessage(message)
