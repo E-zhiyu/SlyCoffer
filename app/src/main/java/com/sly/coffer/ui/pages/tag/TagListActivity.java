@@ -44,7 +44,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class TagListActivity extends AppCompatActivity {
     private final CompositeDisposable disposables = new CompositeDisposable();  //订阅列表
     private ActivityTagListBinding binding;                                     //绑定的XML视图的引用
-    private TagUseCountUnionModel mergedTag = null;                             //被合并的标签
+    private TagUseCountUnionModel mergedTagModel = null;                        //被合并的标签数据模型
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -187,30 +187,39 @@ public class TagListActivity extends AppCompatActivity {
     private void observeLiveData() {
         TagSingleSelectViewModel tagSingleViewModel = new ViewModelProvider(this).get(TagSingleSelectViewModel.class);
         tagSingleViewModel.getClickedEntity().observe(this, tag -> {
-            if (mergedTag == null) return;
+            if (mergedTagModel == null) return;
 
-            String message = String.format(
-                    Locale.getDefault(),
-                    "确认将“%s”合并为“%s”吗？所有使用原标签的流水记录都将改为使用合并后的标签。",
-                    mergedTag.getTag().getName(),
-                    tag.getName()
-            );
-            new MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.merge_tag)
-                    .setMessage(message)
-                    .setPositiveButton("确定", (dialogInterface, i) -> {
-                        BookkeepingDb db = BookkeepingDb.getInstance(this);
-                        disposables.add(TagService.mergeTag(mergedTag.getTag(), tag, db)
-                                .observeOn(AndroidSchedulers.mainThread())
-                                .subscribeOn(Schedulers.io())
-                                .subscribe(
-                                        () -> Toast.makeText(this, "标签合并成功", Toast.LENGTH_SHORT).show(),
-                                        e -> ExceptionHelper.showExceptionDialog(this, e)
-                                )
-                        );
-                    })
-                    .setNegativeButton("取消", null)
-                    .show();
+            Runnable mergeAction = () -> {
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposables.add(TagService.mergeTag(mergedTagModel.getTag(), tag, db)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                () -> Toast.makeText(this, "标签合并成功", Toast.LENGTH_SHORT).show(),
+                                e -> ExceptionHelper.showExceptionDialog(this, e)
+                        )
+                );
+            };
+
+            //若被使用过则弹出提示
+            if (!mergedTagModel.isNotUsed()) {
+                String message = String.format(
+                        Locale.getDefault(),
+                        "标签“%s”被**流水记录**使用过`%d`次，被**通知规则**使用过`%d`次，被**无障碍规则**使用过`%d`次，被**预算**使用过`%d`次。\n\n合并标签会将该标签的所有使用记录更改为合并后的标签，请问确认要将该标签合并为“%s”吗？",
+                        mergedTagModel.getTag().getName(),
+                        mergedTagModel.getAccountUseCount(),
+                        mergedTagModel.getNotiRuleUseCount(),
+                        mergedTagModel.getAccRuleUseCount(),
+                        mergedTagModel.getBudgetUseCount(),
+                        tag.getName()
+                );
+                new MarkdownDialogBuilder(this, getString(R.string.merge_tag), message)
+                        .setPositiveButton("确定", (dialogInterface, i) -> mergeAction.run())
+                        .setNegativeButton("取消", null)
+                        .show();
+            } else {
+                mergeAction.run();
+            }
         });
     }
 
@@ -249,7 +258,7 @@ public class TagListActivity extends AppCompatActivity {
      * @param mergedTag 被合并的标签
      */
     private void mergeTag(@NonNull TagUseCountUnionModel mergedTag) {
-        this.mergedTag = mergedTag;
+        this.mergedTagModel = mergedTag;
 
         Bundle bundle = new Bundle();
         bundle.putInt(KeyStrings.TAG_SCOPE.v(), 0);

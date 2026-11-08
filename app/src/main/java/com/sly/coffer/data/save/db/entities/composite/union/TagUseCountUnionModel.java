@@ -53,4 +53,13 @@ public class TagUseCountUnionModel {
         return Objects.hash(accountUseCount, notiRuleUseCount, accRuleUseCount, budgetUseCount) ==
                 Objects.hash(other.accountUseCount, other.notiRuleUseCount, other.accRuleUseCount, other.budgetUseCount);
     }
+
+    /**
+     * 判断标签是否被使用过
+     *
+     * @return 标签是否被使用过
+     */
+    public boolean isNotUsed() {
+        return accountUseCount + notiRuleUseCount + accRuleUseCount + budgetUseCount == 0;
+    }
 }
