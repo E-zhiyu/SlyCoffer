@@ -12,6 +12,7 @@ import androidx.room.Update;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.TagUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.TagUseCountUnionModel;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +42,20 @@ public interface TagDao {
             "WHERE scope & :scopePow = 0 AND (:exceptedTagIds IS NULL OR tagId NOT IN (:exceptedTagIds)) " +
             "ORDER BY groupId")
     Flowable<List<TagEntity>> getAllTagFlowable(int scopePow, long[] exceptedTagIds);
+
+    /**
+     * 获取带有使用次数的标签列表
+     *
+     * @return 带有使用次数的标签的列表
+     */
+    @Query("SELECT " +
+            "   t.*, " +
+            "   (SELECT COUNT(*) FROM accountTagRef acc WHERE t.tagId = acc.tagId) AS accountUseCount, " +
+            "   (SELECT COUNT(*) FROM notificationRuleTagRef noti WHERE t.tagId = noti.tagId) AS notiRuleUseCount, " +
+            "   (SELECT COUNT(*) FROM accessibilityRuleTagRef acc WHERE t.tagId = acc.tagId) AS accRuleUseCount, " +
+            "   (SELECT COUNT(*) FROM budgetTagRef budget WHERE t.tagId = budget.tagId) AS budgetUseCount " +
+            "FROM tags t")
+    Flowable<List<TagUseCountUnionModel>> getAllTagWithUseCountFlowable();
 
     /**
      * 获取所有标签分组

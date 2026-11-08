@@ -18,15 +18,18 @@ import com.sly.coffer.auxiliary.interfaces.adapter.ViewHolderListener;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.TagListUiModel;
+import com.sly.coffer.data.save.db.entities.composite.union.TagUseCountUnionModel;
 import com.sly.coffer.databinding.ViewHolderTagListBinding;
 import com.sly.coffer.databinding.ViewHolderTagListGroupBinding;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 
+import java.util.Locale;
+
 public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.ViewHolder> {
     private static final int TYPE_ITEM = 1;
     private static final int TYPE_SEPARATOR = 0;
-    private final AdapterOnClickListener<TagEntity> itemClickListener;           //点击监听器
-    private final AdapterOnLongClickListener<TagEntity> itemLongClickListener;   //长按监听器
+    private final AdapterOnClickListener<TagUseCountUnionModel> itemClickListener;           //点击监听器
+    private final AdapterOnLongClickListener<TagUseCountUnionModel> itemLongClickListener;   //长按监听器
     private final AdapterOnLongClickListener<TagGroupEntity> separatorLongClickListener; //分隔符长按监听器
     private static final DiffUtil.ItemCallback<TagListUiModel> ITEM_CALLBACK = new DiffUtil.ItemCallback<>() {
         @Override
@@ -34,7 +37,7 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
             if (oldItem instanceof TagListUiModel.Item && newItem instanceof TagListUiModel.Item) {
                 TagListUiModel.Item oldI = (TagListUiModel.Item) oldItem;
                 TagListUiModel.Item newI = (TagListUiModel.Item) newItem;
-                return oldI.entity.getTagId() == newI.entity.getTagId();
+                return oldI.model.getTag().getTagId() == newI.model.getTag().getTagId();
             } else if (oldItem instanceof TagListUiModel.Group && newItem instanceof TagListUiModel.Group) {
                 TagListUiModel.Group oldS = (TagListUiModel.Group) oldItem;
                 TagListUiModel.Group newS = (TagListUiModel.Group) newItem;
@@ -49,8 +52,11 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
             if (oldItem instanceof TagListUiModel.Item && newItem instanceof TagListUiModel.Item) {
                 TagListUiModel.Item oldI = (TagListUiModel.Item) oldItem;
                 TagListUiModel.Item newI = (TagListUiModel.Item) newItem;
-                return oldI.entity.getName().equals(newI.entity.getName()) &&
-                        oldI.entity.getScope() == newI.entity.getScope();
+                TagEntity oldTag = oldI.model.getTag();
+                TagEntity newTag = newI.model.getTag();
+                return oldTag.getName().equals(newTag.getName()) &&
+                        oldTag.getScope() == newTag.getScope() &&
+                        oldI.model.isUseCountSame(newI.model);
             } else if (oldItem instanceof TagListUiModel.Group && newItem instanceof TagListUiModel.Group) {
                 TagListUiModel.Group oldS = (TagListUiModel.Group) oldItem;
                 TagListUiModel.Group newS = (TagListUiModel.Group) newItem;
@@ -105,8 +111,9 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
      * @param itemLongClickListener 长按监听器
      */
     public TagListAdapter(
-            AdapterOnClickListener<TagEntity> itemClickListener,
-            AdapterOnLongClickListener<TagEntity> itemLongClickListener, AdapterOnLongClickListener<TagGroupEntity> separatorLongClickListener
+            AdapterOnClickListener<TagUseCountUnionModel> itemClickListener,
+            AdapterOnLongClickListener<TagUseCountUnionModel> itemLongClickListener,
+            AdapterOnLongClickListener<TagGroupEntity> separatorLongClickListener
     ) {
         super(ITEM_CALLBACK);
         this.itemClickListener = itemClickListener;
@@ -162,7 +169,7 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
                         public void onClick(int position, View anchor) {
                             TagListUiModel tag = getItem(position);
                             if (tag instanceof TagListUiModel.Item) {
-                                itemClickListener.onClick(((TagListUiModel.Item) tag).entity, anchor);
+                                itemClickListener.onClick(((TagListUiModel.Item) tag).model, anchor);
                             }
                         }
 
@@ -170,7 +177,7 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
                         public void onLongClick(int position, View view) {
                             TagListUiModel tag = getItem(position);
                             if (tag instanceof TagListUiModel.Item) {
-                                itemLongClickListener.onLongClick(((TagListUiModel.Item) tag).entity, view);
+                                itemLongClickListener.onLongClick(((TagListUiModel.Item) tag).model, view);
                             }
                         }
 
@@ -213,7 +220,7 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
         TagListUiModel model = getItem(position);
 
         if (model instanceof TagListUiModel.Item && holder instanceof TagViewHolder) {
-            TagEntity tag = ((TagListUiModel.Item) model).entity;
+            TagEntity tag = ((TagListUiModel.Item) model).model.getTag();
             TagViewHolder itemHolder = (TagViewHolder) holder;
 
             //标签名称
@@ -233,6 +240,9 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
                 }
             }
             itemHolder.binding.scopeText.setText(scopeBuilder.length() > 0 ? scopeBuilder.toString() : "<无作用域>");
+
+            //标签使用次数
+            itemHolder.binding.useCountText.setText(getUseCountStr(((TagListUiModel.Item) model).model));
 
             //设置圆角
             setRadius(itemHolder.binding.getRoot(), position);
@@ -288,5 +298,22 @@ public class TagListAdapter extends ListAdapter<TagListUiModel, RecyclerView.Vie
                 AppearanceHelper.setRadiusStyle(view, RadiusStyle.MIDDLE);
             }
         }
+    }
+
+    /**
+     * 获取标签数据模型的使用次数显示文本
+     *
+     * @param model 标签数据模型
+     * @return 使用次数显示文本
+     */
+    @NonNull
+    private String getUseCountStr(@NonNull TagUseCountUnionModel model) {
+        int account = model.getAccountUseCount();
+        int notification = model.getNotiRuleUseCount();
+        int accessibility = model.getAccRuleUseCount();
+        int budget = model.getBudgetUseCount();
+
+        int total = account + notification + accessibility + budget;
+        return total == 0 ? "未使用" : String.format(Locale.getDefault(), "使用%d次", total);
     }
 }

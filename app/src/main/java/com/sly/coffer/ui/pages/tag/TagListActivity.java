@@ -18,9 +18,9 @@ import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.sly.coffer.R;
 import com.sly.coffer.data.save.db.BookkeepingDb;
-import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.TagListUiModel;
+import com.sly.coffer.data.save.db.entities.composite.union.TagUseCountUnionModel;
 import com.sly.coffer.data.save.db.services.TagService;
 import com.sly.coffer.databinding.ActivityTagListBinding;
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
@@ -44,7 +44,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class TagListActivity extends AppCompatActivity {
     private final CompositeDisposable disposables = new CompositeDisposable();  //订阅列表
     private ActivityTagListBinding binding;                                     //绑定的XML视图的引用
-    private TagEntity mergedTag = null;                                         //被合并的标签
+    private TagUseCountUnionModel mergedTag = null;                             //被合并的标签
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,7 +115,7 @@ public class TagListActivity extends AppCompatActivity {
                 (entity, anchor) -> {
                     Intent skip2Input = new Intent(this, TagInputActivity.class);
                     Bundle bundle = new Bundle();
-                    bundle.putLong(KeyStrings.TAG_ID.v(), entity.getTagId());
+                    bundle.putLong(KeyStrings.TAG_ID.v(), entity.getTag().getTagId());
                     skip2Input.putExtras(bundle);
                     startActivity(skip2Input);
                 },
@@ -192,7 +192,7 @@ public class TagListActivity extends AppCompatActivity {
             String message = String.format(
                     Locale.getDefault(),
                     "确认将“%s”合并为“%s”吗？所有使用原标签的流水记录都将改为使用合并后的标签。",
-                    mergedTag.getName(),
+                    mergedTag.getTag().getName(),
                     tag.getName()
             );
             new MaterialAlertDialogBuilder(this)
@@ -200,7 +200,7 @@ public class TagListActivity extends AppCompatActivity {
                     .setMessage(message)
                     .setPositiveButton("确定", (dialogInterface, i) -> {
                         BookkeepingDb db = BookkeepingDb.getInstance(this);
-                        disposables.add(TagService.mergeTag(mergedTag, tag, db)
+                        disposables.add(TagService.mergeTag(mergedTag.getTag(), tag, db)
                                 .observeOn(AndroidSchedulers.mainThread())
                                 .subscribeOn(Schedulers.io())
                                 .subscribe(
@@ -219,18 +219,18 @@ public class TagListActivity extends AppCompatActivity {
      *
      * @param tag 需要删除的标签
      */
-    private void deleteTag(@NonNull TagEntity tag) {
+    private void deleteTag(@NonNull TagUseCountUnionModel tag) {
         String message = String.format(
                 Locale.getDefault(),
                 "确认删除“%s”吗？",
-                tag.getName()
+                tag.getTag().getName()
         );
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.delete_tag)
                 .setMessage(message)
                 .setPositiveButton("确定", (dialogInterface, i) -> {
                     BookkeepingDb db = BookkeepingDb.getInstance(this);
-                    disposables.add(db.tagDao().deleteTag(tag)
+                    disposables.add(db.tagDao().deleteTag(tag.getTag())
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribeOn(Schedulers.io())
                             .subscribe(
@@ -248,13 +248,13 @@ public class TagListActivity extends AppCompatActivity {
      *
      * @param mergedTag 被合并的标签
      */
-    private void mergeTag(@NonNull TagEntity mergedTag) {
+    private void mergeTag(@NonNull TagUseCountUnionModel mergedTag) {
         this.mergedTag = mergedTag;
 
         Bundle bundle = new Bundle();
         bundle.putInt(KeyStrings.TAG_SCOPE.v(), 0);
         bundle.putBoolean(KeyStrings.TAG_MULTI_CHOICE.v(), false);
-        long[] exceptedTagIds = new long[]{mergedTag.getTagId()};
+        long[] exceptedTagIds = new long[]{mergedTag.getTag().getTagId()};
         bundle.putLongArray(KeyStrings.TAG_ID.v(), exceptedTagIds);
 
         TagSelectBottomSheet bottomSheet = new TagSelectBottomSheet();
