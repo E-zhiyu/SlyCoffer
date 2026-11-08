@@ -564,12 +564,9 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             }
 
             //显示进度条对话框
-            ProgressDialogBuilder dialogBuilder = new ProgressDialogBuilder(
-                    this,
-                    "保存媒体文件",
-                    "正在移动媒体文件……"
-            );
+            ProgressDialogBuilder dialogBuilder = new ProgressDialogBuilder(this, "正在移动媒体文件……");
             AlertDialog dialog = dialogBuilder
+                    .setTitle("保存媒体文件")
                     .setNegativeButton("取消", (dialogInterface, i) -> {
                         disposable.clear();
                         Toast.makeText(this, "已取消媒体文件保存", Toast.LENGTH_SHORT).show();
@@ -870,13 +867,10 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         }
 
         //显示进度条对话框
-        ProgressDialogBuilder builder = new ProgressDialogBuilder(
-                this,
-                "导入媒体",
-                "正在复制媒体文件"
-        );
-        AlertDialog progressDialog = builder.
-                setNegativeButton("取消", (dialogInterface, i) -> {
+        ProgressDialogBuilder builder = new ProgressDialogBuilder(this, "正在复制媒体文件");
+        AlertDialog progressDialog = builder
+                .setTitle("导入媒体")
+                .setNegativeButton("取消", (dialogInterface, i) -> {
                     Toast.makeText(this, "已取消媒体导入", Toast.LENGTH_SHORT).show();
                     disposable.clear();
                 })

@@ -795,7 +795,8 @@ public class AboutHelper {
      * @param context 上下文
      */
     public static void showUpdateLogDialog(Context context) {
-        new MarkdownDialogBuilder(context, context.getString(R.string.changelog), UPDATE_LOG_MD)
+        new MarkdownDialogBuilder(context, UPDATE_LOG_MD)
+                .setTitle(R.string.changelog)
                 .setNegativeButton("关闭", null)
                 .show();
     }

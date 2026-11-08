@@ -21,7 +21,8 @@ public class PermissionDialogDescription implements OnPermissionDescription {
     @Override
     public void askWhetherRequestPermission(@NonNull Activity activity, @NonNull List<IPermission> requestList, @NonNull Runnable continueRequestRunnable, @NonNull Runnable breakRequestRunnable) {
         String description = descriptionFunction.apply(requestList);
-        new MarkdownDialogBuilder(activity, "权限申请", description.isEmpty() ? "请授予权限。" : description)
+        new MarkdownDialogBuilder(activity, description.isEmpty() ? "请授予权限。" : description)
+                .setTitle("权限申请")
                 .setPositiveButton("去申请", (dialog, which) -> continueRequestRunnable.run())
                 .setNegativeButton("取消", (dialog, which) -> breakRequestRunnable.run())
                 .show();

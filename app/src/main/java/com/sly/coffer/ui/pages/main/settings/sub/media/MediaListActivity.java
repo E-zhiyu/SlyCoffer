@@ -99,15 +99,14 @@ public class MediaListActivity extends AppCompatActivity {
                         if (id == R.id.action_compress) {
                             new MarkdownDialogBuilder(
                                     this,
-                                    getString(R.string.compress),
                                     "即将压缩图片的体积，这可能导致以下不可逆的结果：\n" +
                                             "\n" +
                                             "1. 图片变得模糊；\n" +
                                             "2. 原本的HDR显示效果丢失；\n" +
                                             "3. 原本的动态照片效果丢失。\n" +
                                             "\n" +
-                                            "确认继续吗？"
-                            )
+                                            "确认继续吗？")
+                                    .setTitle(R.string.compress)
                                     .setPositiveButton("确定", (dialogInterface, i) ->
                                             MediaHelper.compressImage(
                                                     entity.getUri(),

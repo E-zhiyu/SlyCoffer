@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.view.LayoutInflater;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 
 import com.sly.coffer.databinding.DialogEdittextBinding;
@@ -21,20 +20,23 @@ public class EditTextDialogBuilder
     }
 
     /**
-     * 文本框对话框构造方法
-     *
-     * @param context     上下文
-     * @param dialogTitle 对话框标题
-     * @param hint        输入框的 hint 提示
+     * @param context  上下文
+     * @param hint     文本框顶部的提示
      */
-    public EditTextDialogBuilder(@NonNull Context context, String dialogTitle, String hint) {
-        this(context, dialogTitle, hint, "");
+    public EditTextDialogBuilder(Context context, String hint) {
+        super(context);
+        binding.textLayout.setHint(hint);
     }
 
-    public EditTextDialogBuilder(Context context, String dialogTitle, String hint, String initText) {
-        super(context, dialogTitle);
-        binding.textLayout.setHint(hint);
-        binding.textInput.setText(initText);
+    /**
+     * 设置输入的文本
+     *
+     * @param inputText 输入的文本
+     * @return 文本框对话框
+     */
+    public EditTextDialogBuilder setInputText(String inputText) {
+        binding.textInput.setText(inputText);
+        return this;
     }
 
     @Override
@@ -45,7 +47,7 @@ public class EditTextDialogBuilder
     }
 
     @Override
-    public CustomDialogBuilderBase<DialogEdittextBinding, OnClickedListener, DialogInterface.OnClickListener> setPositiveButton(
+    public EditTextDialogBuilder setPositiveButton(
             String btnTitle,
             OnClickedListener callback
     ) {
@@ -61,7 +63,7 @@ public class EditTextDialogBuilder
     }
 
     @Override
-    public CustomDialogBuilderBase<DialogEdittextBinding, OnClickedListener, DialogInterface.OnClickListener> setNegativeButton(String btnTitle, DialogInterface.OnClickListener callback) {
+    public EditTextDialogBuilder setNegativeButton(String btnTitle, DialogInterface.OnClickListener callback) {
         builder.setNegativeButton(btnTitle, callback);
         return this;
     }
@@ -79,10 +81,19 @@ public class EditTextDialogBuilder
      * @param helpText 帮助文本内容
      * @return 对话框构建器
      */
-    public CustomDialogBuilderBase<DialogEdittextBinding,
-            EditTextDialogBuilder.OnClickedListener,
-            DialogInterface.OnClickListener> setHelpText(String helpText) {
+    public EditTextDialogBuilder setHelpText(String helpText) {
         binding.textLayout.setHelperText(helpText);
+        return this;
+    }
+
+    /**
+     * 设置输入框输入的种类
+     *
+     * @param inputType 输入种类
+     * @return 文本框对话框构建器
+     */
+    public EditTextDialogBuilder setInputType(int inputType) {
+        binding.textInput.setInputType(inputType);
         return this;
     }
 }

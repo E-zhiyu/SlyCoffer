@@ -134,7 +134,8 @@ public class UpdateHelper {
 
                             long currentVersionCode = AboutHelper.getVersionCode(context);
                             if (currentVersionCode < versionCode) {
-                                new MarkdownDialogBuilder(context, "发现新版本", changeLog)
+                                new MarkdownDialogBuilder(context, changeLog)
+                                        .setTitle("发现新版本")
                                         .setNegativeButton("跳过", (dialogInterface, i) ->
                                                 VersionPreference.setSkipVersionCode(context, versionCode)
                                         )

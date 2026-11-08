@@ -105,7 +105,8 @@ public class TagListActivity extends AppCompatActivity {
                     "- 在标签输入界面可以选择标签`作用域`；\n" +
                     "- 在流水输入界面中选择标签时，只会显示与`流水类型`匹配的流水标签。\n" +
                     "> 例：若输入流水数据时将`流水类型`设置为`支出`，选择标签时只会显示`作用域`勾选了`支出`的标签。\n";
-            new MarkdownDialogBuilder(this, "功能介绍", EXPLANATION)
+            new MarkdownDialogBuilder(this, EXPLANATION)
+                    .setTitle("功能介绍")
                     .setNegativeButton("关闭", null)
                     .show();
         });
@@ -213,7 +214,8 @@ public class TagListActivity extends AppCompatActivity {
                         mergedTagModel.getBudgetUseCount(),
                         tag.getName()
                 );
-                new MarkdownDialogBuilder(this, getString(R.string.merge_tag), message)
+                new MarkdownDialogBuilder(this, message)
+                        .setTitle(R.string.merge_tag)
                         .setPositiveButton("确定", (dialogInterface, i) -> mergeAction.run())
                         .setNegativeButton("取消", null)
                         .show();
@@ -277,7 +279,8 @@ public class TagListActivity extends AppCompatActivity {
      * @param group 需要重命名的分组
      */
     private void renameGroup(TagGroupEntity group) {
-        new EditTextDialogBuilder(this, getString(R.string.rename_group), "新名称")
+        new EditTextDialogBuilder(this, "新名称")
+                .setTitle(R.string.rename_group)
                 .setPositiveButton("确定", inputStr -> {
                     if (inputStr.isEmpty()) {
                         Toast.makeText(this, "名称不能为空", Toast.LENGTH_SHORT).show();

@@ -20,8 +20,8 @@ public class ProgressDialogBuilder
         > {
     private final String originSubTitle;    //对话框底部副标题
 
-    public ProgressDialogBuilder(Context context, String dialogTitle, @Nullable String originSubTitle) {
-        super(context, dialogTitle);
+    public ProgressDialogBuilder(Context context, @Nullable String originSubTitle) {
+        super(context);
         this.originSubTitle = originSubTitle == null ? "" : originSubTitle;
     }
 

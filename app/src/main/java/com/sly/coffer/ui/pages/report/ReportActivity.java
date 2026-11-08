@@ -135,7 +135,8 @@ public class ReportActivity extends AppCompatActivity {
                     dateRangeStr,
                     expense, income, income - expense
             );
-            new MarkdownDialogBuilder(this, getString(R.string.report), detail)
+            new MarkdownDialogBuilder(this, detail)
+                    .setTitle(R.string.report)
                     .setNegativeButton("关闭", null)
                     .show();
         });

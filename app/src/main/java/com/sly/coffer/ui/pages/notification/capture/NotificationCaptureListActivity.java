@@ -118,7 +118,8 @@ public class NotificationCaptureListActivity extends AppCompatActivity {
                                 "- 仅会捕获内容中带有数字的通知；\n" +
                                 "- 当捕获功能开启时，任何应用发送的通知都会被保存，包括通知标题、内容、应用来源和时间；\n" +
                                 "- **捕获的通知仅保存在本地，本APP决不会利用权限窃取您的隐私。**\n";
-                        new MarkdownDialogBuilder(this, "功能说明", EXPLANATION)
+                        new MarkdownDialogBuilder(this, EXPLANATION)
+                                .setTitle("功能说明")
                                 .setNegativeButton("关闭", null)
                                 .show();
                         return true;

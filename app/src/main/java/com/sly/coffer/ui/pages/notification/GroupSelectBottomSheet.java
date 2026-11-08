@@ -105,7 +105,8 @@ public class GroupSelectBottomSheet extends BaseBottomSheetDialogFragment {
 
         //添加按钮
         binding.addBtn.setOnClickListener(view ->
-                new EditTextDialogBuilder(requireContext(), getString(R.string.add_rule_group), "输入分组名称")
+                new EditTextDialogBuilder(requireContext(), getString(R.string.add_rule_group))
+                        .setTitle(R.string.input_rule_group_name)
                         .setPositiveButton("确定", inputStr -> {
                             if (inputStr.trim().isEmpty()) {
                                 Toast.makeText(requireContext(), "输入的字符串不能为空", Toast.LENGTH_SHORT).show();
