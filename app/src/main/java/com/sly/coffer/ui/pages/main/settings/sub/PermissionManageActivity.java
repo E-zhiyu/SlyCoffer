@@ -98,7 +98,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                 binding.cameraOption,
                 R.string.camera_permission,
                 "允许使用摄像头",
-                R.drawable.baseline_photo_camera_24,
+                R.drawable.outline_photo_camera_24,
                 RadiusStyle.TOP
         );
         camera.setFunctionListener(v -> PermissionHelper.requestPermission(
