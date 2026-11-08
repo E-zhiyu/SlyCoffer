@@ -10,7 +10,13 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.13.8\n" +
+    private static final String UPDATE_LOG_MD = "# v1.14.0\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复合并标签时无法更新除了流水记录以外的标签映射的BUG\n" +
+            "\n" +
+            "# v1.13.8\n" +
             "\n" +
             "> 从该版本开始应用名称更改为“斯莱账本”\n" +
             "\n" +
