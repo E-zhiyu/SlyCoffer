@@ -281,7 +281,7 @@
     <string name="location_record">位置记录</string>
     <string name="recorded_location">记录的位置：</string>
     <string name="current_location">当前位置：</string>
-    <string name="accoount_location">流水位置信息</string>
+    <string name="account_location">流水位置信息</string>
     <string name="location_permission">定位权限</string>
 
     <string-array name="tips_array">

@@ -15,7 +15,7 @@ import com.sly.coffer.data.save.db.entities.TagEntity;
 
 import java.util.List;
 
-public class AccountUnionModel {
+public class AccountDetailUnionModel {
     @Embedded
     private final AccountEntity account;                //流水记录实体
     @Nullable
@@ -59,7 +59,7 @@ public class AccountUnionModel {
     )
     private final List<MediaEntity> mediaList;          //该流水记录的媒体列表
 
-    public AccountUnionModel(AccountEntity account, @Nullable ExtraTransferEntity transfer, @Nullable ExtraLoanEntity loan, @Nullable AccountEntity repayRelatedAccount, List<TagEntity> tagList, @Nullable LocationEntity location, List<MediaEntity> mediaList) {
+    public AccountDetailUnionModel(AccountEntity account, @Nullable ExtraTransferEntity transfer, @Nullable ExtraLoanEntity loan, @Nullable AccountEntity repayRelatedAccount, List<TagEntity> tagList, @Nullable LocationEntity location, List<MediaEntity> mediaList) {
         this.account = account;
         this.transfer = transfer;
         this.loan = loan;

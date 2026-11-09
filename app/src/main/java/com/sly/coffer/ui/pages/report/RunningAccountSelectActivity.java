@@ -175,7 +175,7 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
                         List<AccountUiModel> currentList = adapter.getCurrentList();
                         for (int i = 0; i < currentList.size(); i++) {
                             AccountUiModel item = currentList.get(i);
-                            if ((item instanceof AccountUiModel.Item) && ((AccountUiModel.Item) item).entity.getAccountId() == key) {
+                            if ((item instanceof AccountUiModel.Item) && ((AccountUiModel.Item) item).model.getAccount().getAccountId() == key) {
                                 isItem = true;
                                 break;
                             }
@@ -281,7 +281,7 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
                 AccountUiModel model = ((AccountListAdapter) binding.accountRecycler.getAdapter())
                         .getCurrentList().get(firstViewPosition);
                 if (model instanceof AccountUiModel.Item) {
-                    initDate = ((AccountUiModel.Item) model).entity.getDateTime().toLocalDate();
+                    initDate = ((AccountUiModel.Item) model).model.getAccount().getDateTime().toLocalDate();
                 } else if (model instanceof AccountUiModel.Separator) {
                     initDate = LocalDate.parse(((AccountUiModel.Separator) model).text, CustomDateTimeFormatter.DATE_WITH_WEEK);
                 }
@@ -304,7 +304,7 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
                     int i = 0;
                     for (AccountUiModel uiModel : ((AccountListAdapter) adapter).getCurrentList()) {
                         if (uiModel instanceof AccountUiModel.Item) {
-                            LocalDate uiDate = ((AccountUiModel.Item) uiModel).entity.getDateTime().toLocalDate();
+                            LocalDate uiDate = ((AccountUiModel.Item) uiModel).model.getAccount().getDateTime().toLocalDate();
                             if (!selectedDate.isBefore(uiDate)) {
                                 break;
                             }
@@ -340,7 +340,7 @@ public class RunningAccountSelectActivity extends AppCompatActivity {
             AccountUiModel model = ((AccountListAdapter) adapter).getCurrentList().get(targetPosition);
             LocalDate exactDate = null;
             if (model instanceof AccountUiModel.Item) {
-                exactDate = ((AccountUiModel.Item) model).entity.getDateTime().toLocalDate();
+                exactDate = ((AccountUiModel.Item) model).model.getAccount().getDateTime().toLocalDate();
             } else if (model instanceof AccountUiModel.Separator) {
                 exactDate = LocalDate.parse(((AccountUiModel.Separator) model).text, CustomDateTimeFormatter.DATE_WITH_WEEK);
             }

@@ -56,7 +56,7 @@ import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
 import com.sly.coffer.data.save.db.entities.LocationEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountDetailUnionModel;
 import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityRunningAccountInputBinding;
@@ -282,7 +282,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                         .subscribe(
                                 modelOptional -> {
                                     if (modelOptional.isEmpty()) return;
-                                    AccountUnionModel model = modelOptional.get();
+                                    AccountDetailUnionModel model = modelOptional.get();
                                     viewModel.setAccountModel(model);
                                 }
                         )
@@ -564,14 +564,14 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         binding.confirmButton.setOnClickListener(v -> {
             AccountInputViewModel accountInputViewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
             LocationViewModel locationViewModel = new ViewModelProvider(this).get(LocationViewModel.class);
-            AccountUnionModel model = accountInputViewModel.getAccountUnionModel();
+            AccountDetailUnionModel model = accountInputViewModel.getAccountUnionModel();
 
             if (locationViewModel.isLocationOn() && locationViewModel.getLocation() == null) {
                 Toast.makeText(this, "请等待获取地理位置……", Toast.LENGTH_SHORT).show();
             } else if (model != null && !locationViewModel.isLocationOn() && model.getLocation() != null) {
                 LocationEntity oldLocationEntity = model.getLocation();
                 new MaterialAlertDialogBuilder(this)
-                        .setTitle(R.string.accoount_location)
+                        .setTitle(R.string.account_location)
                         .setMessage("修改的流水记录包含位置信息，且当前并未开启位置记录功能，请选择是否保留原有的位置信息。")
                         .setPositiveButton("保留", (dialog, which) -> {
                             Location tempLocation = new Location(oldLocationEntity.getProvider());

@@ -4,16 +4,16 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountDetailUnionModel;
 
 public class AccountInputViewModel extends ViewModel {
-    private final MutableLiveData<AccountUnionModel> accountModelLiveData = new MutableLiveData<>();  //缓存的流水记录数据模型
+    private final MutableLiveData<AccountDetailUnionModel> accountModelLiveData = new MutableLiveData<>();  //缓存的流水记录数据模型
 
-    public MutableLiveData<AccountUnionModel> getAccountModelLiveData() {
+    public MutableLiveData<AccountDetailUnionModel> getAccountModelLiveData() {
         return accountModelLiveData;
     }
 
-    public void setAccountModel(AccountUnionModel accountModel) {
+    public void setAccountModel(AccountDetailUnionModel accountModel) {
         accountModelLiveData.setValue(accountModel);
     }
 
@@ -23,7 +23,7 @@ public class AccountInputViewModel extends ViewModel {
      * @return 缓存的流水记录数据模型
      */
     @Nullable
-    public AccountUnionModel getAccountUnionModel() {
+    public AccountDetailUnionModel getAccountUnionModel() {
         return accountModelLiveData.getValue();
     }
 }

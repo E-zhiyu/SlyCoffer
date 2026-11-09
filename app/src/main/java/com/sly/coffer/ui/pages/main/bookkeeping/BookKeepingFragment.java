@@ -119,7 +119,7 @@ public class BookKeepingFragment extends Fragment {
         //流水列表
         AccountListAdapter adapter = new AccountListAdapter(
                 (entity, anchor) -> {
-                    long accountId = entity.getAccountId();
+                    long accountId = entity.getAccount().getAccountId();
                     Bundle bundle = new Bundle();
                     bundle.putLong(KeyStrings.RUNNING_ID.v(), accountId);
 
@@ -133,7 +133,7 @@ public class BookKeepingFragment extends Fragment {
 
                     popupMenu.setOnMenuItemClickListener(item -> {
                         if (item.getItemId() == R.id.action_delete_account) {
-                            deleteAccount(entity);
+                            deleteAccount(entity.getAccount());
                             return true;
                         }
 
@@ -220,7 +220,7 @@ public class BookKeepingFragment extends Fragment {
                 AccountUiModel model = ((AccountListAdapter) binding.accountRecycler.getAdapter())
                         .getCurrentList().get(firstViewPosition);
                 if (model instanceof AccountUiModel.Item) {
-                    initDate = ((AccountUiModel.Item) model).entity.getDateTime().toLocalDate();
+                    initDate = ((AccountUiModel.Item) model).model.getAccount().getDateTime().toLocalDate();
                 } else if (model instanceof AccountUiModel.Separator) {
                     initDate = LocalDate.parse(((AccountUiModel.Separator) model).text, CustomDateTimeFormatter.DATE_WITH_WEEK);
                 }
@@ -243,7 +243,7 @@ public class BookKeepingFragment extends Fragment {
                     int i = 0;
                     for (AccountUiModel uiModel : ((AccountListAdapter) adapter).getCurrentList()) {
                         if (uiModel instanceof AccountUiModel.Item) {
-                            LocalDate uiDate = ((AccountUiModel.Item) uiModel).entity.getDateTime().toLocalDate();
+                            LocalDate uiDate = ((AccountUiModel.Item) uiModel).model.getAccount().getDateTime().toLocalDate();
                             if (!selectedDate.isBefore(uiDate)) {
                                 break;
                             }
@@ -279,7 +279,7 @@ public class BookKeepingFragment extends Fragment {
             AccountUiModel model = ((AccountListAdapter) adapter).getCurrentList().get(targetPosition);
             LocalDate exactDate = null;
             if (model instanceof AccountUiModel.Item) {
-                exactDate = ((AccountUiModel.Item) model).entity.getDateTime().toLocalDate();
+                exactDate = ((AccountUiModel.Item) model).model.getAccount().getDateTime().toLocalDate();
             } else if (model instanceof AccountUiModel.Separator) {
                 exactDate = LocalDate.parse(((AccountUiModel.Separator) model).text, CustomDateTimeFormatter.DATE_WITH_WEEK);
             }

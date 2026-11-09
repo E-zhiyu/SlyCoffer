@@ -20,15 +20,18 @@ import com.sly.coffer.auxiliary.enums.RadiusStyle;
 import com.sly.coffer.auxiliary.enums.types.AutoBookkeepingType;
 import com.sly.coffer.auxiliary.interfaces.adapter.ViewHolderListener;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
+import com.sly.coffer.data.save.db.entities.LocationEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.AccountUiModel;
 import com.sly.coffer.databinding.ViewHolderRunningAccountSelectListBinding;
 import com.sly.coffer.databinding.ViewHolderSeparatorTextChipBinding;
+import com.sly.coffer.helpers.LocationHelper;
 import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.decoration.sticky.StickyHeaderAdapter;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class AccountSelectListAdapter extends ListAdapter<AccountUiModel, RecyclerView.ViewHolder>
         implements StickyHeaderAdapter<String> {
@@ -40,7 +43,7 @@ public class AccountSelectListAdapter extends ListAdapter<AccountUiModel, Recycl
             if (oldItem instanceof AccountUiModel.Item && newItem instanceof AccountUiModel.Item) {
                 AccountUiModel.Item oldI = (AccountUiModel.Item) oldItem;
                 AccountUiModel.Item newI = (AccountUiModel.Item) newItem;
-                return oldI.entity.getAccountId() == newI.entity.getAccountId();
+                return oldI.model.getAccount().getAccountId() == newI.model.getAccount().getAccountId();
             } else if (oldItem instanceof AccountUiModel.Separator && newItem instanceof AccountUiModel.Separator) {
                 AccountUiModel.Separator oldS = (AccountUiModel.Separator) oldItem;
                 AccountUiModel.Separator newS = (AccountUiModel.Separator) newItem;
@@ -55,12 +58,15 @@ public class AccountSelectListAdapter extends ListAdapter<AccountUiModel, Recycl
             if (oldItem instanceof AccountUiModel.Item && newItem instanceof AccountUiModel.Item) {
                 AccountUiModel.Item oldI = (AccountUiModel.Item) oldItem;
                 AccountUiModel.Item newI = (AccountUiModel.Item) newItem;
-                AccountEntity oldAccount = oldI.entity;
-                AccountEntity newAccount = newI.entity;
+                LocationEntity oldLocation = oldI.model.getLocation();
+                LocationEntity newLocation = newI.model.getLocation();
+                AccountEntity oldAccount = oldI.model.getAccount();
+                AccountEntity newAccount = newI.model.getAccount();
                 return oldAccount.getAmount() == newAccount.getAmount() &&
                         oldAccount.getRemark().equals(newAccount.getRemark()) &&
                         oldAccount.getType() == newAccount.getType() &&
-                        oldAccount.getDateTime().isEqual(newAccount.getDateTime());
+                        oldAccount.getDateTime().isEqual(newAccount.getDateTime()) &&
+                        Objects.equals(oldLocation, newLocation);
             } else
                 return oldItem instanceof AccountUiModel.Separator && newItem instanceof AccountUiModel.Separator;
         }
@@ -103,7 +109,7 @@ public class AccountSelectListAdapter extends ListAdapter<AccountUiModel, Recycl
                         List<AccountUiModel> currentList = ((AccountSelectListAdapter) getBindingAdapter()).getCurrentList();
                         if (currentList.get(pos) instanceof AccountUiModel.Item) {
                             return pos < getBindingAdapter().getItemCount() ?
-                                    ((AccountUiModel.Item) currentList.get(pos)).entity.getAccountId() :
+                                    ((AccountUiModel.Item) currentList.get(pos)).model.getAccount().getAccountId() :
                                     null;
                         } else {
                             return null;
@@ -204,7 +210,9 @@ public class AccountSelectListAdapter extends ListAdapter<AccountUiModel, Recycl
         if (model instanceof AccountUiModel.Separator) {
             return ((AccountUiModel.Separator) model).text;
         } else if (model instanceof AccountUiModel.Item) {
-            return ((AccountUiModel.Item) model).entity.getDateTime().format(CustomDateTimeFormatter.DATE_WITH_WEEK);
+            return ((AccountUiModel.Item) model).model.getAccount().getDateTime().format(
+                    CustomDateTimeFormatter.DATE_WITH_WEEK
+            );
         } else {
             return context.getString(R.string.not_applicable);
         }
@@ -233,7 +241,7 @@ public class AccountSelectListAdapter extends ListAdapter<AccountUiModel, Recycl
                         public void onClick(int pos, View anchor) {
                             AccountUiModel model = getItem(pos);
                             if (model instanceof AccountUiModel.Item && selectionTracker != null) {
-                                selectionTracker.select(((AccountUiModel.Item) model).entity.getAccountId());
+                                selectionTracker.select(((AccountUiModel.Item) model).model.getAccount().getAccountId());
                             }
                         }
 
@@ -259,7 +267,7 @@ public class AccountSelectListAdapter extends ListAdapter<AccountUiModel, Recycl
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         AccountUiModel model = getItem(position);
         if (model instanceof AccountUiModel.Item && holder instanceof ItemViewHolder) {
-            AccountEntity account = ((AccountUiModel.Item) model).entity;
+            AccountEntity account = ((AccountUiModel.Item) model).model.getAccount();
             ItemViewHolder itemHolder = (ItemViewHolder) holder;
 
             //选择状态
@@ -293,6 +301,19 @@ public class AccountSelectListAdapter extends ListAdapter<AccountUiModel, Recycl
                     autoBookkeepingType, type, datetime
             );
             itemHolder.binding.typeTimeAutoTagText.setText(typeTimeAutoTag);
+
+            //位置
+            LocationEntity location = ((AccountUiModel.Item) model).model.getLocation();
+            if (location != null) {
+                itemHolder.binding.locationText.setText(LocationHelper.locationToString(
+                        location.getLatitude(),
+                        location.getLongitude(),
+                        location.getAltitude(),
+                        location.isFineLocation()
+                ));
+            } else {
+                itemHolder.binding.locationText.setText("无位置信息");
+            }
 
             //设置圆角
             setRadius(itemHolder.binding.getRoot(), holder.getBindingAdapterPosition());

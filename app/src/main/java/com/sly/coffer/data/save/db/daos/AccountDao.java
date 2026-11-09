@@ -20,7 +20,8 @@ import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.LocationEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
-import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountDetailUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountListUnionModel;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -79,7 +80,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE accountId = :accountId")
-    Single<Optional<AccountUnionModel>> getAccountWithDetailSingleById(long accountId);
+    Single<Optional<AccountDetailUnionModel>> getAccountWithDetailSingleById(long accountId);
 
     /**
      * 通过日期区间获取流水记录的 ID
@@ -100,7 +101,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE dateTime >= :start AND dateTime < :end")
-    Flowable<List<AccountUnionModel>> getAccountWithDetailFlowableByDateRange(LocalDate start, LocalDate end);
+    Flowable<List<AccountDetailUnionModel>> getAccountWithDetailFlowableByDateRange(LocalDate start, LocalDate end);
 
     /**
      * 通过流水记录的 ID 获取流水记录数据
@@ -110,7 +111,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE accountId IN (:ids)")
-    Flowable<List<AccountUnionModel>> getAccountWithDetailFlowableById(Set<Long> ids);
+    Flowable<List<AccountDetailUnionModel>> getAccountWithDetailFlowableById(Set<Long> ids);
 
     /**
      * 获取数据库中储存的转出和转入账户
@@ -292,13 +293,14 @@ public interface AccountDao {
     AccountEntity getAccountById(long accountId);
 
     /**
-     * 通过流水记录编号获取流水记录
+     * 通过流水记录编号获取流水记录列表数据模型
      *
      * @param idList 流水记录编号列表
-     * @return 编号列表包含的流水记录数据
+     * @return 编号列表包含的流水记录列表数据模型
      */
+    @Transaction
     @Query("SELECT * FROM accounts WHERE accountId IN (:idList) ORDER BY dateTime DESC")
-    Flowable<List<AccountEntity>> getAccountByIdFlowable(List<Long> idList);
+    Flowable<List<AccountListUnionModel>> getAccountListByIdFlowable(List<Long> idList);
 
     /**
      * 通过流水记录编号删除位置

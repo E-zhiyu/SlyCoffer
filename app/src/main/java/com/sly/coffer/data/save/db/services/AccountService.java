@@ -18,6 +18,7 @@ import com.sly.coffer.data.save.db.daos.AccountDao;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.AccountUiModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountListUnionModel;
 import com.sly.coffer.helpers.file.FileHelper;
 
 import org.jetbrains.annotations.Contract;
@@ -202,19 +203,19 @@ public class AccountService {
             List<Long> idList,
             @NonNull BookkeepingDb db
     ) {
-        return db.accountDao().getAccountByIdFlowable(idList)
+        return db.accountDao().getAccountListByIdFlowable(idList)
                 .map(accountList -> {
                     //按照日期分组
-                    Map<LocalDate, List<AccountEntity>> dateGroupedMap = accountList.stream()
+                    Map<LocalDate, List<AccountListUnionModel>> dateGroupedMap = accountList.stream()
                             .collect(Collectors.groupingBy(
-                                    accountEntity -> accountEntity.getDateTime().toLocalDate(),
+                                    model -> model.getAccount().getDateTime().toLocalDate(),
                                     LinkedHashMap::new,
                                     Collectors.toList()
                             ));
 
                     //转换为 UiModel
                     List<AccountUiModel> resultList = new ArrayList<>();
-                    for (Map.Entry<LocalDate, List<AccountEntity>> entry : dateGroupedMap.entrySet()) {
+                    for (Map.Entry<LocalDate, List<AccountListUnionModel>> entry : dateGroupedMap.entrySet()) {
                         LocalDate date = entry.getKey();
                         String dateStr = date.format(CustomDateTimeFormatter.DATE_WITH_WEEK);
                         resultList.add(new AccountUiModel.Separator(dateStr));
