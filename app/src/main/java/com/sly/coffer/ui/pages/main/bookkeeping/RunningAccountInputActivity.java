@@ -53,6 +53,7 @@ import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
+import com.sly.coffer.data.save.db.entities.LocationEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
@@ -109,7 +110,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
     private final CompositeDisposable disposable = new CompositeDisposable();
     private SelectionTracker<Long> selectionTracker;        //图片列表选择追踪器
     private BackPressedCallbackHelper backHelper;           //返回逻辑管理器
-    private BackPressedCallbackHelper.BackHandler selectionBackHandler; //媒体多选返回处理器
+    private BackPressedCallbackHelper.BackHandler mediaBackHandler; //媒体多选返回处理器
     private AccountMediaAdapter mediaAdapter;               //媒体适配器
     private AccountTagAdapter tagAdapter;                   //标签适配器
     private ActivityResultLauncher<PickVisualMediaRequest> albumLauncher;   //相册图片选择启动器
@@ -270,92 +271,23 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         if (initBundle != null) {
             binding.toolbar.setTitle(R.string.modify_running_account);
 
-            //读取初始数据
-            long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
-            BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.accountDao().getAccountWithDetailSingleById(accountId)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            modelOptional -> {
-                                if (modelOptional.isEmpty()) return;
-
-                                //获取数据
-                                AccountUnionModel model = modelOptional.get();
-                                AccountEntity account = model.getAccount();
-                                List<TagEntity> tagList = model.getTagList();
-                                List<MediaEntity> mediaList = model.getMediaList();
-
-                                //显示文本框数据
-                                AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
-                                AccountType type = AccountType.values()[account.getType()];
-                                accountExtraDataViewModel.updateAccountType(type);
-                                binding.amountInput.setText(String.valueOf(account.getAmount()));   //金额
-                                binding.remarkInput.setText(account.getRemark());                   //备注
-                                binding.typeInput.setText(type.getTitle());                         //种类
-                                binding.datetimeInput.setText(account.getDateTime().format(
-                                        CustomDateTimeFormatter.DATE_TIME
-                                ));                                                                 //日期和时间
-
-                                //转账相关的文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
-                                    binding.transferInputLayout.setVisibility(View.VISIBLE);
-
-                                    ExtraTransferEntity transfer = model.getTransfer();
-                                    if (account.getTransferId() != null && transfer != null) {
-                                        binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
-                                        binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
-                                    }
+            //读取初始数据并缓存（没有缓存的时候才读取）
+            AccountInputViewModel viewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+            if (viewModel.getAccountUnionModel() == null) {
+                long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposable.add(db.accountDao().getAccountWithDetailSingleById(accountId)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                modelOptional -> {
+                                    if (modelOptional.isEmpty()) return;
+                                    AccountUnionModel model = modelOptional.get();
+                                    viewModel.setAccountModel(model);
                                 }
-
-                                //还款额外数据文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_REPAY)) {
-                                    binding.repayExtraLayout.setVisibility(View.VISIBLE);
-
-                                    AccountEntity repayAccount = model.getRepayRelatedAccount();
-                                    accountExtraDataViewModel.updateRelatedLoan(repayAccount);
-                                    if (account.getRepayAccountId() != null && repayAccount != null) {
-                                        binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
-                                    }
-                                }
-
-                                //借款额外数据文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_LOAN)) {
-                                    binding.loanExtraLayout.setVisibility(View.VISIBLE);
-
-                                    ExtraLoanEntity loan = model.getLoan();
-                                    if (account.getLoanId() != null && loan != null) {
-                                        binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
-                                        InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
-                                        binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
-                                        binding.annualInterestRateInput.setText(String.valueOf(loan.getYearBasepoint() / 100.0));   //年利率
-                                        if (loan.getRepayDate() != null) {
-                                            binding.repayDateInput.setText(loan.getRepayDate().format(CustomDateTimeFormatter.DATE));   //应还日期
-                                        }
-                                        binding.compoundInterestSwitch.setChecked(loan.isAllowCompoundInterest());  //允许复利
-                                    }
-                                }
-
-                                //显示标签
-                                if (!tagList.isEmpty()) {
-                                    tagAdapter.submitList(tagList);
-                                    binding.tagRecycler.setVisibility(View.VISIBLE);
-                                } else {
-                                    binding.tagRecycler.setVisibility(View.GONE);
-                                }
-                                Set<Long> tagIdList = tagList.stream()
-                                        .map(TagEntity::getTagId)
-                                        .collect(Collectors.toSet());
-                                TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
-                                tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
-
-                                //显示媒体
-                                if (!mediaList.isEmpty()) {
-                                    mediaAdapter.submitList(mediaList);
-                                }
-                            }
-                    )
-            );
+                        )
+                );
+            }
         }
 
         //金额
@@ -630,76 +562,29 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
         //完成按钮
         binding.confirmButton.setOnClickListener(v -> {
-            String err = verifyInput();
-            if (err != null) {
-                Toast.makeText(this, err, Toast.LENGTH_SHORT).show();
-                return;
+            AccountInputViewModel accountInputViewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+            LocationViewModel locationViewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+            AccountUnionModel model = accountInputViewModel.getAccountUnionModel();
+
+            if (locationViewModel.isLocationOn() && locationViewModel.getLocation() == null) {
+                Toast.makeText(this, "请等待获取地理位置……", Toast.LENGTH_SHORT).show();
+            } else if (model != null && locationViewModel.isLocationOn() && model.getLocation() != null) {
+                LocationEntity oldLocationEntity = model.getLocation();
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.accoount_location)
+                        .setMessage("修改的流水记录包含位置信息，且当前并未开启位置记录功能，请选择是否保留原有的位置信息。")
+                        .setPositiveButton("保留", (dialog, which) -> {
+                            Location tempLocation = new Location(oldLocationEntity.getProvider());
+                            tempLocation.setLatitude(oldLocationEntity.getLatitude());
+                            tempLocation.setLongitude(oldLocationEntity.getLongitude());
+                            tempLocation.setAltitude(oldLocationEntity.getAltitude());
+                            moveMediaFiles(tempLocation);
+                        })
+                        .setNegativeButton("移除", (dialog, which) -> moveMediaFiles(null))
+                        .show();
+            } else {
+                moveMediaFiles(locationViewModel.isLocationOn() ? locationViewModel.getLocation() : null);
             }
-
-            //显示进度条对话框
-            ProgressDialogBuilder dialogBuilder = new ProgressDialogBuilder(this, "正在移动媒体文件……");
-            AlertDialog dialog = dialogBuilder
-                    .setTitle("保存媒体文件")
-                    .setNegativeButton("取消", (dialogInterface, i) -> {
-                        disposable.clear();
-                        Toast.makeText(this, "已取消媒体文件保存", Toast.LENGTH_SHORT).show();
-                    })
-                    .create();
-
-            //如果有新媒体，则显示对话框
-            List<MediaEntity> currentMediaList = mediaAdapter.getCurrentList();
-            Set<MediaEntity> newMediaSet = currentMediaList.stream()    //获取新添加的媒体
-                    .filter(mediaEntity -> mediaEntity.getMediaId() == 0)
-                    .collect(Collectors.toSet());
-            if (!newMediaSet.isEmpty()) {
-                dialog.show();
-            }
-
-            //创建移动任务，并逐个返回移动成功的 File 型 Uri
-            Observable<MediaEntity> moveTask = Observable.create(emitter -> {
-                File targetDir = DirectoryPaths.MEDIA.getDir(this);
-                long accountId = initBundle == null ? 0 : initBundle.getLong(KeyStrings.RUNNING_ID.v());
-
-                for (MediaEntity originMedia : currentMediaList) {
-                    if (newMediaSet.contains(originMedia)) {
-                        File originFile = new File(Objects.requireNonNull(originMedia.getFileUri().getPath()));
-                        File movedFile = FileHelper.moveFile(originFile, targetDir);
-                        emitter.onNext(new MediaEntity(Uri.fromFile(movedFile), accountId));    //不论是否成功都返回
-                    } else {
-                        emitter.onNext(originMedia);
-                    }
-                }
-
-                emitter.onComplete();
-            });
-
-            //多线程执行任务并调用段落添加/更新方法
-            List<MediaEntity> resultList = new ArrayList<>();   //移动结果列表（可能包含 null）
-            disposable.add(moveTask
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            mediaEntity -> {
-                                resultList.add(mediaEntity);
-                                dialogBuilder.updateProgress(resultList.size(), currentMediaList.size(), "正在移动媒体文件……");
-                            },
-                            e -> {
-                                ExceptionHelper.showExceptionDialog(this, e);
-                                dialog.dismiss();
-                            },
-                            () -> {
-                                dialog.dismiss();
-
-                                //排除移动失败的文件
-                                List<MediaEntity> succeedMediaList = resultList.stream()
-                                        .filter(mediaEntity -> mediaEntity.getFileUri() != null)
-                                        .collect(Collectors.toList());
-
-                                //调用数据写入方法
-                                saveData(succeedMediaList);
-                            }
-                    )
-            );
         });
     }
 
@@ -707,6 +592,97 @@ public class RunningAccountInputActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
+        //流水记录数据
+        AccountInputViewModel accountInputViewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+        accountInputViewModel.getAccountModelLiveData().observe(this, model -> {
+            if (model == null) return;
+
+            AccountEntity account = model.getAccount();
+            List<TagEntity> tagList = model.getTagList();
+            List<MediaEntity> mediaList = model.getMediaList();
+
+            //显示文本框数据
+            AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+            AccountType type = AccountType.values()[account.getType()];
+            accountExtraDataViewModel.updateAccountType(type);
+            binding.amountInput.setText(String.valueOf(account.getAmount()));   //金额
+            binding.remarkInput.setText(account.getRemark());                   //备注
+            binding.typeInput.setText(type.getTitle());                         //种类
+            binding.datetimeInput.setText(account.getDateTime().format(
+                    CustomDateTimeFormatter.DATE_TIME
+            ));                                                                 //日期和时间
+
+            //转账相关的文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
+                binding.transferInputLayout.setVisibility(View.VISIBLE);
+
+                ExtraTransferEntity transfer = model.getTransfer();
+                if (account.getTransferId() != null && transfer != null) {
+                    binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
+                    binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
+                }
+            }
+
+            //还款额外数据文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_REPAY)) {
+                binding.repayExtraLayout.setVisibility(View.VISIBLE);
+
+                AccountEntity repayAccount = model.getRepayRelatedAccount();
+                accountExtraDataViewModel.updateRelatedLoan(repayAccount);
+                if (account.getRepayAccountId() != null && repayAccount != null) {
+                    binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
+                }
+            }
+
+            //借款额外数据文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_LOAN)) {
+                binding.loanExtraLayout.setVisibility(View.VISIBLE);
+
+                ExtraLoanEntity loan = model.getLoan();
+                if (account.getLoanId() != null && loan != null) {
+                    binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
+                    InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
+                    binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
+                    binding.annualInterestRateInput.setText(String.valueOf(loan.getYearBasepoint() / 100.0));   //年利率
+                    if (loan.getRepayDate() != null) {
+                        binding.repayDateInput.setText(loan.getRepayDate().format(CustomDateTimeFormatter.DATE));   //应还日期
+                    }
+                    binding.compoundInterestSwitch.setChecked(loan.isAllowCompoundInterest());  //允许复利
+                }
+            }
+
+            //显示标签
+            if (!tagList.isEmpty()) {
+                tagAdapter.submitList(tagList);
+                binding.tagRecycler.setVisibility(View.VISIBLE);
+            } else {
+                binding.tagRecycler.setVisibility(View.GONE);
+            }
+            Set<Long> tagIdList = tagList.stream()
+                    .map(TagEntity::getTagId)
+                    .collect(Collectors.toSet());
+            TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
+            tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
+
+            //显示地理位置
+            if (model.getLocation() != null) {
+                LocationEntity location = model.getLocation();
+                binding.recordedLocationText.setText(LocationHelper.locationToString(
+                        location.getLatitude(),
+                        location.getLongitude(),
+                        location.getAltitude(),
+                        location.isFineLocation()
+                ));
+            } else {
+                binding.recordedLocationText.setText("无地理位置信息");
+            }
+
+            //显示媒体
+            if (!mediaList.isEmpty()) {
+                mediaAdapter.submitList(mediaList);
+            }
+        });
+
         //流水记录种类
         AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         accountExtraDataViewModel.getAccountTypeLiveData().observe(this, type -> {
@@ -837,6 +813,20 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         locationViewModel.getIsLocationOnLiveData().observe(this, isLocationOn ->
                 binding.locationBtn.setImageResource(isLocationOn ? R.drawable.outline_location_on_24 : R.drawable.outline_location_off_24)
         );
+
+        //当前位置
+        locationViewModel.getLocationLiveData().observe(this, location -> {
+            if (location == null) {
+                binding.currentLocationText.setText("未获取到地理位置");
+            } else {
+                binding.currentLocationText.setText(LocationHelper.locationToString(
+                        location.getLatitude(),
+                        location.getLongitude(),
+                        location.getAltitude(),
+                        XXPermissions.isGrantedPermission(this, PermissionLists.getAccessFineLocationPermission())
+                ));
+            }
+        });
     }
 
     /**
@@ -883,7 +873,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(backPressedCallback);
 
         //媒体多选处理器
-        selectionBackHandler = new BackPressedCallbackHelper.BackHandler() {
+        mediaBackHandler = new BackPressedCallbackHelper.BackHandler() {
             @Override
             public boolean handleBack() {
                 selectionTracker.clearSelection();
@@ -1075,6 +1065,84 @@ public class RunningAccountInputActivity extends AppCompatActivity {
     }
 
     /**
+     * 移动媒体文件到永久目录
+     *
+     * @param location 段落位置信息
+     */
+    private void moveMediaFiles(@Nullable Location location) {
+        String err = verifyInput();
+        if (err != null) {
+            Toast.makeText(this, err, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        //显示进度条对话框
+        ProgressDialogBuilder dialogBuilder = new ProgressDialogBuilder(this, "正在移动媒体文件……");
+        AlertDialog dialog = dialogBuilder
+                .setTitle("保存媒体文件")
+                .setNegativeButton("取消", (dialogInterface, i) -> {
+                    disposable.clear();
+                    Toast.makeText(this, "已取消媒体文件保存", Toast.LENGTH_SHORT).show();
+                })
+                .create();
+
+        //如果有新媒体，则显示对话框
+        List<MediaEntity> currentMediaList = mediaAdapter.getCurrentList();
+        Set<MediaEntity> newMediaSet = currentMediaList.stream()    //获取新添加的媒体
+                .filter(mediaEntity -> mediaEntity.getMediaId() == 0)
+                .collect(Collectors.toSet());
+        if (!newMediaSet.isEmpty()) {
+            dialog.show();
+        }
+
+        //创建移动任务，并逐个返回移动成功的 File 型 Uri
+        Observable<MediaEntity> moveTask = Observable.create(emitter -> {
+            File targetDir = DirectoryPaths.MEDIA.getDir(this);
+            long accountId = initBundle == null ? 0 : initBundle.getLong(KeyStrings.RUNNING_ID.v());
+
+            for (MediaEntity originMedia : currentMediaList) {
+                if (newMediaSet.contains(originMedia)) {
+                    File originFile = new File(Objects.requireNonNull(originMedia.getFileUri().getPath()));
+                    File movedFile = FileHelper.moveFile(originFile, targetDir);
+                    emitter.onNext(new MediaEntity(Uri.fromFile(movedFile), accountId));    //不论是否成功都返回
+                } else {
+                    emitter.onNext(originMedia);
+                }
+            }
+
+            emitter.onComplete();
+        });
+
+        //多线程执行任务并调用段落添加/更新方法
+        List<MediaEntity> resultList = new ArrayList<>();   //移动结果列表（可能包含 null）
+        disposable.add(moveTask
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                        mediaEntity -> {
+                            resultList.add(mediaEntity);
+                            dialogBuilder.updateProgress(resultList.size(), currentMediaList.size(), "正在移动媒体文件……");
+                        },
+                        e -> {
+                            ExceptionHelper.showExceptionDialog(this, e);
+                            dialog.dismiss();
+                        },
+                        () -> {
+                            dialog.dismiss();
+
+                            //排除移动失败的文件
+                            List<MediaEntity> succeedMediaList = resultList.stream()
+                                    .filter(mediaEntity -> mediaEntity.getFileUri() != null)
+                                    .collect(Collectors.toList());
+
+                            //调用数据写入方法
+                            saveData(succeedMediaList, location);
+                        }
+                )
+        );
+    }
+
+    /**
      * 首先保存额外的数据
      *
      * @param account 流水记录数据
@@ -1160,7 +1228,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
     /**
      * 将数据保存到数据库
      */
-    private void saveData(List<MediaEntity> copiedMediaUriList) {
+    private void saveData(List<MediaEntity> copiedMediaUriList, @Nullable Location location) {
         //获取输入的数据
         double amount;
         try {
@@ -1178,6 +1246,8 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         List<Long> tagIdList = tagAdapter.getCurrentList().stream()
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
+
+        //TODO:保存地理位置信息
 
         //生成数据实例并保存
         AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
@@ -1305,9 +1375,9 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
         //处理返回拦截
         if (isSelectMode) {
-            backHelper.registerHandler(selectionBackHandler);
+            backHelper.registerHandler(mediaBackHandler);
         } else {
-            backHelper.unregisterHandler(selectionBackHandler);
+            backHelper.unregisterHandler(mediaBackHandler);
         }
 
         //定义过渡动画

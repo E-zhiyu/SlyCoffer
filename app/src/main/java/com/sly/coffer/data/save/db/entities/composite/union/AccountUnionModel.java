@@ -9,6 +9,7 @@ import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
+import com.sly.coffer.data.save.db.entities.LocationEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 
@@ -44,6 +45,13 @@ public class AccountUnionModel {
             associateBy = @Junction(AccountTagRefEntity.class)
     )
     private final List<TagEntity> tagList;              //该流水记录的标签列表
+    @Nullable
+    @Relation(
+            parentColumn = "accountId",
+            entityColumn = "accountId",
+            entity = LocationEntity.class
+    )
+    private final LocationEntity location;              //流水记录位置信息
     @Relation(
             entity = MediaEntity.class,
             parentColumn = "accountId",
@@ -51,30 +59,18 @@ public class AccountUnionModel {
     )
     private final List<MediaEntity> mediaList;          //该流水记录的媒体列表
 
-    public AccountUnionModel(AccountEntity account, @Nullable ExtraTransferEntity transfer, @Nullable ExtraLoanEntity loan, @Nullable AccountEntity repayRelatedAccount, List<TagEntity> tagList, List<MediaEntity> mediaList) {
+    public AccountUnionModel(AccountEntity account, @Nullable ExtraTransferEntity transfer, @Nullable ExtraLoanEntity loan, @Nullable AccountEntity repayRelatedAccount, List<TagEntity> tagList, @Nullable LocationEntity location, List<MediaEntity> mediaList) {
         this.account = account;
         this.transfer = transfer;
         this.loan = loan;
         this.repayRelatedAccount = repayRelatedAccount;
         this.tagList = tagList;
+        this.location = location;
         this.mediaList = mediaList;
     }
 
     public AccountEntity getAccount() {
         return account;
-    }
-
-    public List<TagEntity> getTagList() {
-        return tagList;
-    }
-
-    public List<MediaEntity> getMediaList() {
-        return mediaList;
-    }
-
-    @Nullable
-    public AccountEntity getRepayRelatedAccount() {
-        return repayRelatedAccount;
     }
 
     @Nullable
@@ -85,5 +81,23 @@ public class AccountUnionModel {
     @Nullable
     public ExtraLoanEntity getLoan() {
         return loan;
+    }
+
+    @Nullable
+    public AccountEntity getRepayRelatedAccount() {
+        return repayRelatedAccount;
+    }
+
+    public List<TagEntity> getTagList() {
+        return tagList;
+    }
+
+    @Nullable
+    public LocationEntity getLocation() {
+        return location;
+    }
+
+    public List<MediaEntity> getMediaList() {
+        return mediaList;
     }
 }

@@ -238,4 +238,12 @@ public class DatabaseMigrations {
             db.execSQL("UPDATE tags SET scope = scope | 24");
         }
     };
+
+    //添加位置相关的表
+    static final Migration MIGRATION_9_10 = new Migration(9, 10) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `locations` (`accountId` INTEGER NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `altitude` REAL NOT NULL, `isFineLocation` INTEGER NOT NULL DEFAULT 1, `provider` TEXT DEFAULT '', PRIMARY KEY(`accountId`), FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )");
+        }
+    };
 }

@@ -281,6 +281,7 @@
     <string name="location_record">位置记录</string>
     <string name="recorded_location">记录的位置：</string>
     <string name="current_location">当前位置：</string>
+    <string name="accoount_location">流水位置信息</string>
 
     <string-array name="tips_array">
         <item>如果设置了自动备份目录，进行软件更新时会自动备份一次。</item>
