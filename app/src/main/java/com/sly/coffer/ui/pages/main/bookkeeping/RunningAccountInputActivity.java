@@ -590,6 +590,12 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             }
         });
 
+        //位置解释按钮
+        binding.locationExplainBtn.setOnClickListener(v -> {
+            final String EXPLANATION = "开启位置记录后，保存流水记录时会同时记录地理位置信息。";
+            TipPreference.showTipWithoutKey(v, Gravity.START, EXPLANATION);
+        });
+
         //媒体添加按钮
         binding.mediaAddBtn.setOnClickListener(view -> {
             MediaAddBottomSheet bottomSheet = new MediaAddBottomSheet();
