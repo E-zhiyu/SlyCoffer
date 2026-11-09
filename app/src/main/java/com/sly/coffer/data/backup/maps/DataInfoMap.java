@@ -14,6 +14,11 @@ public class DataInfoMap {
         this.appVersionCode = appVersionCode;
     }
 
+    public DataInfoMap(long appVersionCode, List<String> fileNames) {
+        this.appVersionCode = appVersionCode;
+        this.fileNames = fileNames;
+    }
+
     public DataInfoMap() {
     }
 

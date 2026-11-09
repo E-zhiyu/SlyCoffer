@@ -11,11 +11,19 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
 public class AccessibilityRuleDataMap {
-    private List<AccessibilityRulePojo> ruleList;
-    private List<AccessibilityRuleTagRefPojo> tagRefList;
-    private List<ExtraTransferPojo> extraTransferList;
-    private List<ExtraLoanPojo> extraLoanList;
-    private List<AccessibilityRuleKeywordGroupPojo> keywordGroupList;
+    private List<AccessibilityRulePojo> ruleList;                       //规则
+    private List<AccessibilityRuleTagRefPojo> tagRefList;               //标签映射
+    private List<ExtraTransferPojo> extraTransferList;                  //转账账户
+    private List<ExtraLoanPojo> extraLoanList;                          //借款记录
+    private List<AccessibilityRuleKeywordGroupPojo> keywordGroupList;   //关键词组合
+
+    public AccessibilityRuleDataMap(List<AccessibilityRulePojo> ruleList, List<AccessibilityRuleTagRefPojo> tagRefList, List<ExtraTransferPojo> extraTransferList, List<ExtraLoanPojo> extraLoanList, List<AccessibilityRuleKeywordGroupPojo> keywordGroupList) {
+        this.ruleList = ruleList;
+        this.tagRefList = tagRefList;
+        this.extraTransferList = extraTransferList;
+        this.extraLoanList = extraLoanList;
+        this.keywordGroupList = keywordGroupList;
+    }
 
     public AccessibilityRuleDataMap() {
     }

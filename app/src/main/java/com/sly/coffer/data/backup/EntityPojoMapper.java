@@ -11,6 +11,7 @@ import com.sly.coffer.data.backup.pojo.ExtraLoanPojo;
 import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 import com.sly.coffer.data.backup.pojo.BudgetPojo;
 import com.sly.coffer.data.backup.pojo.BudgetTagRefPojo;
+import com.sly.coffer.data.backup.pojo.LocationPojo;
 import com.sly.coffer.data.backup.pojo.MediaPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleGroupPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleGroupRefPojo;
@@ -29,6 +30,7 @@ import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
+import com.sly.coffer.data.save.db.entities.LocationEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
@@ -215,4 +217,12 @@ public interface EntityPojoMapper {
     AccessibilityRuleKeywordGroupPojo toAccessibilityRuleKeywordGroupPojo(AccessibilityRuleKeywordGroupEntity entity);
 
     List<AccessibilityRuleKeywordGroupPojo> toAccessibilityRuleKeywordGroupPojoList(List<AccessibilityRuleKeywordGroupEntity> entityList);
+
+    LocationEntity toLocationEntity(LocationPojo pojo);
+
+    List<LocationEntity> toLocationEntityList(List<LocationPojo> pojoList);
+
+    LocationPojo toLocationPojo(LocationEntity entity);
+
+    List<LocationPojo> toLocationPojoList(List<LocationEntity> entityList);
 }
