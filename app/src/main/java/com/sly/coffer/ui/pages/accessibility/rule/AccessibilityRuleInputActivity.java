@@ -7,7 +7,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.util.Pair;
@@ -63,8 +62,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class AccessibilityRuleInputActivity extends AppCompatActivity {
     private ActivityAccessibilityRuleInputBinding binding;
-    @Nullable
-    private Bundle initBundle = null;               //存有初始数据数据包
     private final CompositeDisposable disposable = new CompositeDisposable();
     private AccountTagAdapter tagAdapter;           //标签适配器
     private KeywordGroupListAdapter keywordAdapter; //关键词组合适配器
@@ -92,9 +89,32 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
             return insets;
         });
 
-        initBundle = getIntent().getExtras();
         initViews();
         observeLiveData();
+
+        //加载初始数据
+        Bundle initBundle = getIntent().getExtras();
+        if (initBundle != null) {
+            AccessibilityRuleInputViewModel inputViewModel = new ViewModelProvider(this).get(AccessibilityRuleInputViewModel.class);
+            if (inputViewModel.getRuleModel() == null) {
+                long ruleId = initBundle.getLong(KeyStrings.ACCESSIBILITY_RULE_ID.v());
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposable.add(db.accessibilityRuleDao().getRuleWithDetailById(ruleId)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                optional -> {
+                                    if (optional.isEmpty()) return;
+
+                                    //读取数据
+                                    AccessibilityRuleUnionModel model = optional.get();
+                                    inputViewModel.setRuleModel(model);
+                                },
+                                e -> ExceptionHelper.showExceptionDialog(this, e)
+                        )
+                );
+            }
+        }
     }
 
     @Override
@@ -186,105 +206,10 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
 
         //工具栏
         binding.toolbar.setNavigationOnClickListener(view -> finish());
-        if (initBundle != null) {
+        if (getIntent().getExtras() != null) {
             binding.toolbar.setTitle(R.string.modify_rule);
-
-            long ruleId = initBundle.getLong(KeyStrings.ACCESSIBILITY_RULE_ID.v());
-            BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.accessibilityRuleDao().getRuleWithDetailById(ruleId)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            optional -> {
-                                if (optional.isEmpty()) return;
-
-                                //读取数据
-                                AccessibilityRuleUnionModel model = optional.get();
-                                AccessibilityRuleEntity rule = model.getRule();
-                                List<TagEntity> tagList = model.getTagList();
-                                List<AccessibilityRuleKeywordGroupEntity> keywordGroupList = model.getKeywordGroupList();
-
-                                //填充数据
-                                AccountExtraDataViewModel extraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
-                                AccountType type = AccountType.values()[rule.getType()];
-                                extraDataViewModel.updateAccountType(type);
-                                AccessibilityRuleInputViewModel ruleViewModel = new ViewModelProvider(this).get(AccessibilityRuleInputViewModel.class);
-                                binding.nameInput.setText(rule.getName());                  //名称
-                                binding.typeInput.setText(extraDataViewModel.getAccountType().getTitle());  //种类
-                                if (ruleViewModel.getPickedPage().getValue() == null) { //仅没有设置拾取时才填充
-                                    //填充拾取结果
-                                    PickedPageEntity pickedPage = new PickedPageEntity(
-                                            "拾取的界面",
-                                            rule.getPackageName(),
-                                            rule.getActivityName(),
-                                            LocalDateTime.now()
-                                    );
-                                    ruleViewModel.setPickResult(pickedPage);
-                                }
-
-                                //转账相关的文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
-                                    binding.transferInputLayout.setVisibility(View.VISIBLE);
-
-                                    ExtraTransferEntity transfer = model.getTransfer();
-                                    if (rule.getTransferId() != null && transfer != null) {
-                                        binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
-                                        binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
-                                    }
-                                }
-
-                                //还款额外数据文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_REPAY)) {
-                                    binding.repayExtraLayout.setVisibility(View.VISIBLE);
-
-                                    AccountEntity repayAccount = model.getRepayRelatedAccount();
-                                    extraDataViewModel.updateRelatedLoan(repayAccount);
-                                    if (rule.getRepayAccountId() != null && repayAccount != null) {
-                                        binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
-                                    }
-                                }
-
-                                //借款额外数据文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_LOAN)) {
-                                    binding.loanExtraLayout.setVisibility(View.VISIBLE);
-
-                                    ExtraLoanEntity loan = model.getLoan();
-                                    if (rule.getLoanId() != null && loan != null) {
-                                        binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
-                                        InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
-                                        binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
-                                        binding.annualInterestRateInput.setText(String.valueOf(loan.getYearBasepoint() / 100.0));   //年利率
-                                        if (loan.getRepayDate() != null) {
-                                            binding.repayDateInput.setText(loan.getRepayDate().format(CustomDateTimeFormatter.DATE));   //应还日期
-                                        }
-                                        binding.compoundInterestSwitch.setChecked(loan.isAllowCompoundInterest());  //允许复利
-                                    }
-                                }
-
-                                //显示关键词组合
-                                if (!keywordGroupList.isEmpty()) {
-                                    keywordAdapter.submitList(keywordGroupList);
-                                    binding.keywordGroupRecycler.setVisibility(View.VISIBLE);
-                                } else {
-                                    binding.keywordGroupRecycler.setVisibility(View.GONE);
-                                }
-
-                                //显示标签
-                                if (!tagList.isEmpty()) {
-                                    tagAdapter.submitList(tagList);
-                                    binding.tagRecycler.setVisibility(View.VISIBLE);
-                                } else {
-                                    binding.tagRecycler.setVisibility(View.GONE);
-                                }
-                                Set<Long> tagIdList = tagList.stream()
-                                        .map(TagEntity::getTagId)
-                                        .collect(Collectors.toSet());
-                                TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
-                                tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
-                            },
-                            e -> ExceptionHelper.showExceptionDialog(this, e)
-                    )
-            );
+        } else {
+            binding.toolbar.setTitle(R.string.add_rule);
         }
 
         //名称
@@ -458,7 +383,8 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                     .setTitle("输入" + keywordGroup)
                     .setNegativeButton("取消", null)
                     .setPositiveButton("确定", inputStr -> {
-                        long ruleId = initBundle == null ? 0 : initBundle.getLong(KeyStrings.ACCESSIBILITY_RULE_ID.v());
+                        AccessibilityRuleInputViewModel inputViewModel = new ViewModelProvider(this).get(AccessibilityRuleInputViewModel.class);
+                        long ruleId = inputViewModel.getRuleModel() == null ? 0 : inputViewModel.getRuleModel().getRule().getRuleId();
                         List<AccessibilityRuleKeywordGroupEntity> keywordGroupList = new ArrayList<>(keywordAdapter.getCurrentList());
                         keywordGroupList.add(new AccessibilityRuleKeywordGroupEntity(ruleId, inputStr.trim()));
                         keywordAdapter.submitList(
@@ -511,6 +437,93 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
+        //输入框数据
+        AccessibilityRuleInputViewModel ruleInputViewModel = new ViewModelProvider(this)
+                .get(AccessibilityRuleInputViewModel.class);
+        ruleInputViewModel.getRuleModelLiveData().observe(this, model -> {
+            AccessibilityRuleEntity rule = model.getRule();
+            List<TagEntity> tagList = model.getTagList();
+            List<AccessibilityRuleKeywordGroupEntity> keywordGroupList = model.getKeywordGroupList();
+
+            //填充数据
+            AccountExtraDataViewModel extraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+            AccountType type = AccountType.values()[rule.getType()];
+            extraDataViewModel.updateAccountType(type);
+            AccessibilityRuleInputViewModel ruleViewModel = new ViewModelProvider(this).get(AccessibilityRuleInputViewModel.class);
+            binding.nameInput.setText(rule.getName());                  //名称
+            binding.typeInput.setText(extraDataViewModel.getAccountType().getTitle());  //种类
+            if (ruleViewModel.getPickedPage().getValue() == null) { //仅没有设置拾取时才填充
+                //填充拾取结果
+                PickedPageEntity pickedPage = new PickedPageEntity(
+                        "拾取的界面",
+                        rule.getPackageName(),
+                        rule.getActivityName(),
+                        LocalDateTime.now()
+                );
+                ruleViewModel.setPickResult(pickedPage);
+            }
+
+            //转账相关的文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
+                binding.transferInputLayout.setVisibility(View.VISIBLE);
+
+                ExtraTransferEntity transfer = model.getTransfer();
+                if (rule.getTransferId() != null && transfer != null) {
+                    binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
+                    binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
+                }
+            }
+
+            //还款额外数据文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_REPAY)) {
+                binding.repayExtraLayout.setVisibility(View.VISIBLE);
+
+                AccountEntity repayAccount = model.getRepayRelatedAccount();
+                extraDataViewModel.updateRelatedLoan(repayAccount);
+                if (rule.getRepayAccountId() != null && repayAccount != null) {
+                    binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
+                }
+            }
+
+            //借款额外数据文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_LOAN)) {
+                binding.loanExtraLayout.setVisibility(View.VISIBLE);
+
+                ExtraLoanEntity loan = model.getLoan();
+                if (rule.getLoanId() != null && loan != null) {
+                    binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
+                    InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
+                    binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
+                    binding.annualInterestRateInput.setText(String.valueOf(loan.getYearBasepoint() / 100.0));   //年利率
+                    if (loan.getRepayDate() != null) {
+                        binding.repayDateInput.setText(loan.getRepayDate().format(CustomDateTimeFormatter.DATE));   //应还日期
+                    }
+                    binding.compoundInterestSwitch.setChecked(loan.isAllowCompoundInterest());  //允许复利
+                }
+            }
+
+            //显示关键词组合
+            if (!keywordGroupList.isEmpty()) {
+                keywordAdapter.submitList(keywordGroupList);
+                binding.keywordGroupRecycler.setVisibility(View.VISIBLE);
+            } else {
+                binding.keywordGroupRecycler.setVisibility(View.GONE);
+            }
+
+            //显示标签
+            if (!tagList.isEmpty()) {
+                tagAdapter.submitList(tagList);
+                binding.tagRecycler.setVisibility(View.VISIBLE);
+            } else {
+                binding.tagRecycler.setVisibility(View.GONE);
+            }
+            Set<Long> tagIdList = tagList.stream()
+                    .map(TagEntity::getTagId)
+                    .collect(Collectors.toSet());
+            TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
+            tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
+        });
+
         //流水记录种类
         AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         accountExtraDataViewModel.getAccountTypeLiveData().observe(this, type -> {
@@ -579,9 +592,7 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
             );
         });
 
-        //金额文本选择
-        AccessibilityRuleInputViewModel ruleInputViewModel = new ViewModelProvider(this)
-                .get(AccessibilityRuleInputViewModel.class);
+        //界面选择
         ruleInputViewModel.getPickedPage().observe(this, pickedPage -> {
             if (pickedPage == null) {
                 //清空文本框
@@ -736,7 +747,7 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
 
-        //保存数据
+        //实例化数据实体
         AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         AccessibilityRuleEntity rule = new AccessibilityRuleEntity(
                 name,
@@ -746,8 +757,11 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
         );
         rule.setRepayAccountId(viewModel.getRepayAccountId());  //设置关联的借款记录的编号
         List<AccessibilityRuleKeywordGroupEntity> keywordGroupList = new ArrayList<>(keywordAdapter.getCurrentList());
+
+        //保存数据
+        AccessibilityRuleInputViewModel inputViewModel = new ViewModelProvider(this).get(AccessibilityRuleInputViewModel.class);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        if (initBundle == null) {
+        if (inputViewModel.getRuleModel() == null) {
             disposable.add(saveExtraDataFirstly(rule)
                     .andThen(AccessibilityRuleService.addNewAccessibilityRule(rule, keywordGroupList, tagIdList, db))
                     .observeOn(AndroidSchedulers.mainThread())
@@ -761,8 +775,7 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
                     )
             );
         } else {
-            long ruleId = initBundle.getLong(KeyStrings.ACCESSIBILITY_RULE_ID.v());
-            rule.setRuleId(ruleId);
+            rule.setRuleId(inputViewModel.getRuleModel().getRule().getRuleId());
             disposable.add(saveExtraDataFirstly(rule)
                     .andThen(AccessibilityRuleService.modifyAccessibilityRule(rule, keywordGroupList, tagIdList, db))
                     .observeOn(AndroidSchedulers.mainThread())
