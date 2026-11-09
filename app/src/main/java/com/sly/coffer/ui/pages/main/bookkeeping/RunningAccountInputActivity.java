@@ -569,6 +569,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             if (locationViewModel.isLocationOn() && locationViewModel.getLocation() == null) {
                 Toast.makeText(this, "请等待获取地理位置……", Toast.LENGTH_SHORT).show();
             } else if (model != null && !locationViewModel.isLocationOn() && model.getLocation() != null) {
+                //TODO:备份地理位置数据
                 LocationEntity oldLocationEntity = model.getLocation();
                 new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.accoount_location)

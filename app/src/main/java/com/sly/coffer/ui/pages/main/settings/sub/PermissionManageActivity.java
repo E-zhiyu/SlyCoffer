@@ -33,7 +33,7 @@ import java.util.function.Function;
 
 public class PermissionManageActivity extends AppCompatActivity {
     private ActivityPermissionManageBinding binding;                //绑定的XML视图
-    private SettingClickableTextView camera, appList, notification, notificationListener, battery, alarm;
+    private SettingClickableTextView camera, appList, notification, notificationListener, battery, alarm, location;
     private SettingClickableTextView autoBookkeeping, pick;
     private final PermissionHelper.PermissionCallback REQUEST_CALLBACK = new PermissionHelper.PermissionCallback() {
         @Override
@@ -249,7 +249,7 @@ public class PermissionManageActivity extends AppCompatActivity {
                 R.string.alarm_permission,
                 "允许设置定时任务",
                 R.drawable.outline_alarm_24,
-                RadiusStyle.BOTTOM
+                RadiusStyle.MIDDLE
         );
         alarm.setFunctionListener(v -> PermissionHelper.requestPermission(
                 this,
@@ -262,6 +262,32 @@ public class PermissionManageActivity extends AppCompatActivity {
         alarm.setOnLongClickListener(view -> {
             SlyAccountBook.lockLifecycleObserver(true);
             XXPermissions.startPermissionActivity(this, PermissionLists.getScheduleExactAlarmPermission());
+            return true;
+        });
+
+        //定位权限
+        location = new SettingClickableTextView(
+                this,
+                binding.locationOption,
+                R.string.location_permission,
+                "允许获取所处位置",
+                R.drawable.outline_location_on_24,
+                RadiusStyle.BOTTOM
+        );
+        location.setFunctionListener(v -> PermissionHelper.requestLocationPermission(
+                this,
+                permissionList ->
+                        "该权限允许应用获取设备所处的位置，应用范围如下：\n" +
+                                "- 添加或修改流水记录时保存地理位置信息。\n",
+                null
+        ));
+        location.setOnLongClickListener(v -> {
+            SlyAccountBook.lockLifecycleObserver(true);
+            XXPermissions.startPermissionActivity(
+                    this,
+                    PermissionLists.getAccessFineLocationPermission(),
+                    PermissionLists.getAccessCoarseLocationPermission()
+            );
             return true;
         });
 
@@ -352,5 +378,16 @@ public class PermissionManageActivity extends AppCompatActivity {
         //无障碍视图拾取服务
         boolean isAccessibilityPickGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getBindAccessibilityServicePermission(PickAccessibilityService.class));
         pick.getFunctionComponent().setText(isAccessibilityPickGranted ? ENABLED : NOT_ENABLED);
+
+        //定位权限
+        boolean isFineLocationGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getAccessFineLocationPermission());
+        boolean isCoarseLocationGranted = XXPermissions.isGrantedPermission(this, PermissionLists.getAccessCoarseLocationPermission());
+        if (isFineLocationGranted) {
+            location.getFunctionComponent().setText("精确位置");
+        } else if (isCoarseLocationGranted) {
+            location.getFunctionComponent().setText("粗略位置");
+        } else {
+            location.getFunctionComponent().setText(NOT_GRANTED);
+        }
     }
 }
