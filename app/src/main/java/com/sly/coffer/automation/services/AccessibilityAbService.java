@@ -685,7 +685,7 @@ public class AccessibilityAbService extends AccessibilityService {
         String ruleName = rule.getName();
         int notificationId = (int) (rule.getRuleId() + System.currentTimeMillis() + NotificationID.AUTO_BOOKKEEPING_CONFIRM.ordinal());
         disposable.add(saveExtraDataFirstly(account, model)
-                .andThen(AccountService.addNewAccount(account, null, tagIdList, this))
+                .andThen(AccountService.addNewAccount(account, null, tagIdList, null, this))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(

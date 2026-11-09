@@ -568,7 +568,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
             if (locationViewModel.isLocationOn() && locationViewModel.getLocation() == null) {
                 Toast.makeText(this, "请等待获取地理位置……", Toast.LENGTH_SHORT).show();
-            } else if (model != null && locationViewModel.isLocationOn() && model.getLocation() != null) {
+            } else if (model != null && !locationViewModel.isLocationOn() && model.getLocation() != null) {
                 LocationEntity oldLocationEntity = model.getLocation();
                 new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.accoount_location)
@@ -1247,8 +1247,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
 
-        //TODO:保存地理位置信息
-
         //生成数据实例并保存
         AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         AccountEntity account = new AccountEntity(
@@ -1260,7 +1258,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         );
         if (initBundle == null) {
             disposable.add(saveExtraDataFirstly(account)
-                    .andThen(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, this))
+                    .andThen(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, location, this))
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -1283,7 +1281,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v(), -1);
             account.setAccountId(accountId);
             disposable.add(saveExtraDataFirstly(account)
-                    .andThen(AccountService.modifyAccount(account, copiedMediaUriList, tagIdList, this))
+                    .andThen(AccountService.modifyAccount(account, copiedMediaUriList, tagIdList, location, this))
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(

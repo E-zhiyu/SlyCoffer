@@ -1,12 +1,16 @@
 package com.sly.coffer.data.save.db.services;
 
 import android.content.Context;
+import android.location.Location;
 import android.net.Uri;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.sqlite.db.SimpleSQLiteQuery;
 
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
@@ -231,6 +235,7 @@ public class AccountService {
      * @param account         新流水记录
      * @param mediaEntityList 位于永久目录下的媒体文件实体列表
      * @param tagIdList       与该记录绑定的标签的 ID 列表
+     * @param location        位置信息
      * @param context         上下文
      * @return 新添加的流水记录的编号
      */
@@ -238,11 +243,21 @@ public class AccountService {
             AccountEntity account,
             @Nullable List<MediaEntity> mediaEntityList,
             @Nullable List<Long> tagIdList,
+            @Nullable Location location,
             Context context
     ) {
         return Single.defer(() -> {
             BookkeepingDb db = BookkeepingDb.getInstance(context);
-            long accountId = db.accountDao().addAccount(account, mediaEntityList, tagIdList);
+            Pair<Boolean, Location> locationPair;
+            if (location != null) {
+                boolean isFineLocation = XXPermissions.isGrantedPermission(
+                        context, PermissionLists.getAccessFineLocationPermission()
+                );
+                locationPair = new Pair<>(isFineLocation, location);
+            } else {
+                locationPair = null;
+            }
+            long accountId = db.accountDao().addAccount(account, mediaEntityList, tagIdList, locationPair);
 
             //检查预算
             BudgetService.checkAndSendLowBalanceNotification(context);
@@ -257,6 +272,7 @@ public class AccountService {
      * @param account         修改后的流水记录
      * @param mediaEntityList 位于永久目录下的媒体文件实体列表，可能包含新添加的媒体
      * @param tagIdList       与该记录绑定的标签的 Id 列表
+     * @param location        位置信息
      * @param context         上下文
      * @return 是否完成
      */
@@ -264,11 +280,25 @@ public class AccountService {
             AccountEntity account,
             List<MediaEntity> mediaEntityList,
             List<Long> tagIdList,
+            @Nullable Location location,
             Context context
     ) {
         BookkeepingDb db = BookkeepingDb.getInstance(context);
         return Single.defer(() -> {
-            Set<Uri> oldMediaUriSet = db.accountDao().modifyAccount(account, mediaEntityList, tagIdList, db.extraDataDao());
+            Pair<Boolean, Location> locationPair;
+            if (location != null) {
+                boolean isFineLocation = XXPermissions.isGrantedPermission(context, PermissionLists.getAccessFineLocationPermission());
+                locationPair = new Pair<>(isFineLocation, location);
+            } else {
+                locationPair = null;
+            }
+            Set<Uri> oldMediaUriSet = db.accountDao().modifyAccount(
+                    account,
+                    mediaEntityList,
+                    tagIdList,
+                    locationPair,
+                    db.extraDataDao()
+            );
 
             //删除旧媒体文件
             if (oldMediaUriSet != null) {

@@ -28,13 +28,13 @@ public class LocationEntity {
     @ColumnInfo(defaultValue = "")
     private String provider;        //位置提供者
 
-    public LocationEntity(double latitude, double longitude, double altitude, boolean isFineLocation, String provider, long accountId) {
+    public LocationEntity(long accountId, double latitude, double longitude, double altitude, boolean isFineLocation, String provider) {
+        this.accountId = accountId;
         this.latitude = latitude;
         this.longitude = longitude;
         this.altitude = altitude;
         this.isFineLocation = isFineLocation;
         this.provider = provider;
-        this.accountId = accountId;
     }
 
     public long getAccountId() {
