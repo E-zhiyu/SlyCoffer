@@ -594,7 +594,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
-        //流水记录数据
+        //输入框数据
         AccountInputViewModel accountInputViewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
         accountInputViewModel.getAccountModelLiveData().observe(this, model -> {
             if (model == null) return;

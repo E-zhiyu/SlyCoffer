@@ -92,7 +92,7 @@ public class PickedPageListActivity extends AppCompatActivity {
                 binding.clearHistoryBtn,
                 SearchHistoryPreference.KEY_PICKED_VIEW,
                 keyword -> {
-                    PickedPageViewModel viewModel = new ViewModelProvider(this).get(PickedPageViewModel.class);
+                    PickedPageListViewModel viewModel = new ViewModelProvider(this).get(PickedPageListViewModel.class);
                     viewModel.executeSearch(keyword.trim());
                 },
                 item -> {
@@ -151,7 +151,7 @@ public class PickedPageListActivity extends AppCompatActivity {
                 this::showPopupMenu
         );
         binding.recycler.setAdapter(adapter);
-        PickedPageViewModel viewModel = new ViewModelProvider(this).get(PickedPageViewModel.class);
+        PickedPageListViewModel viewModel = new ViewModelProvider(this).get(PickedPageListViewModel.class);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         disposable.add(viewModel.getPickedPageFlowable(db)
                 .subscribe(
@@ -238,7 +238,7 @@ public class PickedPageListActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
-        PickedPageViewModel roleListViewModel = new ViewModelProvider(PickedPageListActivity.this).get(PickedPageViewModel.class);
+        PickedPageListViewModel roleListViewModel = new ViewModelProvider(PickedPageListActivity.this).get(PickedPageListViewModel.class);
         roleListViewModel.getFilterUpdatedLiveData().observe(this, v ->
                 setSearchMode(!roleListViewModel.isNoFilter())
         );
@@ -261,7 +261,7 @@ public class PickedPageListActivity extends AppCompatActivity {
         searchBackHandler = new BackPressedCallbackHelper.BackHandler() {
             @Override
             public boolean handleBack() {
-                PickedPageViewModel viewModel = new ViewModelProvider(PickedPageListActivity.this).get(PickedPageViewModel.class);
+                PickedPageListViewModel viewModel = new ViewModelProvider(PickedPageListActivity.this).get(PickedPageListViewModel.class);
                 viewModel.clearFilter();
                 return true;
             }
