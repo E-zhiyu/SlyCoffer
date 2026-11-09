@@ -8,11 +8,11 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.sly.coffer.auxiliary.enums.unique.KeyStrings;
 import com.sly.coffer.data.save.db.BookkeepingDb;
@@ -31,10 +31,13 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class PickedPageInputActivity extends AppCompatActivity {
     private ActivityPickedPageInputBinding binding;                     //绑定的 XML 布局
-    @Nullable
-    private Bundle initBundle = null;                                   //包含初始化数据的数据包
     private ActivityResultLauncher<Intent> packageNameSelectLauncher;   //包名选择启动器
     private final CompositeDisposable disposable = new CompositeDisposable();
+
+    {
+        //初始化意图启动器
+        initLaunchers();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,9 +62,31 @@ public class PickedPageInputActivity extends AppCompatActivity {
             return insets;
         });
 
-        initBundle = getIntent().getExtras();
-        initLaunchers();
         initViews();
+        observeLiveData();
+
+        //加载初始数据
+        Bundle initBundle = getIntent().getExtras();
+        if (initBundle != null) {
+            PickedPageInputViewModel viewModel = new ViewModelProvider(this).get(PickedPageInputViewModel.class);
+            if (viewModel.getPickedPage() == null) {
+                long id = initBundle.getLong(KeyStrings.PICKED_PAGE_ID.v());
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposable.add(db.accessibilityRuleDao().getPickedPageSingleById(id)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                optional -> {
+                                    if (optional.isEmpty()) return;
+
+                                    PickedPageEntity pickedPage = optional.get();
+                                    viewModel.setPickedPage(pickedPage);
+                                },
+                                e -> ExceptionHelper.showExceptionDialog(this, e)
+                        )
+                );
+            }
+        }
     }
 
     @Override
@@ -100,25 +125,6 @@ public class PickedPageInputActivity extends AppCompatActivity {
     private void initViews() {
         //工具栏
         binding.toolbar.setNavigationOnClickListener(view -> finish());
-        if (initBundle != null) {
-            long id = initBundle.getLong(KeyStrings.PICKED_PAGE_ID.v());
-            BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.accessibilityRuleDao().getPickedPageSingleById(id)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            optional -> {
-                                if (optional.isEmpty()) return;
-
-                                PickedPageEntity pickedPage = optional.get();
-                                binding.remarkInput.setText(pickedPage.getRemark());                //备注
-                                binding.packageNameInput.setText(pickedPage.getPackageName());      //应用包名
-                                binding.activityNameInput.setText(pickedPage.getActivityName());    //界面名称
-                            },
-                            e -> ExceptionHelper.showExceptionDialog(this, e)
-                    )
-            );
-        }
 
         //包名
         binding.packageNameInput.setOnFocusChangeListener((v, hasFocus) -> {
@@ -165,6 +171,19 @@ public class PickedPageInputActivity extends AppCompatActivity {
     }
 
     /**
+     * 观察 ViewModel 中的 LiveData
+     */
+    private void observeLiveData() {
+        //输入框数据
+        PickedPageInputViewModel inputViewModel = new ViewModelProvider(this).get(PickedPageInputViewModel.class);
+        inputViewModel.getPickedPageLiveData().observe(this, pickedPage -> {
+            binding.remarkInput.setText(pickedPage.getRemark());                //备注
+            binding.packageNameInput.setText(pickedPage.getPackageName());      //应用包名
+            binding.activityNameInput.setText(pickedPage.getActivityName());    //界面名称
+        });
+    }
+
+    /**
      * 校验输入内容的有效性
      *
      * @return 错误提示，无错误返回 null
@@ -204,10 +223,9 @@ public class PickedPageInputActivity extends AppCompatActivity {
 
         //保存数据
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        if (initBundle != null) {
-            long id = initBundle.getLong(KeyStrings.PICKED_PAGE_ID.v());
-            pickedPage.setId(id);
-
+        PickedPageInputViewModel inputViewModel = new ViewModelProvider(this).get(PickedPageInputViewModel.class);
+        if (inputViewModel.getPickedPage() != null) {
+            pickedPage.setId(inputViewModel.getPickedPage().getId());
             disposable.add(db.accessibilityRuleDao().updatePickedPageCompletable(pickedPage)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())

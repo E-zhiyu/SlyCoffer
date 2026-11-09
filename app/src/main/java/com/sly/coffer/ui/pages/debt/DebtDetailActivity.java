@@ -6,7 +6,6 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -41,8 +40,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class DebtDetailActivity extends AppCompatActivity {
     private ActivityDebtDetailBinding binding;  //绑定的 XML 布局
     private final CompositeDisposable disposable = new CompositeDisposable();
-    @Nullable
-    private Bundle initBundle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,9 +64,31 @@ public class DebtDetailActivity extends AppCompatActivity {
             return insets;
         });
 
-        initBundle = getIntent().getExtras();
         initViews();
         observeLiveData();
+
+        //加载初始数据
+        Bundle initBundle = getIntent().getExtras();
+        if (initBundle != null) {
+            DebtDetailViewModel viewModel = new ViewModelProvider(this).get(DebtDetailViewModel.class);
+            if (viewModel.getAccountLoanUnionModel() == null) {
+                long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposable.add(db.extraDataDao().getAccountWithLoanFlowableById(accountId)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(
+                                optional -> {
+                                    if (optional.isEmpty()) return;
+
+                                    AccountLoanUnionModel model = optional.get();
+                                    viewModel.setAccountLoanUnionModel(model);
+                                },
+                                e -> ExceptionHelper.showExceptionDialog(this, e)
+                        )
+                );
+            }
+        }
     }
 
     @Override
@@ -97,24 +116,6 @@ public class DebtDetailActivity extends AppCompatActivity {
 
         //工具栏
         binding.toolbar.setNavigationOnClickListener(view -> finish());
-        if (initBundle != null) {
-            long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
-            BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.extraDataDao().getAccountWithLoanFlowableById(accountId)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(
-                            optional -> {
-                                if (optional.isEmpty()) return;
-
-                                AccountLoanUnionModel model = optional.get();
-                                DebtDetailViewModel viewModel = new ViewModelProvider(this).get(DebtDetailViewModel.class);
-                                viewModel.updateAccountLoanUnionModel(model);
-                            },
-                            e -> ExceptionHelper.showExceptionDialog(this, e)
-                    )
-            );
-        }
 
         //债务卡片
         AppearanceHelper.setRadius(

@@ -38,7 +38,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class NotificationRuleGroupInputActivity extends AppCompatActivity {
     private ActivityNotificationRuleGroupInputBinding binding;  //绑定的 XML 布局
-    private Bundle initBundle = null;                           //包含初始化数据的数据包
     private final CompositeDisposable disposable = new CompositeDisposable();
     private RuleListAdapter ruleAdapter;                        //通知规则的适配器
 
@@ -65,9 +64,30 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
             return insets;
         });
 
-        initBundle = getIntent().getExtras();
         initViews();
         observeLiveData();
+
+        //加载初始数据
+        Bundle initBundle = getIntent().getExtras();
+        if (initBundle != null) {
+            NotiGroupInputViewModel inputViewModel = new ViewModelProvider(this).get(NotiGroupInputViewModel.class);
+            if (inputViewModel.getRuleGroupModel() == null) {
+                long groupId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_GROUP_ID.v());
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposable.add(NotificationRuleService.getRuleGroupAndRuleByGroupId(groupId, db)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(
+                                optional -> {
+                                    if (optional.isEmpty()) return;
+                                    NotificationRuleAndGroupUnionModel model = optional.get();
+                                    inputViewModel.setRuleGroupModel(model);
+                                },
+                                e -> ExceptionHelper.showExceptionDialog(this, e)
+                        )
+                );
+            }
+        }
     }
 
     @Override
@@ -86,35 +106,10 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
 
         //工具栏
         binding.toolbar.setNavigationOnClickListener(view -> finish());
-        if (initBundle != null) {
+        if (getIntent().getExtras() != null) {
             binding.toolbar.setTitle(R.string.modify_rule_group);
-            long groupId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_GROUP_ID.v());
-
-            BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(NotificationRuleService.getRuleGroupAndRuleByGroupId(groupId, db)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(
-                            optional -> {
-                                if (optional.isEmpty()) return;
-
-                                NotificationRuleAndGroupUnionModel model = optional.get();
-                                NotificationRuleGroupEntity group = model.getGroup();
-                                List<NotificationRuleEntity> ruleList = model.getRuleList();
-
-                                //填充文本框
-                                binding.nameInput.setText(group.getName()); //名称
-
-                                //规则列表
-                                List<Long> ruleIdList = ruleList.stream()
-                                        .map(NotificationRuleEntity::getRuleId)
-                                        .collect(Collectors.toList());
-                                NotificationRuleSelectViewModel viewModel = new ViewModelProvider(this).get(NotificationRuleSelectViewModel.class);
-                                viewModel.updateRuleLiveData(ruleIdList);
-                            },
-                            e -> ExceptionHelper.showExceptionDialog(this, e)
-                    )
-            );
+        } else {
+            binding.toolbar.setTitle(R.string.add_rule_group);
         }
 
         //名称
@@ -158,6 +153,23 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
      * 观察 ViewModel 中的 LiveData
      */
     private void observeLiveData() {
+        //输入框数据
+        NotiGroupInputViewModel inputViewModel = new ViewModelProvider(this).get(NotiGroupInputViewModel.class);
+        inputViewModel.getRuleGroupModelLiveData().observe(this, model -> {
+            NotificationRuleGroupEntity group = model.getGroup();
+            List<NotificationRuleEntity> ruleList = model.getRuleList();
+
+            //填充文本框
+            binding.nameInput.setText(group.getName()); //名称
+
+            //规则列表
+            List<Long> ruleIdList = ruleList.stream()
+                    .map(NotificationRuleEntity::getRuleId)
+                    .collect(Collectors.toList());
+            NotificationRuleSelectViewModel viewModel = new ViewModelProvider(this).get(NotificationRuleSelectViewModel.class);
+            viewModel.updateRuleLiveData(ruleIdList);
+        });
+
         //规则选择逻辑
         NotificationRuleSelectViewModel ruleSelectViewModel = new ViewModelProvider(this).get(NotificationRuleSelectViewModel.class);
         ruleSelectViewModel.getRuleIdLiveData().observe(this, ruleIdList -> {
@@ -231,7 +243,8 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
         //保存数据
         NotificationRuleGroupEntity group = new NotificationRuleGroupEntity(name);
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        if (initBundle == null) {
+        NotiGroupInputViewModel inputViewModel = new ViewModelProvider(this).get(NotiGroupInputViewModel.class);
+        if (inputViewModel.getRuleGroupModel() == null) {
             disposable.add(NotificationRuleService.addNotificationRuleGroup(group, ruleIdList, db)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
@@ -244,8 +257,7 @@ public class NotificationRuleGroupInputActivity extends AppCompatActivity {
                     )
             );
         } else {
-            long groupId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_GROUP_ID.v(), 0);
-            group.setGroupId(groupId);
+            group.setGroupId(inputViewModel.getRuleGroupModel().getGroup().getGroupId());
             disposable.add(NotificationRuleService.modifyNotificationRuleGroup(group, ruleIdList, db)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())

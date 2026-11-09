@@ -6,11 +6,11 @@ import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.chip.Chip;
 import com.sly.coffer.R;
@@ -33,9 +33,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class TagInputActivity extends AppCompatActivity {
     private ActivityTagInputBinding binding;    //绑定的XML视图的引用
-    @Nullable
-    private Bundle initBundle = null;               //带有初始数据的数据包
-    private int scope = 0;                          //标签作用域范围
     private final CompositeDisposable disposable = new CompositeDisposable();  //订阅列表（便于取消订阅）
 
     @Override
@@ -62,8 +59,34 @@ public class TagInputActivity extends AppCompatActivity {
             return insets;
         });
 
-        initBundle = getIntent().getExtras();
         initViews();
+        observeLiveData();
+
+        Bundle initBundle = getIntent().getExtras();
+        if (initBundle != null) {
+            TagInputViewModel inputViewModel = new ViewModelProvider(this).get(TagInputViewModel.class);
+            if (inputViewModel.getTagModel() == null) {
+                long tagId = initBundle.getLong(KeyStrings.TAG_ID.v());
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposable.add(db.tagDao().getTagWithGroupSingleById(tagId)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                optional -> {
+                                    if (optional.isEmpty()) return;
+
+                                    TagUnionModel model = optional.get();
+                                    inputViewModel.setTagModel(model);
+                                },
+                                e -> ExceptionHelper.showExceptionDialog(this, e)
+                        )
+                );
+            } else {
+                initScopeChipGroup();
+            }
+        } else {
+            initScopeChipGroup();
+        }
     }
 
     @Override
@@ -78,39 +101,10 @@ public class TagInputActivity extends AppCompatActivity {
     private void initViews() {
         //工具栏
         binding.toolbar.setNavigationOnClickListener(v -> finish());
-        if (initBundle != null) {
+        if (getIntent().getExtras() != null) {
             binding.toolbar.setTitle(R.string.modify_tag);
-            long tagId = initBundle.getLong(KeyStrings.TAG_ID.v());
-
-            BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.tagDao().getTagWithGroupSingleById(tagId)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            optional -> {
-                                if (optional.isEmpty()) return;
-
-                                TagUnionModel model = optional.get();
-                                TagEntity tag = model.getTag();
-
-                                //标签名称
-                                String tagName = tag.getName();
-                                binding.nameInput.setText(tagName);
-
-                                //分组名称
-                                if (model.getGroup() != null) {
-                                    binding.groupInput.setText(model.getGroup().getName());
-                                }
-
-                                //标签作用域选择
-                                scope = tag.getScope();
-                                initScopeChipGroup();
-                            },
-                            e -> ExceptionHelper.showExceptionDialog(this, e)
-                    )
-            );
         } else {
-            initScopeChipGroup();
+            binding.toolbar.setTitle(R.string.add_tag);
         }
 
         //标签名称输入框
@@ -165,29 +159,46 @@ public class TagInputActivity extends AppCompatActivity {
     }
 
     /**
+     * 观察 ViewModel 中的 LiveData
+     */
+    private void observeLiveData() {
+        TagInputViewModel inputViewModel = new ViewModelProvider(this).get(TagInputViewModel.class);
+        inputViewModel.getTagModelLiveData().observe(this, model -> {
+            TagEntity tag = model.getTag();
+
+            //标签名称
+            String tagName = tag.getName();
+            binding.nameInput.setText(tagName);
+
+            //分组名称
+            if (model.getGroup() != null) {
+                binding.groupInput.setText(model.getGroup().getName());
+            }
+
+            //初始化标签作用域选择
+            initScopeChipGroup();
+        });
+    }
+
+    /**
      * 初始化标签作用域 ChipGroup
      */
     private void initScopeChipGroup() {
         binding.scopeChipGroup.removeAllViews();
+        TagInputViewModel inputViewModel = new ViewModelProvider(this).get(TagInputViewModel.class);
+        TagUnionModel tagModel = inputViewModel.getTagModel();
         for (AccountType type : AccountType.values()) {
             Chip scopeChip = new Chip(this);
             scopeChip.setCheckable(true);
             scopeChip.setCheckedIconVisible(true);
             scopeChip.setText(type.getTitle());
+            scopeChip.setId(type.ordinal());    //将枚举序数作为编号
 
             //设置初始选择状态
             int iBinary = (int) Math.pow(2, type.ordinal());
-            scopeChip.setChecked((scope & iBinary) == 0);
-
-            //设置切换监听器
-            scopeChip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                int binary = (int) Math.pow(2, type.ordinal());
-                if (!isChecked) {
-                    scope |= binary;    //未被选择则将对应二进制位置为1，标记为对那种类型不可见
-                } else {
-                    scope &= ~binary;
-                }
-            });
+            if (tagModel != null) {
+                scopeChip.setChecked((tagModel.getTag().getScope() & iBinary) == 0);
+            }
 
             //添加视图到Chip组中
             binding.scopeChipGroup.addView(scopeChip);
@@ -212,6 +223,19 @@ public class TagInputActivity extends AppCompatActivity {
     }
 
     /**
+     * 从 ChipGroup 中获取用户选择的标签作用域
+     *
+     * @return 标签作用域
+     */
+    private int getTagScopeFromChipGroup() {
+        int scope = Integer.MAX_VALUE;
+        for (int id : binding.scopeChipGroup.getCheckedChipIds()) {
+            scope &= ~(int) Math.pow(2, id);
+        }
+        return scope;
+    }
+
+    /**
      * 将输入的数据保存到数据库
      */
     private void saveData() {
@@ -220,19 +244,20 @@ public class TagInputActivity extends AppCompatActivity {
         String groupName = String.valueOf(binding.groupInput.getText()).trim();
 
         //保存数据
-        TagEntity tag = new TagEntity(tagName, scope);
+        TagInputViewModel inputViewModel = new ViewModelProvider(this).get(TagInputViewModel.class);
+        TagEntity tag = new TagEntity(tagName, getTagScopeFromChipGroup());
         BookkeepingDb db = BookkeepingDb.getInstance(this);
         final String NAME_EXISTS_EXCEPTION = "NAME_EXISTS";
-        if (initBundle == null) {
+        if (inputViewModel.getTagModel() == null) {
             disposable.add(db.tagDao().isTagNameInDb(tagName, tag.getTagId())
-                    .subscribeOn(Schedulers.io())
                     .flatMapCompletable(exists -> {
                         if (exists) {
-                            return Completable.error(new Exception(NAME_EXISTS_EXCEPTION));
+                            return Completable.error(new IllegalArgumentException(NAME_EXISTS_EXCEPTION));
                         } else {
                             return TagService.addTag(tag, groupName, db);
                         }
                     })
+                    .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             () -> {
@@ -252,14 +277,12 @@ public class TagInputActivity extends AppCompatActivity {
                     )
             );
         } else {
-            long tagId = initBundle.getLong(KeyStrings.TAG_ID.v());
-            tag.setTagId(tagId);
-
+            tag.setTagId(inputViewModel.getTagModel().getTag().getTagId());
             disposable.add(db.tagDao().isTagNameInDb(tagName, tag.getTagId())
                     .subscribeOn(Schedulers.io())
                     .flatMapCompletable(exists -> {
                         if (exists) {
-                            return Completable.error(new Exception(NAME_EXISTS_EXCEPTION));
+                            return Completable.error(new IllegalArgumentException(NAME_EXISTS_EXCEPTION));
                         } else {
                             return TagService.modifyTag(tag, groupName, db);
                         }

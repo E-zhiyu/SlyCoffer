@@ -52,8 +52,6 @@ public class BudgetInputActivity extends AppCompatActivity {
     private ActivityBudgetInputBinding binding;                     //绑定的XML视图
     private ResetFrequency resetFrequency = ResetFrequency.FOREVER; //预算重置频率
     private final CompositeDisposable disposable = new CompositeDisposable();
-    @Nullable
-    private Bundle initBundle = null;                               //装有初始数据的数据包
     private AccountTagAdapter tagAdapter;                           //标签适配器
 
     @Override
@@ -80,9 +78,31 @@ public class BudgetInputActivity extends AppCompatActivity {
             return insets;
         });
 
-        initBundle = getIntent().getExtras();
         initViews();
         observeLiveData();
+
+        //加载初始数据
+        Bundle initBundle = getIntent().getExtras();
+        if (initBundle != null) {
+            BudgetInputViewModel inputViewModel = new ViewModelProvider(this).get(BudgetInputViewModel.class);
+            if (inputViewModel.getBudgetModel() == null) {
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                long budgetId = initBundle.getLong(KeyStrings.BUDGET_ID.v());
+                disposable.add(db.budgetDao().getBudgetWithDetailById(budgetId)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                optional -> {
+                                    if (optional.isEmpty()) return;
+
+                                    BudgetUnionModel model = optional.get();
+                                    inputViewModel.setBudgetModel(model);
+                                },
+                                e -> ExceptionHelper.showExceptionDialog(this, e)
+                        )
+                );
+            }
+        }
     }
 
     @Override
@@ -131,53 +151,10 @@ public class BudgetInputActivity extends AppCompatActivity {
 
         //标题栏
         binding.toolbar.setNavigationOnClickListener(v -> finish());
-        if (initBundle != null) {
+        if (getIntent().getExtras() != null) {
             binding.toolbar.setTitle(R.string.modify_budget);
-            long budgetId = initBundle.getLong(KeyStrings.BUDGET_ID.v());
-
-            //显示余额输入框
-            binding.leftAmountLayout.setVisibility(View.VISIBLE);
-
-            //加载数据
-            BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.budgetDao().getBudgetWithDetailById(budgetId)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            optional -> {
-                                if (optional.isEmpty()) return;
-
-                                BudgetUnionModel model = optional.get();
-                                BudgetEntity budget = model.getBudget();
-                                List<TagEntity> tagList = model.getTagList();
-
-                                //初始化输入框
-                                binding.budgetNameInput.setText(budget.getName());                          //名称
-                                binding.initAmountInput.setText(String.valueOf(budget.getInitAmount()));    //初始金额
-                                binding.leftAmountInput.setText(String.valueOf(budget.getBalance()));    //余额
-                                binding.startDateInput.setText(                                             //起算日期
-                                        budget.getStartDate().format(CustomDateTimeFormatter.DATE)
-                                );
-                                resetFrequency = ResetFrequency.values()[budget.getResetFrequency()];
-                                binding.resetFrequencyInput.setText(resetFrequency.getTitle());             //重置频率
-                                binding.lowBalanceRatioSlider.setValue(budget.getLowBalanceRatio());        //低余额比例
-
-                                //显示标签
-                                if (!tagList.isEmpty()) {
-                                    tagAdapter.submitList(tagList);
-                                    binding.tagRecycler.setVisibility(View.VISIBLE);
-                                } else {
-                                    binding.tagRecycler.setVisibility(View.GONE);
-                                }
-                                Set<Long> tagIdList = tagList.stream()
-                                        .map(TagEntity::getTagId)
-                                        .collect(Collectors.toSet());
-                                TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
-                                tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
-                            },
-                            e -> ExceptionHelper.showExceptionDialog(this, e)
-                    )
-            );
+        } else {
+            binding.toolbar.setTitle(R.string.add_budget);
         }
 
         //预算名称
@@ -206,6 +183,13 @@ public class BudgetInputActivity extends AppCompatActivity {
                 }
             }
         });
+
+        //余额
+        if (getIntent().getExtras() != null) {
+            binding.leftAmountLayout.setVisibility(View.VISIBLE);
+        } else {
+            binding.leftAmountLayout.setVisibility(View.GONE);
+        }
 
         //日期和时间
         binding.startDateInput.setText(LocalDate.now().format(CustomDateTimeFormatter.DATE));
@@ -268,6 +252,37 @@ public class BudgetInputActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
+        //输入框数据
+        BudgetInputViewModel inputViewModel = new ViewModelProvider(this).get(BudgetInputViewModel.class);
+        inputViewModel.getBudgetModelLiveData().observe(this, model -> {
+            BudgetEntity budget = model.getBudget();
+            List<TagEntity> tagList = model.getTagList();
+
+            //初始化输入框
+            binding.budgetNameInput.setText(budget.getName());                          //名称
+            binding.initAmountInput.setText(String.valueOf(budget.getInitAmount()));    //初始金额
+            binding.leftAmountInput.setText(String.valueOf(budget.getBalance()));    //余额
+            binding.startDateInput.setText(                                             //起算日期
+                    budget.getStartDate().format(CustomDateTimeFormatter.DATE)
+            );
+            resetFrequency = ResetFrequency.values()[budget.getResetFrequency()];
+            binding.resetFrequencyInput.setText(resetFrequency.getTitle());             //重置频率
+            binding.lowBalanceRatioSlider.setValue(budget.getLowBalanceRatio());        //低余额比例
+
+            //显示标签
+            if (!tagList.isEmpty()) {
+                tagAdapter.submitList(tagList);
+                binding.tagRecycler.setVisibility(View.VISIBLE);
+            } else {
+                binding.tagRecycler.setVisibility(View.GONE);
+            }
+            Set<Long> tagIdList = tagList.stream()
+                    .map(TagEntity::getTagId)
+                    .collect(Collectors.toSet());
+            TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
+            tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
+        });
+
         //标签选择
         TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
         tagMultiSelectViewModel.getCheckedIdLiveData().observe(this, idSet -> {
@@ -393,6 +408,7 @@ public class BudgetInputActivity extends AppCompatActivity {
         }
 
         //进行校验
+        BudgetInputViewModel inputViewModel = new ViewModelProvider(this).get(BudgetInputViewModel.class);
         if (name.isEmpty()) {
             err = "预算名称不能为空";
             binding.budgetNameLayout.setError(err);
@@ -402,10 +418,10 @@ public class BudgetInputActivity extends AppCompatActivity {
         } else if (initAmount == 0) {
             err = "初始金额不能为0";
             binding.initAmountLayout.setError(err);
-        } else if (leftAmountStr.isEmpty() && initBundle != null) {
+        } else if (leftAmountStr.isEmpty() && inputViewModel.getBudgetModel() != null) {
             err = "剩余金额不能为空";
             binding.leftAmountLayout.setError(err);
-        } else if (initBundle != null && leftAmount > initAmount) {
+        } else if (inputViewModel.getBudgetModel() != null && leftAmount > initAmount) {
             err = "剩余金额不能超过初始金额";
             binding.leftAmountLayout.setError(err);
         }
@@ -438,8 +454,17 @@ public class BudgetInputActivity extends AppCompatActivity {
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
 
-        BudgetEntity budget = new BudgetEntity(name, initAmount, leftAmount, startDate, resetFrequency.ordinal(), lowBalanceRatio);
-        if (initBundle == null) {
+        //保存数据
+        BudgetEntity budget = new BudgetEntity(
+                name,
+                initAmount,
+                leftAmount,
+                startDate,
+                resetFrequency.ordinal(),
+                lowBalanceRatio
+        );
+        BudgetInputViewModel inputViewModel = new ViewModelProvider(this).get(BudgetInputViewModel.class);
+        if (inputViewModel.getBudgetModel() == null) {
             disposable.add(BudgetService.addBudget(budget, tagIdList, this)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
@@ -452,8 +477,7 @@ public class BudgetInputActivity extends AppCompatActivity {
                     )
             );
         } else {
-            long budgetId = initBundle.getLong(KeyStrings.BUDGET_ID.v());
-            budget.setBudgetId(budgetId);
+            budget.setBudgetId(inputViewModel.getBudgetModel().getBudget().getBudgetId());
             disposable.add(BudgetService.modifyBudget(budget, tagIdList, this)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())

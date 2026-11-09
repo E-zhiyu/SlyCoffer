@@ -69,13 +69,15 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class NotificationRuleInputActivity extends AppCompatActivity {
-    @Nullable
-    private Bundle initBundle = null;                               //存有初始数据数据包
     private ActivityResultLauncher<Intent> packageNameSelectLauncher;   //包名选择启动器
     private ActivityNotificationRuleInputBinding binding;           //绑定的XML视图引用
     private final CompositeDisposable disposable = new CompositeDisposable();
-    private RuleGroupChipListAdapter groupAdapter;          //规则分组适配器
+    private RuleGroupChipListAdapter groupAdapter;                  //规则分组适配器
     private AccountTagAdapter tagAdapter;                           //标签适配器
+
+    {
+        initLaunchers();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,10 +102,30 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
             return insets;
         });
 
-        initBundle = getIntent().getExtras();
         initViews();
         observeLiveData();
-        initLaunchers();
+
+        //加载初始数据
+        Bundle initBundle = getIntent().getExtras();
+        if (initBundle != null) {
+            NotiRuleInputViewModel inputViewModel = new ViewModelProvider(this).get(NotiRuleInputViewModel.class);
+            if (inputViewModel.getRuleModel() == null) {
+                long ruleId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_ID.v());
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposable.add(db.notificationRuleDao().getNotificationRuleWithDetailSingleById(ruleId)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                optional -> {
+                                    if (optional.isEmpty()) return;
+                                    NotificationRuleUnionModel model = optional.get();
+                                    inputViewModel.setRuleModel(model);
+                                },
+                                e -> ExceptionHelper.showExceptionDialog(this, e)
+                        )
+                );
+            }
+        }
     }
 
     @Override
@@ -185,97 +207,10 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
 
         //工具栏
         binding.toolbar.setNavigationOnClickListener(view -> finish());
-        if (initBundle != null) {
+        if (getIntent().getExtras() != null) {
             binding.toolbar.setTitle(R.string.modify_rule);
-
-            long ruleId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_ID.v());
-            BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.notificationRuleDao().getNotificationRuleWithDetailSingleById(ruleId)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            optional -> {
-                                if (optional.isEmpty()) return;
-
-                                //解析数据
-                                NotificationRuleUnionModel model = optional.get();
-                                NotificationRuleEntity rule = model.getRule();
-                                List<TagEntity> tagList = model.getTagList();
-                                List<NotificationRuleGroupEntity> groupList = model.getGroupList();
-
-                                //填充文本框
-                                AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
-                                AccountType type = AccountType.values()[rule.getType()];
-                                accountExtraDataViewModel.updateAccountType(type);
-                                binding.nameInput.setText(rule.getName());                      //名称
-                                binding.typeInput.setText(type.getTitle());                     //种类
-                                binding.packageNameInput.setText(rule.getPackageName());        //包名
-                                binding.notificationTitleInput.setText(rule.getTargetTitle());  //标题
-                                binding.regexInput.setText(rule.getContentRegex());             //正则表达式
-                                binding.captureGroupPositionInput.setText(String.valueOf(rule.getCaptureGroupPos()));   //捕获组位置
-
-                                //转账相关的文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
-                                    binding.transferInputLayout.setVisibility(View.VISIBLE);
-
-                                    ExtraTransferEntity transfer = model.getTransfer();
-                                    if (rule.getTransferId() != null && transfer != null) {
-                                        binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
-                                        binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
-                                    }
-                                }
-
-                                //还款额外数据文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_REPAY)) {
-                                    binding.repayExtraLayout.setVisibility(View.VISIBLE);
-
-                                    AccountEntity repayAccount = model.getRepayRelatedAccount();
-                                    accountExtraDataViewModel.updateRelatedLoan(repayAccount);
-                                    if (rule.getRepayAccountId() != null && repayAccount != null) {
-                                        binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
-                                    }
-                                }
-
-                                //借款额外数据文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_LOAN)) {
-                                    binding.loanExtraLayout.setVisibility(View.VISIBLE);
-
-                                    ExtraLoanEntity loan = model.getLoan();
-                                    if (rule.getLoanId() != null && loan != null) {
-                                        binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
-                                        InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
-                                        binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
-                                        binding.annualInterestRateInput.setText(String.valueOf(loan.getYearBasepoint() / 100.0));   //年利率
-                                        if (loan.getRepayDate() != null) {
-                                            binding.repayDateInput.setText(loan.getRepayDate().format(CustomDateTimeFormatter.DATE));   //应还日期
-                                        }
-                                        binding.compoundInterestSwitch.setChecked(loan.isAllowCompoundInterest());  //允许复利
-                                    }
-                                }
-
-                                //显示标签
-                                if (!tagList.isEmpty() && tagAdapter != null) {
-                                    tagAdapter.submitList(tagList);
-                                    binding.tagRecycler.setVisibility(View.VISIBLE);
-                                } else {
-                                    binding.tagRecycler.setVisibility(View.GONE);
-                                }
-                                Set<Long> tagIdList = tagList.stream()
-                                        .map(TagEntity::getTagId)
-                                        .collect(Collectors.toSet());
-                                TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
-                                tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
-
-                                //显示分组
-                                List<Long> groupIdList = groupList.stream()
-                                        .map(NotificationRuleGroupEntity::getGroupId)
-                                        .collect(Collectors.toList());
-                                GroupSelectViewModel groupSelectViewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
-                                groupSelectViewModel.updateCheckedGroupId(new HashSet<>(groupIdList));
-                            },
-                            e -> ExceptionHelper.showExceptionDialog(this, e)
-                    )
-            );
+        } else {
+            binding.toolbar.setTitle(R.string.add_rule);
         }
 
         //名称
@@ -524,6 +459,84 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
+        //输入框数据
+        NotiRuleInputViewModel inputViewModel = new ViewModelProvider(this).get(NotiRuleInputViewModel.class);
+        inputViewModel.getRuleModelLiveData().observe(this, model -> {
+            NotificationRuleEntity rule = model.getRule();
+            List<TagEntity> tagList = model.getTagList();
+            List<NotificationRuleGroupEntity> groupList = model.getGroupList();
+
+            //填充文本框
+            AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+            AccountType type = AccountType.values()[rule.getType()];
+            accountExtraDataViewModel.updateAccountType(type);
+            binding.nameInput.setText(rule.getName());                      //名称
+            binding.typeInput.setText(type.getTitle());                     //种类
+            binding.packageNameInput.setText(rule.getPackageName());        //包名
+            binding.notificationTitleInput.setText(rule.getTargetTitle());  //标题
+            binding.regexInput.setText(rule.getContentRegex());             //正则表达式
+            binding.captureGroupPositionInput.setText(String.valueOf(rule.getCaptureGroupPos()));   //捕获组位置
+
+            //转账相关的文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
+                binding.transferInputLayout.setVisibility(View.VISIBLE);
+
+                ExtraTransferEntity transfer = model.getTransfer();
+                if (rule.getTransferId() != null && transfer != null) {
+                    binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
+                    binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
+                }
+            }
+
+            //还款额外数据文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_REPAY)) {
+                binding.repayExtraLayout.setVisibility(View.VISIBLE);
+
+                AccountEntity repayAccount = model.getRepayRelatedAccount();
+                accountExtraDataViewModel.updateRelatedLoan(repayAccount);
+                if (rule.getRepayAccountId() != null && repayAccount != null) {
+                    binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
+                }
+            }
+
+            //借款额外数据文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_LOAN)) {
+                binding.loanExtraLayout.setVisibility(View.VISIBLE);
+
+                ExtraLoanEntity loan = model.getLoan();
+                if (rule.getLoanId() != null && loan != null) {
+                    binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
+                    InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
+                    binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
+                    binding.annualInterestRateInput.setText(String.valueOf(loan.getYearBasepoint() / 100.0));   //年利率
+                    if (loan.getRepayDate() != null) {
+                        binding.repayDateInput.setText(loan.getRepayDate().format(CustomDateTimeFormatter.DATE));   //应还日期
+                    }
+                    binding.compoundInterestSwitch.setChecked(loan.isAllowCompoundInterest());  //允许复利
+                }
+            }
+
+            //显示标签
+            if (!tagList.isEmpty() && tagAdapter != null) {
+                tagAdapter.submitList(tagList);
+                binding.tagRecycler.setVisibility(View.VISIBLE);
+            } else {
+                binding.tagRecycler.setVisibility(View.GONE);
+            }
+            Set<Long> tagIdList = tagList.stream()
+                    .map(TagEntity::getTagId)
+                    .collect(Collectors.toSet());
+            TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
+            tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
+
+            //显示分组
+            List<Long> groupIdList = groupList.stream()
+                    .map(NotificationRuleGroupEntity::getGroupId)
+                    .collect(Collectors.toList());
+            GroupSelectViewModel groupSelectViewModel = new ViewModelProvider(this).get(GroupSelectViewModel.class);
+            groupSelectViewModel.updateCheckedGroupId(new HashSet<>(groupIdList));
+        });
+
         //流水记录种类
         AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         accountExtraDataViewModel.getAccountTypeLiveData().observe(this, type -> {
@@ -858,7 +871,8 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                 captureGroupPos
         );
         BookkeepingDb db = BookkeepingDb.getInstance(this);
-        if (initBundle == null) {
+        NotiRuleInputViewModel inputViewModel = new ViewModelProvider(this).get(NotiRuleInputViewModel.class);
+        if (inputViewModel.getRuleModel() == null) {
             disposable.add(saveExtraDataFirstly(rule)
                     .andThen(NotificationRuleService.addNewNotificationRule(rule, tagIdList, groupIdList, db))
                     .observeOn(AndroidSchedulers.mainThread())
@@ -872,8 +886,7 @@ public class NotificationRuleInputActivity extends AppCompatActivity {
                     )
             );
         } else {
-            long ruleId = initBundle.getLong(KeyStrings.NOTIFICATION_RULE_ID.v());
-            rule.setRuleId(ruleId);
+            rule.setRuleId(inputViewModel.getRuleModel().getRule().getRuleId());
             disposable.add(saveExtraDataFirstly(rule)
                     .andThen(NotificationRuleService.modifyNotificationRule(rule, tagIdList, groupIdList, db))
                     .observeOn(AndroidSchedulers.mainThread())

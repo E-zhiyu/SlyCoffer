@@ -6,7 +6,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.util.Pair;
@@ -63,10 +62,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
     private ActivityCapturedNotificationRuleInputBinding binding;
     private final CompositeDisposable disposable = new CompositeDisposable();
-    @Nullable
-    private Bundle initBundle = null;                       //带有初始数据的数据包
-    @Nullable
-    private CapturedNotificationEntity notification = null; //捕获的通知实例
     private RuleGroupChipListAdapter groupAdapter;          //规则分组适配器
     private AccountTagAdapter tagAdapter;                   //标签适配器
 
@@ -93,9 +88,30 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
             return insets;
         });
 
-        initBundle = getIntent().getExtras();
         initViews();
         observeLiveData();
+
+        //加载初始数据
+        Bundle initBundle = getIntent().getExtras();
+        if (initBundle != null) {
+            CNRInputViewModel inputViewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
+            if (inputViewModel.getNotification() == null) {
+                long notificationId = initBundle.getLong(KeyStrings.CAPTURED_NOTIFICATION_ID.v());
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposable.add(db.notificationRuleDao().getCapturedNotificationById(notificationId)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                optional -> {
+                                    if (optional.isEmpty()) return;
+                                    CapturedNotificationEntity notification = optional.get();
+                                    inputViewModel.setNotification(notification);
+                                },
+                                e -> ExceptionHelper.showExceptionDialog(this, e)
+                        )
+                );
+            }
+        }
     }
 
     @Override
@@ -177,56 +193,6 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
 
         //工具栏
         binding.toolbar.setNavigationOnClickListener(view -> finish());
-        if (initBundle != null) {
-            long notificationId = initBundle.getLong(KeyStrings.CAPTURED_NOTIFICATION_ID.v());
-
-            BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.notificationRuleDao().getCapturedNotificationById(notificationId)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            optional -> {
-                                if (optional.isEmpty()) return;
-
-                                notification = optional.get();
-
-                                //通知内容文本
-                                String content = notification.getContent();
-                                binding.notificationContentText.setText(content);
-
-                                CNRInputViewModel viewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
-                                int groupPos = viewModel.getGroupPos();
-
-                                //金额选择 ChipGroup
-                                Pattern amountPattern = Pattern.compile("(\\d+(?:,\\d{3})*(?:\\.\\d{1,2})?)");
-                                Matcher matcher = amountPattern.matcher(content);
-                                int i = 1;
-                                binding.amountSelectChipGroup.removeAllViews();
-                                while (matcher.find()) {
-                                    String amountText = matcher.group();
-
-                                    int finalPosition = i;
-                                    Chip amountChip = new Chip(this);
-                                    amountChip.setCheckable(true);
-                                    if (i == groupPos) {
-                                        amountChip.setChecked(true);
-                                    }
-                                    amountChip.setText(amountText);
-                                    amountChip.setCheckedIconVisible(true);
-                                    amountChip.setOnCheckedChangeListener((compoundButton, b) -> {
-                                        if (b) {
-                                            viewModel.setGroupPos(finalPosition);
-                                        }
-                                    });
-                                    binding.amountSelectChipGroup.addView(amountChip);
-
-                                    i++;
-                                }
-                            },
-                            e -> ExceptionHelper.showExceptionDialog(this, e)
-                    )
-            );
-        }
 
         //名称
         binding.nameInput.setOnFocusChangeListener((view, b) -> {
@@ -408,11 +374,12 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
 
         //通知内容复制按钮
         binding.contentCopyBtn.setOnClickListener(view -> {
-            if (notification == null) {
+            CNRInputViewModel inputViewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
+            if (inputViewModel.getNotification() == null) {
                 Toast.makeText(this, "复制失败", Toast.LENGTH_SHORT).show();
                 return;
             }
-            ImmHelper.copyToClipboard("捕获的通知内容", notification.getContent(), this);
+            ImmHelper.copyToClipboard("捕获的通知内容", inputViewModel.getNotification().getContent(), this);
             Toast.makeText(this, "复制成功", Toast.LENGTH_SHORT).show();
         });
 
@@ -438,6 +405,43 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
+        //输入框数据
+        CNRInputViewModel inputViewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
+        inputViewModel.getNotificationLiveData().observe(this, notification -> {
+            //通知内容文本
+            String content = notification.getContent();
+            binding.notificationContentText.setText(content);
+
+            CNRInputViewModel viewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
+            int groupPos = viewModel.getGroupPos();
+
+            //金额选择 ChipGroup
+            Pattern amountPattern = Pattern.compile("(\\d+(?:,\\d{3})*(?:\\.\\d{1,2})?)");
+            Matcher matcher = amountPattern.matcher(content);
+            int i = 1;
+            binding.amountSelectChipGroup.removeAllViews();
+            while (matcher.find()) {
+                String amountText = matcher.group();
+
+                int finalPosition = i;
+                Chip amountChip = new Chip(this);
+                amountChip.setCheckable(true);
+                if (i == groupPos) {
+                    amountChip.setChecked(true);
+                }
+                amountChip.setText(amountText);
+                amountChip.setCheckedIconVisible(true);
+                amountChip.setOnCheckedChangeListener((compoundButton, b) -> {
+                    if (b) {
+                        viewModel.setGroupPos(finalPosition);
+                    }
+                });
+                binding.amountSelectChipGroup.addView(amountChip);
+
+                i++;
+            }
+        });
+
         //流水记录种类
         AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         accountExtraDataViewModel.getAccountTypeLiveData().observe(this, type -> {
@@ -552,6 +556,7 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         String importAccount = String.valueOf(binding.importAccountInput.getText()).trim();
         String loanTargetName = String.valueOf(binding.loanTargetNameInput.getText()).trim();
 
+        CNRInputViewModel inputViewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
         AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         AccountType type = accountExtraDataViewModel.getAccountType();
         boolean isTransfer = type.hasExtraData(AccountType.DATA_FLAG_TRANSFER);
@@ -568,11 +573,11 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
         } else if (isLoan && loanTargetName.isEmpty()) {
             err = "借款对象不能为空";
             binding.loanTargetNameLayout.setError(err);
-        } else if (notification == null) {
+        } else if (inputViewModel.getNotification() == null) {
             err = "错误：通知数据获取失败";
         } else {
             final String NUM_REGEX = "\\d";
-            Matcher matcher = Pattern.compile(NUM_REGEX).matcher(notification.getContent());
+            Matcher matcher = Pattern.compile(NUM_REGEX).matcher(inputViewModel.getNotification().getContent());
             if (!matcher.find()) {
                 err = "错误：通知内容不包含数字";
             }
@@ -668,6 +673,8 @@ public class CapturedNotificationRuleInputActivity extends AppCompatActivity {
      * 将数据保存到数据库
      */
     private void saveData() {
+        CNRInputViewModel inputViewModel = new ViewModelProvider(this).get(CNRInputViewModel.class);
+        CapturedNotificationEntity notification = inputViewModel.getNotification();
         if (notification == null) return;
 
         //获取必要数据

@@ -105,8 +105,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class RunningAccountInputActivity extends AppCompatActivity {
     private ActivityRunningAccountInputBinding binding;     //绑定的XML视图引用
-    @Nullable
-    private Bundle initBundle = null;                       //传递初始数据的数据包
     private final CompositeDisposable disposable = new CompositeDisposable();
     private SelectionTracker<Long> selectionTracker;        //图片列表选择追踪器
     private BackPressedCallbackHelper backHelper;           //返回逻辑管理器
@@ -147,10 +145,30 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             return insets;
         });
 
-        initBundle = getIntent().getExtras();
         initViews();
         observeLiveData();
         initOnBackPressedHandlers();
+
+        //初始化数据
+        Bundle initBundle = getIntent().getExtras();
+        if (initBundle != null) {
+            AccountInputViewModel viewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+            if (viewModel.getAccountUnionModel() == null) {
+                long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposable.add(db.accountDao().getAccountWithDetailSingleById(accountId)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                modelOptional -> {
+                                    if (modelOptional.isEmpty()) return;
+                                    AccountDetailUnionModel model = modelOptional.get();
+                                    viewModel.setAccountModel(model);
+                                }
+                        )
+                );
+            }
+        }
     }
 
     @Override
@@ -268,26 +286,10 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
         //工具栏
         binding.toolbar.setNavigationOnClickListener(v -> finish());
-        if (initBundle != null) {
+        if (getIntent().getExtras() != null) {
             binding.toolbar.setTitle(R.string.modify_running_account);
-
-            //读取初始数据并缓存（没有缓存的时候才读取）
-            AccountInputViewModel viewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
-            if (viewModel.getAccountUnionModel() == null) {
-                long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
-                BookkeepingDb db = BookkeepingDb.getInstance(this);
-                disposable.add(db.accountDao().getAccountWithDetailSingleById(accountId)
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.io())
-                        .subscribe(
-                                modelOptional -> {
-                                    if (modelOptional.isEmpty()) return;
-                                    AccountDetailUnionModel model = modelOptional.get();
-                                    viewModel.setAccountModel(model);
-                                }
-                        )
-                );
-            }
+        } else {
+            binding.toolbar.setTitle(R.string.add_running_account);
         }
 
         //金额
@@ -592,7 +594,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
-        //流水记录数据
+        //输入框数据
         AccountInputViewModel accountInputViewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
         accountInputViewModel.getAccountModelLiveData().observe(this, model -> {
             if (model == null) return;
@@ -931,7 +933,9 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         List<MediaEntity> mediaList = new ArrayList<>(mediaAdapter.getCurrentList());
 
         //更新列表
-        long accountId = initBundle == null ? 0 : initBundle.getLong(KeyStrings.RUNNING_ID.v());
+        AccountInputViewModel viewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+        long accountId = viewModel.getAccountUnionModel() != null ?
+                viewModel.getAccountUnionModel().getAccount().getAccountId() : 0;
         mediaList.add(new MediaEntity(tempPictureUri, accountId));
         mediaAdapter.submitList(mediaList);
     }
@@ -978,7 +982,9 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
                 //保存到列表中
                 Uri successfulUri = Uri.fromFile(resultFile);
-                long accountId = initBundle == null ? 0 : initBundle.getLong(KeyStrings.RUNNING_ID.v());
+                AccountInputViewModel viewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+                long accountId = viewModel.getAccountUnionModel() != null ?
+                        viewModel.getAccountUnionModel().getAccount().getAccountId() : 0;
                 MediaEntity media = new MediaEntity(successfulUri, accountId);
                 mediaList.add(media);
 
@@ -1098,7 +1104,9 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         //创建移动任务，并逐个返回移动成功的 File 型 Uri
         Observable<MediaEntity> moveTask = Observable.create(emitter -> {
             File targetDir = DirectoryPaths.MEDIA.getDir(this);
-            long accountId = initBundle == null ? 0 : initBundle.getLong(KeyStrings.RUNNING_ID.v());
+            AccountInputViewModel viewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+            long accountId = viewModel.getAccountUnionModel() != null ?
+                    viewModel.getAccountUnionModel().getAccount().getAccountId() : 0;
 
             for (MediaEntity originMedia : currentMediaList) {
                 if (newMediaSet.contains(originMedia)) {
@@ -1247,16 +1255,19 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                 .map(TagEntity::getTagId)
                 .collect(Collectors.toList());
 
-        //生成数据实例并保存
-        AccountExtraDataViewModel viewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+        //生成数据实例
+        AccountExtraDataViewModel extraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         AccountEntity account = new AccountEntity(
                 amount,
                 remark,
-                viewModel.getAccountType().ordinal(),
+                extraDataViewModel.getAccountType().ordinal(),
                 dateTime,
                 AutoBookkeepingType.NONE.ordinal()
         );
-        if (initBundle == null) {
+
+        //保存数据
+        AccountInputViewModel inputViewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+        if (inputViewModel.getAccountUnionModel() == null) {
             disposable.add(saveExtraDataFirstly(account)
                     .andThen(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, location, this))
                     .observeOn(AndroidSchedulers.mainThread())
@@ -1278,7 +1289,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                     )
             );
         } else {
-            long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v(), -1);
+            long accountId = inputViewModel.getAccountUnionModel().getAccount().getAccountId();
             account.setAccountId(accountId);
             disposable.add(saveExtraDataFirstly(account)
                     .andThen(AccountService.modifyAccount(account, copiedMediaUriList, tagIdList, location, this))

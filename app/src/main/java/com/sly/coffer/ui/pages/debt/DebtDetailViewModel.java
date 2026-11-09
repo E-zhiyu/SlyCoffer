@@ -18,7 +18,7 @@ public class DebtDetailViewModel extends ViewModel {
         return accountLoanModelLiveData.getValue();
     }
 
-    public void updateAccountLoanUnionModel(AccountLoanUnionModel model) {
+    public void setAccountLoanUnionModel(AccountLoanUnionModel model) {
         accountLoanModelLiveData.setValue(model);
     }
 }
