@@ -4,19 +4,22 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
 public class LocationPojo {
-    private long paragraphId;       //段落编号（外键）
+    private long accountId;         //流水记录编号（外键）
     private double latitude;        //纬度
     private double longitude;       //经度
     private double altitude;        //海拔
     private boolean isFineLocation = true; //是否为精确位置
     private String provider = "";   //位置提供者
 
-    public long getParagraphId() {
-        return paragraphId;
+    public LocationPojo() {
     }
 
-    public void setParagraphId(long paragraphId) {
-        this.paragraphId = paragraphId;
+    public long getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(long accountId) {
+        this.accountId = accountId;
     }
 
     public double getLatitude() {

@@ -1,6 +1,7 @@
 package com.sly.coffer.data.backup;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.room.Dao;
 import androidx.room.Insert;
@@ -9,6 +10,7 @@ import androidx.room.Query;
 import androidx.room.Transaction;
 
 import com.sly.coffer.auxiliary.classes.ImportResult;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.data.backup.maps.AccessibilityRuleDataMap;
 import com.sly.coffer.data.backup.maps.BudgetDataMap;
 import com.sly.coffer.data.backup.maps.NotificationRuleDataMap;
@@ -311,6 +313,9 @@ public interface DataBackupDao {
         }
 
         //返回导入结果
+        for (Throwable e : exceptionList) {
+            Log.e(LogTags.DATA_BACKUP_DAO.n(), "导入出错：\n" + e.getMessage());
+        }
         if (exceptionList.isEmpty()) {
             return ImportResult.success();
         } else {
@@ -497,6 +502,9 @@ public interface DataBackupDao {
         }
 
         //返回导入结果
+        for (Throwable e : exceptionList) {
+            Log.e(LogTags.DATA_BACKUP_DAO.n(), "导入出错：\n" + e.getMessage());
+        }
         if (exceptionList.isEmpty()) {
             return ImportResult.success();
         } else {
@@ -569,6 +577,9 @@ public interface DataBackupDao {
         }
 
         //返回导入结果
+        for (Throwable e : exceptionList) {
+            Log.e(LogTags.DATA_BACKUP_DAO.n(), "导入出错：\n" + e.getMessage());
+        }
         if (exceptionList.isEmpty()) {
             return ImportResult.success();
         } else {
@@ -740,6 +751,9 @@ public interface DataBackupDao {
         }
 
         //返回导入结果
+        for (Throwable e : exceptionList) {
+            Log.e(LogTags.DATA_BACKUP_DAO.n(), "导入出错：\n" + e.getMessage());
+        }
         if (exceptionList.isEmpty()) {
             return ImportResult.success();
         } else {

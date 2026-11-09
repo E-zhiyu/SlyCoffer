@@ -3,6 +3,7 @@ package com.sly.coffer.auxiliary.enums.unique;
 public enum LogTags {
     RESTORE_WORKER("RestoreWorker"),
     BACKUP_WORKER("BackupWorker"),
+    DATA_BACKUP_DAO("DataBackupDao"),
     MEDIA_LIST_ACTIVITY("MediaListActivity"),
     MAIN_ACTIVITY("MainActivity"),
     REPORT_ACTIVITY("ReportActivity"),
