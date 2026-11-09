@@ -150,7 +150,8 @@ public class DebtDetailActivity extends AppCompatActivity {
                     repayDate != null ? repayDate.format(CustomDateTimeFormatter.DATE) : "未约定应还日期",
                     debtStr
             );
-            new MarkdownDialogBuilder(this, getString(R.string.debt_info), info)
+            new MarkdownDialogBuilder(this, info)
+                    .setTitle(R.string.debt_info)
                     .setNegativeButton("关闭", null)
                     .show();
         });

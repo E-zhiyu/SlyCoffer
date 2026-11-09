@@ -77,7 +77,7 @@ public class AccountListActivity extends AppCompatActivity {
         //流水列表
         AccountListAdapter adapter = new AccountListAdapter(
                 (entity, anchor) -> {
-                    long accountId = entity.getAccountId();
+                    long accountId = entity.getAccount().getAccountId();
                     Bundle bundle = new Bundle();
                     bundle.putLong(KeyStrings.RUNNING_ID.v(), accountId);
 
@@ -91,7 +91,7 @@ public class AccountListActivity extends AppCompatActivity {
 
                     popupMenu.setOnMenuItemClickListener(item -> {
                         if (item.getItemId() == R.id.action_delete_account) {
-                            deleteAccount(entity);
+                            deleteAccount(entity.getAccount());
                             return true;
                         }
 

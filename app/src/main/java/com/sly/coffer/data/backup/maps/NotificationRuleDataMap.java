@@ -12,12 +12,21 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
 public class NotificationRuleDataMap {
-    private List<NotificationRulePojo> notificationRuleList;
-    private List<NotificationRuleTagRefPojo> notificationRuleTagRefList;
-    private List<ExtraTransferPojo> extraTransferList;
-    private List<ExtraLoanPojo> extraLoanList;
-    private List<NotificationRuleGroupPojo> notificationRuleGroupList;
-    private List<NotificationRuleGroupRefPojo> notificationRuleGroupRefList;
+    private List<NotificationRulePojo> notificationRuleList;                    //规则
+    private List<NotificationRuleTagRefPojo> notificationRuleTagRefList;        //标签映射
+    private List<ExtraTransferPojo> extraTransferList;                          //转账账户
+    private List<ExtraLoanPojo> extraLoanList;                                  //借款记录
+    private List<NotificationRuleGroupPojo> notificationRuleGroupList;          //规则分组
+    private List<NotificationRuleGroupRefPojo> notificationRuleGroupRefList;    //规则分组与规则映射
+
+    public NotificationRuleDataMap(List<NotificationRulePojo> notificationRuleList, List<NotificationRuleTagRefPojo> notificationRuleTagRefList, List<ExtraTransferPojo> extraTransferList, List<ExtraLoanPojo> extraLoanList, List<NotificationRuleGroupPojo> notificationRuleGroupList, List<NotificationRuleGroupRefPojo> notificationRuleGroupRefList) {
+        this.notificationRuleList = notificationRuleList;
+        this.notificationRuleTagRefList = notificationRuleTagRefList;
+        this.extraTransferList = extraTransferList;
+        this.extraLoanList = extraLoanList;
+        this.notificationRuleGroupList = notificationRuleGroupList;
+        this.notificationRuleGroupRefList = notificationRuleGroupRefList;
+    }
 
     public NotificationRuleDataMap() {
     }

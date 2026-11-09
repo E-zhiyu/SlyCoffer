@@ -52,14 +52,11 @@ public class MultiChoiceDialogBuilder
     /**
      * 自定义对话框构造器基类构造方法
      *
-     * @param context     上下文
-     * @param dialogTitle 对话框标题
+     * @param context  上下文
+     * @param itemList 选项列表
      */
-    public MultiChoiceDialogBuilder(Context context,
-                                    String dialogTitle,
-                                    List<ChoiceItem> itemList
-    ) {
-        super(context, dialogTitle);
+    public MultiChoiceDialogBuilder(Context context, List<ChoiceItem> itemList) {
+        super(context);
 
         //实例化多选列表的适配器
         adapter = new MultiChoiceDialogAdapter(itemList);
@@ -74,7 +71,7 @@ public class MultiChoiceDialogBuilder
     }
 
     @Override
-    public CustomDialogBuilderBase<DialogMultichoiceBinding,OnClickedListener, OnClickedListener> setPositiveButton(String btnTitle, OnClickedListener callback) {
+    public CustomDialogBuilderBase<DialogMultichoiceBinding, OnClickedListener, OnClickedListener> setPositiveButton(String btnTitle, OnClickedListener callback) {
         if (callback != null) {
             builder.setPositiveButton(btnTitle, (dialogInterface, i) ->
                     callback.onConfirmed(adapter.getCheckedStatList())
@@ -86,7 +83,7 @@ public class MultiChoiceDialogBuilder
     }
 
     @Override
-    public CustomDialogBuilderBase<DialogMultichoiceBinding,OnClickedListener, OnClickedListener> setNegativeButton(String btnTitle, OnClickedListener callback) {
+    public CustomDialogBuilderBase<DialogMultichoiceBinding, OnClickedListener, OnClickedListener> setNegativeButton(String btnTitle, OnClickedListener callback) {
         if (callback != null) {
             builder.setNegativeButton(btnTitle, (dialogInterface, i) ->
                     callback.onConfirmed(adapter.getCheckedStatList())

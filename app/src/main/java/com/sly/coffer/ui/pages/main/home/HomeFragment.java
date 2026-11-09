@@ -183,7 +183,8 @@ public class HomeFragment extends Fragment {
                     "今日消费情况如下：\n\n支出 **%.2f**元  \n收入 **%.2f**元  \n结余 **%.2f**元  \n",
                     expense, income, balance
             );
-            new MarkdownDialogBuilder(requireContext(), getString(R.string.report), detail)
+            new MarkdownDialogBuilder(requireContext(), detail)
+                    .setTitle(R.string.report)
                     .setNegativeButton("关闭", null)
                     .show();
 
@@ -261,7 +262,8 @@ public class HomeFragment extends Fragment {
                     "截至目前，与您相关的债务信息如下：\n\n应还款 **%.2f**元  \n待收债 **%.2f**元\n\n> 本APP计算的数据不一定准确，请以实际约定为准。",
                     borrowed, lent
             );
-            new MarkdownDialogBuilder(requireContext(), "债务信息", detail)
+            new MarkdownDialogBuilder(requireContext(), detail)
+                    .setTitle("债务信息")
                     .setNegativeButton("取消", null)
                     .show();
 

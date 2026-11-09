@@ -21,7 +21,7 @@ public class AccountKeyProvider extends ItemKeyProvider<Long> {
     public Long getKey(int position) {
         AccountUiModel model = adapter.getCurrentList().get(position);
         if (model instanceof AccountUiModel.Item) {
-            return ((AccountUiModel.Item) model).entity.getAccountId();
+            return ((AccountUiModel.Item) model).model.getAccount().getAccountId();
         } else if (model instanceof AccountUiModel.Separator) {
             return -Math.abs((long) ((AccountUiModel.Separator) model).text.hashCode());
         } else return null;
@@ -34,7 +34,7 @@ public class AccountKeyProvider extends ItemKeyProvider<Long> {
             AccountUiModel item = currentList.get(i);
             if (key >= 0 &&
                     (item instanceof AccountUiModel.Item) &&
-                    ((AccountUiModel.Item) item).entity.getAccountId() == key
+                    ((AccountUiModel.Item) item).model.getAccount().getAccountId() == key
             ) {
                 return i;
             } else if (key < 0 &&

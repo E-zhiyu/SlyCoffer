@@ -1,7 +1,8 @@
 package com.sly.coffer.ui.pages.main.bookkeeping;
 
-import android.Manifest;
 import android.content.Intent;
+import android.location.Location;
+import android.location.LocationListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,7 +22,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
@@ -41,6 +41,7 @@ import androidx.transition.TransitionSet;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.hjq.permissions.XXPermissions;
 import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.R;
 import com.sly.coffer.SlyAccountBook;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
@@ -52,9 +53,10 @@ import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
+import com.sly.coffer.data.save.db.entities.LocationEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountDetailUnionModel;
 import com.sly.coffer.data.save.db.services.AccountService;
 import com.sly.coffer.data.save.preference.TipPreference;
 import com.sly.coffer.databinding.ActivityRunningAccountInputBinding;
@@ -64,6 +66,8 @@ import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
+import com.sly.coffer.helpers.LocationHelper;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.time.DateTimePickerHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
@@ -90,6 +94,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -105,12 +110,18 @@ public class RunningAccountInputActivity extends AppCompatActivity {
     private final CompositeDisposable disposable = new CompositeDisposable();
     private SelectionTracker<Long> selectionTracker;        //图片列表选择追踪器
     private BackPressedCallbackHelper backHelper;           //返回逻辑管理器
-    private BackPressedCallbackHelper.BackHandler selectionBackHandler; //媒体多选返回处理器
+    private BackPressedCallbackHelper.BackHandler mediaBackHandler; //媒体多选返回处理器
     private AccountMediaAdapter mediaAdapter;               //媒体适配器
     private AccountTagAdapter tagAdapter;                   //标签适配器
     private ActivityResultLauncher<PickVisualMediaRequest> albumLauncher;   //相册图片选择启动器
     private ActivityResultLauncher<Uri> takePictureLauncher;    //调用系统相机的启动器
-    private ActivityResultLauncher<String> permissionLauncher;  //权限申请启动器
+    @Nullable
+    private List<LocationListener> locationListenerList;        //位置监听器的列表
+
+    {
+        //初始化意图启动器
+        initLaunchers();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,7 +150,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         initBundle = getIntent().getExtras();
         initViews();
         observeLiveData();
-        initLaunchers();
         initOnBackPressedHandlers();
     }
 
@@ -147,6 +157,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
+        requestLocation(false); //清理位置监听器
         disposable.dispose();
 
         //移除临时媒体目录中的文件
@@ -260,92 +271,23 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         if (initBundle != null) {
             binding.toolbar.setTitle(R.string.modify_running_account);
 
-            //读取初始数据
-            long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
-            BookkeepingDb db = BookkeepingDb.getInstance(this);
-            disposable.add(db.accountDao().getAccountWithDetailSingleById(accountId)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            modelOptional -> {
-                                if (modelOptional.isEmpty()) return;
-
-                                //获取数据
-                                AccountUnionModel model = modelOptional.get();
-                                AccountEntity account = model.getAccount();
-                                List<TagEntity> tagList = model.getTagList();
-                                List<MediaEntity> mediaList = model.getMediaList();
-
-                                //显示文本框数据
-                                AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
-                                AccountType type = AccountType.values()[account.getType()];
-                                accountExtraDataViewModel.updateAccountType(type);
-                                binding.amountInput.setText(String.valueOf(account.getAmount()));   //金额
-                                binding.remarkInput.setText(account.getRemark());                   //备注
-                                binding.typeInput.setText(type.getTitle());                         //种类
-                                binding.datetimeInput.setText(account.getDateTime().format(
-                                        CustomDateTimeFormatter.DATE_TIME
-                                ));                                                                 //日期和时间
-
-                                //转账相关的文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
-                                    binding.transferInputLayout.setVisibility(View.VISIBLE);
-
-                                    ExtraTransferEntity transfer = model.getTransfer();
-                                    if (account.getTransferId() != null && transfer != null) {
-                                        binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
-                                        binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
-                                    }
+            //读取初始数据并缓存（没有缓存的时候才读取）
+            AccountInputViewModel viewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+            if (viewModel.getAccountUnionModel() == null) {
+                long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v());
+                BookkeepingDb db = BookkeepingDb.getInstance(this);
+                disposable.add(db.accountDao().getAccountWithDetailSingleById(accountId)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                modelOptional -> {
+                                    if (modelOptional.isEmpty()) return;
+                                    AccountDetailUnionModel model = modelOptional.get();
+                                    viewModel.setAccountModel(model);
                                 }
-
-                                //还款额外数据文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_REPAY)) {
-                                    binding.repayExtraLayout.setVisibility(View.VISIBLE);
-
-                                    AccountEntity repayAccount = model.getRepayRelatedAccount();
-                                    accountExtraDataViewModel.updateRelatedLoan(repayAccount);
-                                    if (account.getRepayAccountId() != null && repayAccount != null) {
-                                        binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
-                                    }
-                                }
-
-                                //借款额外数据文本框
-                                if (type.hasExtraData(AccountType.DATA_FLAG_LOAN)) {
-                                    binding.loanExtraLayout.setVisibility(View.VISIBLE);
-
-                                    ExtraLoanEntity loan = model.getLoan();
-                                    if (account.getLoanId() != null && loan != null) {
-                                        binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
-                                        InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
-                                        binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
-                                        binding.annualInterestRateInput.setText(String.valueOf(loan.getYearBasepoint() / 100.0));   //年利率
-                                        if (loan.getRepayDate() != null) {
-                                            binding.repayDateInput.setText(loan.getRepayDate().format(CustomDateTimeFormatter.DATE));   //应还日期
-                                        }
-                                        binding.compoundInterestSwitch.setChecked(loan.isAllowCompoundInterest());  //允许复利
-                                    }
-                                }
-
-                                //显示标签
-                                if (!tagList.isEmpty()) {
-                                    tagAdapter.submitList(tagList);
-                                    binding.tagRecycler.setVisibility(View.VISIBLE);
-                                } else {
-                                    binding.tagRecycler.setVisibility(View.GONE);
-                                }
-                                Set<Long> tagIdList = tagList.stream()
-                                        .map(TagEntity::getTagId)
-                                        .collect(Collectors.toSet());
-                                TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
-                                tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
-
-                                //显示媒体
-                                if (!mediaList.isEmpty()) {
-                                    mediaAdapter.submitList(mediaList);
-                                }
-                            }
-                    )
-            );
+                        )
+                );
+            }
         }
 
         //金额
@@ -523,6 +465,69 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             TipPreference.showTipWithoutKey(view, Gravity.START, EXPLANATION);
         });
 
+        //定位按钮
+        binding.locationBtn.setOnClickListener(v -> {
+            LocationViewModel viewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+            boolean isLocationOn = viewModel.isLocationOn();
+
+            if (isLocationOn) {
+                requestLocation(false);
+            } else {
+                PermissionHelper.requestLocationPermission(
+                        this,
+                        permissionList -> {
+                            StringBuilder builder = new StringBuilder();
+
+                            if (XXPermissions.containsPermission(permissionList, PermissionLists.getAccessFineLocationPermission()) ||
+                                    XXPermissions.containsPermission(permissionList, PermissionLists.getAccessCoarseLocationPermission())) {
+                                builder.append("该功能需要使用定位权限，请授予定位权限以允许APP获取保存段落时所处的位置。\n");
+                            }
+
+                            return builder.toString();
+                        },
+                        new PermissionHelper.LocationPermissionCallback() {
+                            @Override
+                            public void hasFineLocation() {
+                                requestLocation(true);
+                            }
+
+                            @Override
+                            public void justCoarseLocation() {
+                                requestLocation(true);
+                            }
+
+                            @Override
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, @Nullable Function<List<IPermission>, String> descriptionFun) {
+                                if (!grantedList.isEmpty()) {
+                                    requestLocation(true);
+                                } else {
+                                    String message;
+                                    if (descriptionFun == null) {
+                                        message = "权限申请被拒绝，是否跳转至权限设置界面授予权限？";
+                                    } else {
+                                        message = descriptionFun.apply(deniedList);
+                                    }
+                                    new MaterialAlertDialogBuilder(RunningAccountInputActivity.this)
+                                            .setTitle("请求被拒绝")
+                                            .setMessage(message)
+                                            .setPositiveButton("前往设置", (dialog, which) ->
+                                                    XXPermissions.startPermissionActivity(RunningAccountInputActivity.this, deniedList)
+                                            )
+                                            .setNegativeButton("取消", null)
+                                            .show();
+                                }
+                            }
+                        }
+                );
+            }
+        });
+
+        //位置解释按钮
+        binding.locationExplainBtn.setOnClickListener(v -> {
+            final String EXPLANATION = "开启位置记录后，保存流水记录时会同时记录地理位置信息。";
+            TipPreference.showTipWithoutKey(v, Gravity.START, EXPLANATION);
+        });
+
         //媒体添加按钮
         binding.mediaAddBtn.setOnClickListener(view -> {
             MediaAddBottomSheet bottomSheet = new MediaAddBottomSheet();
@@ -557,79 +562,29 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
         //完成按钮
         binding.confirmButton.setOnClickListener(v -> {
-            String err = verifyInput();
-            if (err != null) {
-                Toast.makeText(this, err, Toast.LENGTH_SHORT).show();
-                return;
+            AccountInputViewModel accountInputViewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+            LocationViewModel locationViewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+            AccountDetailUnionModel model = accountInputViewModel.getAccountUnionModel();
+
+            if (locationViewModel.isLocationOn() && locationViewModel.getLocation() == null) {
+                Toast.makeText(this, "请等待获取地理位置……", Toast.LENGTH_SHORT).show();
+            } else if (model != null && !locationViewModel.isLocationOn() && model.getLocation() != null) {
+                LocationEntity oldLocationEntity = model.getLocation();
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.account_location)
+                        .setMessage("修改的流水记录包含位置信息，且当前并未开启位置记录功能，请选择是否保留原有的位置信息。")
+                        .setPositiveButton("保留", (dialog, which) -> {
+                            Location tempLocation = new Location(oldLocationEntity.getProvider());
+                            tempLocation.setLatitude(oldLocationEntity.getLatitude());
+                            tempLocation.setLongitude(oldLocationEntity.getLongitude());
+                            tempLocation.setAltitude(oldLocationEntity.getAltitude());
+                            moveMediaFiles(tempLocation);
+                        })
+                        .setNegativeButton("移除", (dialog, which) -> moveMediaFiles(null))
+                        .show();
+            } else {
+                moveMediaFiles(locationViewModel.isLocationOn() ? locationViewModel.getLocation() : null);
             }
-
-            //显示进度条对话框
-            ProgressDialogBuilder dialogBuilder = new ProgressDialogBuilder(
-                    this,
-                    "保存媒体文件",
-                    "正在移动媒体文件……"
-            );
-            AlertDialog dialog = dialogBuilder
-                    .setNegativeButton("取消", (dialogInterface, i) -> {
-                        disposable.clear();
-                        Toast.makeText(this, "已取消媒体文件保存", Toast.LENGTH_SHORT).show();
-                    })
-                    .create();
-
-            //如果有新媒体，则显示对话框
-            List<MediaEntity> currentMediaList = mediaAdapter.getCurrentList();
-            Set<MediaEntity> newMediaSet = currentMediaList.stream()    //获取新添加的媒体
-                    .filter(mediaEntity -> mediaEntity.getMediaId() == 0)
-                    .collect(Collectors.toSet());
-            if (!newMediaSet.isEmpty()) {
-                dialog.show();
-            }
-
-            //创建移动任务，并逐个返回移动成功的 File 型 Uri
-            Observable<MediaEntity> moveTask = Observable.create(emitter -> {
-                File targetDir = DirectoryPaths.MEDIA.getDir(this);
-                long accountId = initBundle == null ? 0 : initBundle.getLong(KeyStrings.RUNNING_ID.v());
-
-                for (MediaEntity originMedia : currentMediaList) {
-                    if (newMediaSet.contains(originMedia)) {
-                        File originFile = new File(Objects.requireNonNull(originMedia.getFileUri().getPath()));
-                        File movedFile = FileHelper.moveFile(originFile, targetDir);
-                        emitter.onNext(new MediaEntity(Uri.fromFile(movedFile), accountId));    //不论是否成功都返回
-                    } else {
-                        emitter.onNext(originMedia);
-                    }
-                }
-
-                emitter.onComplete();
-            });
-
-            //多线程执行任务并调用段落添加/更新方法
-            List<MediaEntity> resultList = new ArrayList<>();   //移动结果列表（可能包含 null）
-            disposable.add(moveTask
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            mediaEntity -> {
-                                resultList.add(mediaEntity);
-                                dialogBuilder.updateProgress(resultList.size(), currentMediaList.size(), "正在移动媒体文件……");
-                            },
-                            e -> {
-                                ExceptionHelper.showExceptionDialog(this, e);
-                                dialog.dismiss();
-                            },
-                            () -> {
-                                dialog.dismiss();
-
-                                //排除移动失败的文件
-                                List<MediaEntity> succeedMediaList = resultList.stream()
-                                        .filter(mediaEntity -> mediaEntity.getFileUri() != null)
-                                        .collect(Collectors.toList());
-
-                                //调用数据写入方法
-                                saveData(succeedMediaList);
-                            }
-                    )
-            );
         });
     }
 
@@ -637,6 +592,97 @@ public class RunningAccountInputActivity extends AppCompatActivity {
      * 观察 ViewModel 的 LiveData
      */
     private void observeLiveData() {
+        //流水记录数据
+        AccountInputViewModel accountInputViewModel = new ViewModelProvider(this).get(AccountInputViewModel.class);
+        accountInputViewModel.getAccountModelLiveData().observe(this, model -> {
+            if (model == null) return;
+
+            AccountEntity account = model.getAccount();
+            List<TagEntity> tagList = model.getTagList();
+            List<MediaEntity> mediaList = model.getMediaList();
+
+            //显示文本框数据
+            AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
+            AccountType type = AccountType.values()[account.getType()];
+            accountExtraDataViewModel.updateAccountType(type);
+            binding.amountInput.setText(String.valueOf(account.getAmount()));   //金额
+            binding.remarkInput.setText(account.getRemark());                   //备注
+            binding.typeInput.setText(type.getTitle());                         //种类
+            binding.datetimeInput.setText(account.getDateTime().format(
+                    CustomDateTimeFormatter.DATE_TIME
+            ));                                                                 //日期和时间
+
+            //转账相关的文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_TRANSFER)) {
+                binding.transferInputLayout.setVisibility(View.VISIBLE);
+
+                ExtraTransferEntity transfer = model.getTransfer();
+                if (account.getTransferId() != null && transfer != null) {
+                    binding.exportAccountInput.setText(transfer.getExportAccount());    //转出账户
+                    binding.importAccountInput.setText(transfer.getImportAccount());    //转入账户
+                }
+            }
+
+            //还款额外数据文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_REPAY)) {
+                binding.repayExtraLayout.setVisibility(View.VISIBLE);
+
+                AccountEntity repayAccount = model.getRepayRelatedAccount();
+                accountExtraDataViewModel.updateRelatedLoan(repayAccount);
+                if (account.getRepayAccountId() != null && repayAccount != null) {
+                    binding.relatedLoanInput.setText(repayAccount.getRemark()); //关联的借款记录备注
+                }
+            }
+
+            //借款额外数据文本框
+            if (type.hasExtraData(AccountType.DATA_FLAG_LOAN)) {
+                binding.loanExtraLayout.setVisibility(View.VISIBLE);
+
+                ExtraLoanEntity loan = model.getLoan();
+                if (account.getLoanId() != null && loan != null) {
+                    binding.loanTargetNameInput.setText(loan.getLoanTargetName());      //借款对象
+                    InterestPeriodType interestPeriodType = InterestPeriodType.values()[loan.getInterestPeriodType()];
+                    binding.interestPeriodInput.setText(interestPeriodType.getTitle()); //结息周期
+                    binding.annualInterestRateInput.setText(String.valueOf(loan.getYearBasepoint() / 100.0));   //年利率
+                    if (loan.getRepayDate() != null) {
+                        binding.repayDateInput.setText(loan.getRepayDate().format(CustomDateTimeFormatter.DATE));   //应还日期
+                    }
+                    binding.compoundInterestSwitch.setChecked(loan.isAllowCompoundInterest());  //允许复利
+                }
+            }
+
+            //显示标签
+            if (!tagList.isEmpty()) {
+                tagAdapter.submitList(tagList);
+                binding.tagRecycler.setVisibility(View.VISIBLE);
+            } else {
+                binding.tagRecycler.setVisibility(View.GONE);
+            }
+            Set<Long> tagIdList = tagList.stream()
+                    .map(TagEntity::getTagId)
+                    .collect(Collectors.toSet());
+            TagMultiSelectViewModel tagMultiSelectViewModel = new ViewModelProvider(this).get(TagMultiSelectViewModel.class);
+            tagMultiSelectViewModel.updateCheckedIdLiveData(tagIdList);
+
+            //显示地理位置
+            if (model.getLocation() != null) {
+                LocationEntity location = model.getLocation();
+                binding.recordedLocationText.setText(LocationHelper.locationToString(
+                        location.getLatitude(),
+                        location.getLongitude(),
+                        location.getAltitude(),
+                        location.isFineLocation()
+                ));
+            } else {
+                binding.recordedLocationText.setText("无地理位置信息");
+            }
+
+            //显示媒体
+            if (!mediaList.isEmpty()) {
+                mediaAdapter.submitList(mediaList);
+            }
+        });
+
         //流水记录种类
         AccountExtraDataViewModel accountExtraDataViewModel = new ViewModelProvider(this).get(AccountExtraDataViewModel.class);
         accountExtraDataViewModel.getAccountTypeLiveData().observe(this, type -> {
@@ -676,11 +722,48 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             MediaAddOption option = MediaAddOption.values()[integer];
 
             if (option == MediaAddOption.TAKE_PICTURE) {
-                if (XXPermissions.isGrantedPermission(this, PermissionLists.getCameraPermission())) {
-                    launchSystemCamera();
-                } else {
-                    permissionLauncher.launch(Manifest.permission.CAMERA);
-                }
+                PermissionHelper.requestPermission(
+                        this,
+                        permissionList -> {
+                            StringBuilder builder = new StringBuilder();
+                            if (XXPermissions.containsPermission(permissionList, PermissionLists.getCameraPermission())) {
+                                builder.append("请授予相机权限以用于拍摄图片。");
+                            }
+                            return builder.toString();
+                        },
+                        new PermissionHelper.PermissionCallback() {
+                            @Override
+                            public void allGranted(List<IPermission> permissionList) {
+                                launchSystemCamera();
+                            }
+
+                            @Override
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, @Nullable Function<List<IPermission>, String> descriptionFun) {
+                                boolean noDenied = deniedList.isEmpty();
+                                boolean noGranted = grantedList.isEmpty();
+                                if (noDenied && !noGranted) {
+                                    launchSystemCamera();
+                                } else {
+                                    String message;
+                                    if (descriptionFun == null) {
+                                        message = noGranted ? "权限申请被拒绝，是否跳转至权限设置界面授予权限？" :
+                                                "有权限没有授予，是否跳转至权限设置界面授予权限？";
+                                    } else {
+                                        message = descriptionFun.apply(deniedList);
+                                    }
+                                    new MaterialAlertDialogBuilder(RunningAccountInputActivity.this)
+                                            .setTitle("请求被拒绝")
+                                            .setMessage(message)
+                                            .setPositiveButton("前往设置", (dialog, which) ->
+                                                    XXPermissions.startPermissionActivity(RunningAccountInputActivity.this, deniedList)
+                                            )
+                                            .setNegativeButton("取消", null)
+                                            .show();
+                                }
+                            }
+                        },
+                        PermissionLists.getCameraPermission()
+                );
             } else if (option == MediaAddOption.OPEN_ALBUM) {
                 albumLauncher.launch(
                         new PickVisualMediaRequest.Builder()
@@ -724,6 +807,26 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                     )
             );
         });
+
+        //位置记录开关
+        LocationViewModel locationViewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+        locationViewModel.getIsLocationOnLiveData().observe(this, isLocationOn ->
+                binding.locationBtn.setImageResource(isLocationOn ? R.drawable.outline_location_on_24 : R.drawable.outline_location_off_24)
+        );
+
+        //当前位置
+        locationViewModel.getLocationLiveData().observe(this, location -> {
+            if (location == null) {
+                binding.currentLocationText.setText("未获取到地理位置");
+            } else {
+                binding.currentLocationText.setText(LocationHelper.locationToString(
+                        location.getLatitude(),
+                        location.getLongitude(),
+                        location.getAltitude(),
+                        XXPermissions.isGrantedPermission(this, PermissionLists.getAccessFineLocationPermission())
+                ));
+            }
+        });
     }
 
     /**
@@ -754,30 +857,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                     }
                 }
         );
-
-        //权限申请启动器
-        permissionLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestPermission(),
-                result -> {
-                    if (result) {
-                        launchSystemCamera();
-                    } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-                        //弹出解释对话框
-                        new MaterialAlertDialogBuilder(this)
-                                .setTitle("申请权限")
-                                .setMessage("使用相机拍照需要先授予摄像头权限")
-                                .setNegativeButton("取消", null)
-                                .setPositiveButton(
-                                        "确定",
-                                        (dialogInterface, i) ->
-                                                permissionLauncher.launch(Manifest.permission.CAMERA)
-                                )
-                                .show();
-                    } else {
-                        Toast.makeText(this, "请授予相机权限后再拍照", Toast.LENGTH_SHORT).show();
-                    }
-                }
-        );
     }
 
     /**
@@ -794,7 +873,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(backPressedCallback);
 
         //媒体多选处理器
-        selectionBackHandler = new BackPressedCallbackHelper.BackHandler() {
+        mediaBackHandler = new BackPressedCallbackHelper.BackHandler() {
             @Override
             public boolean handleBack() {
                 selectionTracker.clearSelection();
@@ -870,13 +949,10 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         }
 
         //显示进度条对话框
-        ProgressDialogBuilder builder = new ProgressDialogBuilder(
-                this,
-                "导入媒体",
-                "正在复制媒体文件"
-        );
-        AlertDialog progressDialog = builder.
-                setNegativeButton("取消", (dialogInterface, i) -> {
+        ProgressDialogBuilder builder = new ProgressDialogBuilder(this, "正在复制媒体文件");
+        AlertDialog progressDialog = builder
+                .setTitle("导入媒体")
+                .setNegativeButton("取消", (dialogInterface, i) -> {
                     Toast.makeText(this, "已取消媒体导入", Toast.LENGTH_SHORT).show();
                     disposable.clear();
                 })
@@ -989,6 +1065,84 @@ public class RunningAccountInputActivity extends AppCompatActivity {
     }
 
     /**
+     * 移动媒体文件到永久目录
+     *
+     * @param location 段落位置信息
+     */
+    private void moveMediaFiles(@Nullable Location location) {
+        String err = verifyInput();
+        if (err != null) {
+            Toast.makeText(this, err, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        //显示进度条对话框
+        ProgressDialogBuilder dialogBuilder = new ProgressDialogBuilder(this, "正在移动媒体文件……");
+        AlertDialog dialog = dialogBuilder
+                .setTitle("保存媒体文件")
+                .setNegativeButton("取消", (dialogInterface, i) -> {
+                    disposable.clear();
+                    Toast.makeText(this, "已取消媒体文件保存", Toast.LENGTH_SHORT).show();
+                })
+                .create();
+
+        //如果有新媒体，则显示对话框
+        List<MediaEntity> currentMediaList = mediaAdapter.getCurrentList();
+        Set<MediaEntity> newMediaSet = currentMediaList.stream()    //获取新添加的媒体
+                .filter(mediaEntity -> mediaEntity.getMediaId() == 0)
+                .collect(Collectors.toSet());
+        if (!newMediaSet.isEmpty()) {
+            dialog.show();
+        }
+
+        //创建移动任务，并逐个返回移动成功的 File 型 Uri
+        Observable<MediaEntity> moveTask = Observable.create(emitter -> {
+            File targetDir = DirectoryPaths.MEDIA.getDir(this);
+            long accountId = initBundle == null ? 0 : initBundle.getLong(KeyStrings.RUNNING_ID.v());
+
+            for (MediaEntity originMedia : currentMediaList) {
+                if (newMediaSet.contains(originMedia)) {
+                    File originFile = new File(Objects.requireNonNull(originMedia.getFileUri().getPath()));
+                    File movedFile = FileHelper.moveFile(originFile, targetDir);
+                    emitter.onNext(new MediaEntity(Uri.fromFile(movedFile), accountId));    //不论是否成功都返回
+                } else {
+                    emitter.onNext(originMedia);
+                }
+            }
+
+            emitter.onComplete();
+        });
+
+        //多线程执行任务并调用段落添加/更新方法
+        List<MediaEntity> resultList = new ArrayList<>();   //移动结果列表（可能包含 null）
+        disposable.add(moveTask
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                        mediaEntity -> {
+                            resultList.add(mediaEntity);
+                            dialogBuilder.updateProgress(resultList.size(), currentMediaList.size(), "正在移动媒体文件……");
+                        },
+                        e -> {
+                            ExceptionHelper.showExceptionDialog(this, e);
+                            dialog.dismiss();
+                        },
+                        () -> {
+                            dialog.dismiss();
+
+                            //排除移动失败的文件
+                            List<MediaEntity> succeedMediaList = resultList.stream()
+                                    .filter(mediaEntity -> mediaEntity.getFileUri() != null)
+                                    .collect(Collectors.toList());
+
+                            //调用数据写入方法
+                            saveData(succeedMediaList, location);
+                        }
+                )
+        );
+    }
+
+    /**
      * 首先保存额外的数据
      *
      * @param account 流水记录数据
@@ -1074,7 +1228,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
     /**
      * 将数据保存到数据库
      */
-    private void saveData(List<MediaEntity> copiedMediaUriList) {
+    private void saveData(List<MediaEntity> copiedMediaUriList, @Nullable Location location) {
         //获取输入的数据
         double amount;
         try {
@@ -1104,7 +1258,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         );
         if (initBundle == null) {
             disposable.add(saveExtraDataFirstly(account)
-                    .andThen(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, this))
+                    .andThen(AccountService.addNewAccount(account, copiedMediaUriList, tagIdList, location, this))
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -1127,7 +1281,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             long accountId = initBundle.getLong(KeyStrings.RUNNING_ID.v(), -1);
             account.setAccountId(accountId);
             disposable.add(saveExtraDataFirstly(account)
-                    .andThen(AccountService.modifyAccount(account, copiedMediaUriList, tagIdList, this))
+                    .andThen(AccountService.modifyAccount(account, copiedMediaUriList, tagIdList, location, this))
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe(
@@ -1219,9 +1373,9 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
         //处理返回拦截
         if (isSelectMode) {
-            backHelper.registerHandler(selectionBackHandler);
+            backHelper.registerHandler(mediaBackHandler);
         } else {
-            backHelper.unregisterHandler(selectionBackHandler);
+            backHelper.unregisterHandler(mediaBackHandler);
         }
 
         //定义过渡动画
@@ -1246,6 +1400,62 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
         if (binding.mediaRecycler.getAdapter() instanceof AccountMediaAdapter) {
             ((AccountMediaAdapter) binding.mediaRecycler.getAdapter()).setSelectMode(isSelectMode); //切换适配器选择模式
+        }
+    }
+
+    /**
+     * 监听当前位置
+     *
+     * @param open 是否监听
+     */
+    private void requestLocation(boolean open) {
+        LocationViewModel viewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+
+        if (open && !viewModel.isLocationOn()) {
+            //监听位置
+            LocationHelper.removeLocationListeners(this, locationListenerList);  //清理旧的监听器
+            locationListenerList = LocationHelper.requestCurrentLocation(this, new LocationHelper.CurrentLocationListener() {
+                @Override
+                public void onUpdated(Location location) {
+                    viewModel.setLocation(location);
+                }
+
+                @Override
+                public void onProviderDisabled(String provider) {
+                    requestLocation(false);
+                }
+
+                @Override
+                public void onListenStarted() {
+                    //弹出提示
+                    IPermission fineLocation = PermissionLists.getAccessFineLocationPermission();
+                    IPermission coarseLocation = PermissionLists.getAccessCoarseLocationPermission();
+                    boolean isFineGranted = XXPermissions.isGrantedPermission(RunningAccountInputActivity.this, fineLocation);
+                    boolean isCoarseGranted = XXPermissions.isGrantedPermission(RunningAccountInputActivity.this, coarseLocation);
+                    if (isFineGranted && isCoarseGranted) {
+                        Toast.makeText(RunningAccountInputActivity.this, "流水记录将记录地理位置", Toast.LENGTH_SHORT).show();
+                    } else if (isCoarseGranted) {
+                        Toast.makeText(RunningAccountInputActivity.this, "流水记录将记录粗略的地理位置", Toast.LENGTH_SHORT).show();
+                    }
+
+                    viewModel.setLocationOn(true);
+                }
+
+                @Override
+                public void onRequestFailed(String message) {
+                    Toast.makeText(RunningAccountInputActivity.this, message, Toast.LENGTH_SHORT).show();
+                    requestLocation(false);
+                }
+            });
+        } else if (!open) {
+            if (viewModel.isLocationOn()) {
+                Toast.makeText(this, "已关闭位置记录", Toast.LENGTH_SHORT).show();
+            }
+
+            LocationHelper.removeLocationListeners(this, locationListenerList); //清理旧的监听器
+            locationListenerList = null;
+            viewModel.setLocationOn(false);
+            viewModel.setLocation(null);
         }
     }
 }

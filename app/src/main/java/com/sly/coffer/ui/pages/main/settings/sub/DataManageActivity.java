@@ -350,7 +350,8 @@ public class DataManageActivity extends AppCompatActivity {
                 .collect(Collectors.toList());
 
         //显示多选对话框
-        new MultiChoiceDialogBuilder(this, "导出数据", itemList)
+        new MultiChoiceDialogBuilder(this, itemList)
+                .setTitle("导出数据")
                 .setPositiveButton("确定", checkedStatList -> {
                     //判断是否没有选择任何一个选项
                     if (checkedStatList.stream().noneMatch(Boolean::booleanValue)) {
@@ -393,7 +394,8 @@ public class DataManageActivity extends AppCompatActivity {
         UUID uuid = WorkerScheduler.executeWorkOnceNow(this, BackupWorker.class, data);
 
         //显示进度条对话框
-        AlertDialog dialog = new ProgressDialogBuilder(this, "导出数据", "正在导出数据……")
+        AlertDialog dialog = new ProgressDialogBuilder(this, "正在导出数据……")
+                .setTitle("导出数据")
                 .setPositiveButton("后台执行", (dialogInterface, i) ->
                         Toast.makeText(this, "已在后台执行，请留意通知", Toast.LENGTH_SHORT).show()
                 )
@@ -413,7 +415,8 @@ public class DataManageActivity extends AppCompatActivity {
      */
     private void showImportChoiceDialog(Uri uri) {
         //显示扫描文件的进度条对话框
-        AlertDialog progressDialog = new ProgressDialogBuilder(this, "扫描文件", "正在扫描文件……")
+        AlertDialog progressDialog = new ProgressDialogBuilder(this, "正在扫描文件……")
+                .setTitle("扫描文件")
                 .setNegativeButton("取消", (dialogInterface, i) -> {
                     disposables.clear();
                     Toast.makeText(this, "已取消数据导入", Toast.LENGTH_SHORT).show();
@@ -455,7 +458,8 @@ public class DataManageActivity extends AppCompatActivity {
                     progressDialog.dismiss();
 
                     //显示多选对话框
-                    new MultiChoiceDialogBuilder(this, "导入数据", itemList)
+                    new MultiChoiceDialogBuilder(this, itemList)
+                            .setTitle("导入数据")
                             .setPositiveButton("确认", checkedStatList ->
                                     importData(uri, checkedStatList)
                             )
@@ -489,7 +493,8 @@ public class DataManageActivity extends AppCompatActivity {
         UUID uuid = WorkerScheduler.executeWorkOnceNow(this, RestoreWorker.class, data);
 
         //显示扫描文件的进度条对话框
-        AlertDialog dialog = new ProgressDialogBuilder(this, "导入数据", "正在导入数据……")
+        AlertDialog dialog = new ProgressDialogBuilder(this, "正在导入数据……")
+                .setTitle("导入数据")
                 .setPositiveButton("后台执行", (dialogInterface, i) ->
                         Toast.makeText(this, "已在后台执行，请留意通知", Toast.LENGTH_SHORT).show()
                 )

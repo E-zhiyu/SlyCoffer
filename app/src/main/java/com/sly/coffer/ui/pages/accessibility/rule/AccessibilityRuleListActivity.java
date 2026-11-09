@@ -136,7 +136,8 @@ public class AccessibilityRuleListActivity extends AppCompatActivity {
                     "- 本功能**完全在本地运行**，无障碍服务仅用于金额提取和记账；\n" +
                     "- **APP不会以任何形式收集、存储或上传您的屏幕内容、金额信息或任何个人数据**；\n" +
                     "- 您创建的所有规则仅保存在本机，请您放心使用。";
-            new MarkdownDialogBuilder(this, "功能介绍", EXPLANATION)
+            new MarkdownDialogBuilder(this, EXPLANATION)
+                    .setTitle("功能介绍")
                     .setNegativeButton("关闭", null)
                     .show();
         });

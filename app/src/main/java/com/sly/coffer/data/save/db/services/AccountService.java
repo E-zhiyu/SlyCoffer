@@ -1,12 +1,16 @@
 package com.sly.coffer.data.save.db.services;
 
 import android.content.Context;
+import android.location.Location;
 import android.net.Uri;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.sqlite.db.SimpleSQLiteQuery;
 
+import com.hjq.permissions.XXPermissions;
+import com.hjq.permissions.permission.PermissionLists;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.converters.DateTimeConverter;
@@ -14,6 +18,7 @@ import com.sly.coffer.data.save.db.daos.AccountDao;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.AccountUiModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountListUnionModel;
 import com.sly.coffer.helpers.file.FileHelper;
 
 import org.jetbrains.annotations.Contract;
@@ -198,19 +203,19 @@ public class AccountService {
             List<Long> idList,
             @NonNull BookkeepingDb db
     ) {
-        return db.accountDao().getAccountByIdFlowable(idList)
+        return db.accountDao().getAccountListByIdFlowable(idList)
                 .map(accountList -> {
                     //按照日期分组
-                    Map<LocalDate, List<AccountEntity>> dateGroupedMap = accountList.stream()
+                    Map<LocalDate, List<AccountListUnionModel>> dateGroupedMap = accountList.stream()
                             .collect(Collectors.groupingBy(
-                                    accountEntity -> accountEntity.getDateTime().toLocalDate(),
+                                    model -> model.getAccount().getDateTime().toLocalDate(),
                                     LinkedHashMap::new,
                                     Collectors.toList()
                             ));
 
                     //转换为 UiModel
                     List<AccountUiModel> resultList = new ArrayList<>();
-                    for (Map.Entry<LocalDate, List<AccountEntity>> entry : dateGroupedMap.entrySet()) {
+                    for (Map.Entry<LocalDate, List<AccountListUnionModel>> entry : dateGroupedMap.entrySet()) {
                         LocalDate date = entry.getKey();
                         String dateStr = date.format(CustomDateTimeFormatter.DATE_WITH_WEEK);
                         resultList.add(new AccountUiModel.Separator(dateStr));
@@ -231,6 +236,7 @@ public class AccountService {
      * @param account         新流水记录
      * @param mediaEntityList 位于永久目录下的媒体文件实体列表
      * @param tagIdList       与该记录绑定的标签的 ID 列表
+     * @param location        位置信息
      * @param context         上下文
      * @return 新添加的流水记录的编号
      */
@@ -238,11 +244,21 @@ public class AccountService {
             AccountEntity account,
             @Nullable List<MediaEntity> mediaEntityList,
             @Nullable List<Long> tagIdList,
+            @Nullable Location location,
             Context context
     ) {
         return Single.defer(() -> {
             BookkeepingDb db = BookkeepingDb.getInstance(context);
-            long accountId = db.accountDao().addAccount(account, mediaEntityList, tagIdList);
+            Pair<Boolean, Location> locationPair;
+            if (location != null) {
+                boolean isFineLocation = XXPermissions.isGrantedPermission(
+                        context, PermissionLists.getAccessFineLocationPermission()
+                );
+                locationPair = new Pair<>(isFineLocation, location);
+            } else {
+                locationPair = null;
+            }
+            long accountId = db.accountDao().addAccount(account, mediaEntityList, tagIdList, locationPair);
 
             //检查预算
             BudgetService.checkAndSendLowBalanceNotification(context);
@@ -257,6 +273,7 @@ public class AccountService {
      * @param account         修改后的流水记录
      * @param mediaEntityList 位于永久目录下的媒体文件实体列表，可能包含新添加的媒体
      * @param tagIdList       与该记录绑定的标签的 Id 列表
+     * @param location        位置信息
      * @param context         上下文
      * @return 是否完成
      */
@@ -264,11 +281,25 @@ public class AccountService {
             AccountEntity account,
             List<MediaEntity> mediaEntityList,
             List<Long> tagIdList,
+            @Nullable Location location,
             Context context
     ) {
         BookkeepingDb db = BookkeepingDb.getInstance(context);
         return Single.defer(() -> {
-            Set<Uri> oldMediaUriSet = db.accountDao().modifyAccount(account, mediaEntityList, tagIdList, db.extraDataDao());
+            Pair<Boolean, Location> locationPair;
+            if (location != null) {
+                boolean isFineLocation = XXPermissions.isGrantedPermission(context, PermissionLists.getAccessFineLocationPermission());
+                locationPair = new Pair<>(isFineLocation, location);
+            } else {
+                locationPair = null;
+            }
+            Set<Uri> oldMediaUriSet = db.accountDao().modifyAccount(
+                    account,
+                    mediaEntityList,
+                    tagIdList,
+                    locationPair,
+                    db.extraDataDao()
+            );
 
             //删除旧媒体文件
             if (oldMediaUriSet != null) {

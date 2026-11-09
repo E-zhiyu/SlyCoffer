@@ -3,6 +3,7 @@ package com.sly.coffer.ui.others.dialogs;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.viewbinding.ViewBinding;
 
@@ -22,16 +23,58 @@ public abstract class CustomDialogBuilderBase<VB extends ViewBinding, P, N> {
     /**
      * 自定义对话框构造器基类构造方法
      *
-     * @param context     上下文
-     * @param dialogTitle 对话框标题
+     * @param context 上下文
      */
-    public CustomDialogBuilderBase(@NonNull Context context, String dialogTitle) {
+    public CustomDialogBuilderBase(@NonNull Context context) {
         builder = new MaterialAlertDialogBuilder(context);
-        builder.setTitle(dialogTitle);
 
         //设置自定义视图
         binding = getCustomView();
         builder.setView(binding.getRoot());
+    }
+
+    /**
+     * 设置标题
+     *
+     * @param title 标题文本资源编号
+     * @return 自定义对话框构建器
+     */
+    public CustomDialogBuilderBase<VB, P, N> setTitle(@StringRes int title) {
+        builder.setTitle(title);
+        return this;
+    }
+
+    /**
+     * 设置标题
+     *
+     * @param title 标题文本
+     * @return 自定义对话框构建器
+     */
+    public CustomDialogBuilderBase<VB, P, N> setTitle(String title) {
+        builder.setTitle(title);
+        return this;
+    }
+
+    /**
+     * 设置消息文本
+     *
+     * @param message 消息文本
+     * @return 自定义对话框构建器
+     */
+    public CustomDialogBuilderBase<VB, P, N> setMessage(String message) {
+        builder.setMessage(message);
+        return this;
+    }
+
+    /**
+     * 设置消息文本
+     *
+     * @param message 消息文本
+     * @return 自定义对话框构建器
+     */
+    public CustomDialogBuilderBase<VB, P, N> setMessage(@StringRes int message) {
+        builder.setMessage(message);
+        return this;
     }
 
     /**

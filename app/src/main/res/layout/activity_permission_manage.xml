@@ -79,6 +79,11 @@
                 android:id="@+id/alarm_option"
                 layout="@layout/view_setting_option" />
 
+            <!-- 定位权限 -->
+            <include
+                android:id="@+id/location_option"
+                layout="@layout/view_setting_option" />
+
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

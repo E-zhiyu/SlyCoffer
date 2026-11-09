@@ -8,8 +8,13 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // 忽略JSON中多余字段
 public class BudgetDataMap {
-    private List<BudgetPojo> budgetList;
-    private List<BudgetTagRefPojo> budgetTagRefList;
+    private List<BudgetPojo> budgetList;                //预算
+    private List<BudgetTagRefPojo> budgetTagRefList;    //标签映射
+
+    public BudgetDataMap(List<BudgetPojo> budgetList, List<BudgetTagRefPojo> budgetTagRefList) {
+        this.budgetList = budgetList;
+        this.budgetTagRefList = budgetTagRefList;
+    }
 
     public BudgetDataMap() {
     }

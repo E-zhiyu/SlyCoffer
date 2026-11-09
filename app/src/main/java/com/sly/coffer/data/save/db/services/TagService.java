@@ -9,6 +9,7 @@ import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.TagGroupUiModel;
 import com.sly.coffer.data.save.db.entities.composite.ui.TagListUiModel;
+import com.sly.coffer.data.save.db.entities.composite.union.TagUseCountUnionModel;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -81,7 +82,7 @@ public class TagService {
     public static Flowable<List<TagListUiModel>> getTagListFlowable(@NonNull BookkeepingDb db) {
         TagDao dao = db.tagDao();
         return Flowable.combineLatest(
-                dao.getAllTagFlowable(0, null),
+                dao.getAllTagWithUseCountFlowable(),
                 dao.getAllTagGroupFlowable(),
                 (tagList, groupList) -> {
                     //按照分组编号分组
@@ -92,36 +93,36 @@ public class TagService {
                             ));
 
                     //构建标签分组 Map，并先填入已有的分组
-                    Map<Long, List<TagEntity>> groupedTagMap = groupList.stream()
+                    Map<Long, List<TagUseCountUnionModel>> groupedTagMap = groupList.stream()
                             .collect(Collectors.toMap(
                                     TagGroupEntity::getGroupId,
                                     group -> new ArrayList<>()
                             ));
 
                     //将有分组的标签填入分组 Map
-                    List<TagEntity> tagWithGroupList = tagList.stream()
-                            .filter(tag -> tag.getGroupId() != null)
+                    List<TagUseCountUnionModel> tagWithGroupList = tagList.stream()
+                            .filter(tag -> tag.getTag().getGroupId() != null)
                             .collect(Collectors.toList());
-                    for (TagEntity tag : tagWithGroupList) {
-                        Long groupId = tag.getGroupId();
-                        List<TagEntity> listInMap = groupedTagMap.get(groupId);
+                    for (TagUseCountUnionModel model : tagWithGroupList) {
+                        Long groupId = model.getTag().getGroupId();
+                        List<TagUseCountUnionModel> listInMap = groupedTagMap.get(groupId);
                         if (listInMap != null) {
-                            listInMap.add(tag);
+                            listInMap.add(model);
                         } else {
-                            List<TagEntity> newList = new ArrayList<>();
-                            newList.add(tag);
+                            List<TagUseCountUnionModel> newList = new ArrayList<>();
+                            newList.add(model);
                             groupedTagMap.put(groupId, newList);
                         }
                     }
 
                     //填充没有分组的标签
                     List<TagListUiModel> resultList = tagList.stream()
-                            .filter(tag -> tag.getGroupId() == null)
+                            .filter(tag -> tag.getTag().getGroupId() == null)
                             .map(TagListUiModel.Item::new)
                             .collect(Collectors.toList());
 
                     //填充有分组的标签
-                    for (Map.Entry<Long, List<TagEntity>> entry : groupedTagMap.entrySet()) {
+                    for (Map.Entry<Long, List<TagUseCountUnionModel>> entry : groupedTagMap.entrySet()) {
                         Long groupId = entry.getKey();
 
                         //插入分组

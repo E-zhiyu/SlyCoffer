@@ -12,6 +12,7 @@ import androidx.room.Update;
 import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
 import com.sly.coffer.data.save.db.entities.composite.union.TagUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.TagUseCountUnionModel;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +42,20 @@ public interface TagDao {
             "WHERE scope & :scopePow = 0 AND (:exceptedTagIds IS NULL OR tagId NOT IN (:exceptedTagIds)) " +
             "ORDER BY groupId")
     Flowable<List<TagEntity>> getAllTagFlowable(int scopePow, long[] exceptedTagIds);
+
+    /**
+     * 获取带有使用次数的标签列表
+     *
+     * @return 带有使用次数的标签的列表
+     */
+    @Query("SELECT " +
+            "   t.*, " +
+            "   (SELECT COUNT(*) FROM accountTagRef acc WHERE t.tagId = acc.tagId) AS accountUseCount, " +
+            "   (SELECT COUNT(*) FROM notificationRuleTagRef noti WHERE t.tagId = noti.tagId) AS notiRuleUseCount, " +
+            "   (SELECT COUNT(*) FROM accessibilityRuleTagRef acc WHERE t.tagId = acc.tagId) AS accRuleUseCount, " +
+            "   (SELECT COUNT(*) FROM budgetTagRef budget WHERE t.tagId = budget.tagId) AS budgetUseCount " +
+            "FROM tags t")
+    Flowable<List<TagUseCountUnionModel>> getAllTagWithUseCountFlowable();
 
     /**
      * 获取所有标签分组
@@ -232,13 +247,40 @@ public interface TagDao {
     }
 
     /**
-     * 替换流水记录和标签映射的标签编号
+     * 合并流水记录的标签映射
      *
-     * @param originTag   原来的标签编号
-     * @param targetTagId 修改后的标签编号
+     * @param mergedTagId 被合并的标签编号
+     * @param targetTagId 合并后的标签编号
      */
-    @Query("UPDATE OR REPLACE accountTagRef SET tagId = :targetTagId WHERE tagId = :originTag")
-    void changeAccountTag(long originTag, long targetTagId);
+    @Query("UPDATE OR REPLACE accountTagRef SET tagId = :targetTagId WHERE tagId = :mergedTagId")
+    void mergeAccountTag(long mergedTagId, long targetTagId);
+
+    /**
+     * 合并通知规则的标签映射
+     *
+     * @param mergedTagId 被合并的标签编号
+     * @param targetTagId 合并后的标签编号
+     */
+    @Query("UPDATE OR REPLACE notificationRuleTagRef SET tagId = :targetTagId WHERE tagId = :mergedTagId")
+    void mergeNotificationRuleTag(long mergedTagId, long targetTagId);
+
+    /**
+     * 合并无障碍规则的标签映射
+     *
+     * @param mergedTagId 被合并的标签编号
+     * @param targetTagId 合并后的标签编号
+     */
+    @Query("UPDATE OR REPLACE accessibilityRuleTagRef SET tagId = :targetTagId WHERE tagId = :mergedTagId")
+    void mergeAccessibilityRuleTag(long mergedTagId, long targetTagId);
+
+    /**
+     * 合并无障碍规则的标签映射
+     *
+     * @param mergedTagId 被合并的标签编号
+     * @param targetTagId 合并后的标签编号
+     */
+    @Query("UPDATE OR REPLACE budgetTagRef SET tagId = :targetTagId WHERE tagId = :mergedTagId")
+    void mergeBudgetTag(long mergedTagId, long targetTagId);
 
     @Delete
     void deleteMergedTag(TagEntity tag);
@@ -252,7 +294,10 @@ public interface TagDao {
     @Transaction
     default void mergeTag(TagEntity mergedTag, TagEntity targetTag) {
         if (mergedTag == null || targetTag == null) return;
-        changeAccountTag(mergedTag.getTagId(), targetTag.getTagId());
+        mergeAccountTag(mergedTag.getTagId(), targetTag.getTagId());
+        mergeNotificationRuleTag(mergedTag.getTagId(), targetTag.getTagId());
+        mergeAccessibilityRuleTag(mergedTag.getTagId(), targetTag.getTagId());
+        mergeBudgetTag(mergedTag.getTagId(), targetTag.getTagId());
         deleteMergedTag(mergedTag);
     }
 }

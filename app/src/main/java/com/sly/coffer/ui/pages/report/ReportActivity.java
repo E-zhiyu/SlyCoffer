@@ -28,7 +28,7 @@ import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.data.save.db.BookkeepingDb;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
 import com.sly.coffer.data.save.db.entities.TagEntity;
-import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountDetailUnionModel;
 import com.sly.coffer.databinding.ActivityReportBinding;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.TextHelper;
@@ -135,7 +135,8 @@ public class ReportActivity extends AppCompatActivity {
                     dateRangeStr,
                     expense, income, income - expense
             );
-            new MarkdownDialogBuilder(this, getString(R.string.report), detail)
+            new MarkdownDialogBuilder(this, detail)
+                    .setTitle(R.string.report)
                     .setNegativeButton("关闭", null)
                     .show();
         });
@@ -203,7 +204,7 @@ public class ReportActivity extends AppCompatActivity {
                             Log.d(LogTags.REPORT_ACTIVITY.n(), "流水数据更新");
 
                             //收入来源
-                            List<AccountUnionModel> incomeModelList = modelList.stream()
+                            List<AccountDetailUnionModel> incomeModelList = modelList.stream()
                                     .filter(model -> model.getAccount().getType() == AccountType.INCOME.ordinal())
                                     .collect(Collectors.toList());
                             Pair<List<AmountProportionInfo>, Double> incomePair = convertToTagProportions(incomeModelList);
@@ -228,7 +229,7 @@ public class ReportActivity extends AppCompatActivity {
                             }
 
                             //支出来源
-                            List<AccountUnionModel> expenseModelList = modelList.stream()
+                            List<AccountDetailUnionModel> expenseModelList = modelList.stream()
                                     .filter(model -> model.getAccount().getType() == AccountType.EXPENSE.ordinal())
                                     .collect(Collectors.toList());
                             Pair<List<AmountProportionInfo>, Double> expensePair = convertToTagProportions(expenseModelList);
@@ -388,7 +389,7 @@ public class ReportActivity extends AppCompatActivity {
      */
     @NonNull
     @Contract("null -> new")
-    private Pair<List<AmountProportionInfo>, Double> convertToTagProportions(List<AccountUnionModel> modelList) {
+    private Pair<List<AmountProportionInfo>, Double> convertToTagProportions(List<AccountDetailUnionModel> modelList) {
         if (modelList == null || modelList.isEmpty()) {
             return new Pair<>(new ArrayList<>(), 0.0);
         }
@@ -396,7 +397,7 @@ public class ReportActivity extends AppCompatActivity {
         List<AccountEntity> noTagAccountList = new ArrayList<>();
         Map<TagEntity, List<AccountEntity>> accountMap = new HashMap<>();
         double totalAmount = 0.0;
-        for (AccountUnionModel model : modelList) {
+        for (AccountDetailUnionModel model : modelList) {
             AccountEntity account = model.getAccount();
             List<TagEntity> tagList = model.getTagList();
             double amount = account.getAmount();
@@ -475,7 +476,7 @@ public class ReportActivity extends AppCompatActivity {
      * @return 金额占比数据列表
      */
     @NonNull
-    private List<AmountProportionInfo> convertToMonthProportions(@NonNull List<AccountUnionModel> modelList) {
+    private List<AmountProportionInfo> convertToMonthProportions(@NonNull List<AccountDetailUnionModel> modelList) {
         Map<Integer, List<AccountEntity>> amountMap = new LinkedHashMap<>();
         double totalBalance = 0.0;
         AccountType[] types = AccountType.values();
@@ -484,7 +485,7 @@ public class ReportActivity extends AppCompatActivity {
         }
 
         //根据月份分类并存放到 Map 中
-        for (AccountUnionModel model : modelList) {
+        for (AccountDetailUnionModel model : modelList) {
             AccountEntity account = model.getAccount();
             double amount = account.getAmount();
             int monthValue = account.getDateTime().getMonthValue();

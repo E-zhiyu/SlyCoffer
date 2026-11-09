@@ -10,11 +10,9 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingStart="15dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="15dp"
-        android:paddingBottom="10dp">
+        android:padding="15dp">
 
+        <!-- 备注 -->
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/remark_text"
             android:layout_width="0dp"
@@ -24,12 +22,9 @@
             android:maxLines="1"
             android:text="@string/remark"
             android:textAppearance="?attr/textAppearanceBodyLarge"
-            app:layout_constraintBottom_toTopOf="@+id/type_time_auto_tag_text"
             app:layout_constraintEnd_toStartOf="@id/amount_text"
-            app:layout_constraintHorizontal_bias="0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_chainStyle="packed" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- 种类、时间和自动记账种类 -->
         <com.google.android.material.textview.MaterialTextView
@@ -39,10 +34,21 @@
             android:text="@string/date_time"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="?attr/colorOutline"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/remark_text" />
 
+        <!-- 位置 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/location_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/account_location"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOutline"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/type_time_auto_tag_text" />
+
+        <!-- 金额 -->
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/amount_text"
             android:layout_width="wrap_content"

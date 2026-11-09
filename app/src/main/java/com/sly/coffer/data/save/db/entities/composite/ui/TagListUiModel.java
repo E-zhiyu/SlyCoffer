@@ -1,14 +1,14 @@
 package com.sly.coffer.data.save.db.entities.composite.ui;
 
-import com.sly.coffer.data.save.db.entities.TagEntity;
 import com.sly.coffer.data.save.db.entities.TagGroupEntity;
+import com.sly.coffer.data.save.db.entities.composite.union.TagUseCountUnionModel;
 
 public class TagListUiModel {
     public static class Item extends TagListUiModel {
-        public final TagEntity entity;
+        public final TagUseCountUnionModel model;
 
-        public Item(TagEntity entity) {
-            this.entity = entity;
+        public Item(TagUseCountUnionModel model) {
+            this.model = model;
         }
     }
 

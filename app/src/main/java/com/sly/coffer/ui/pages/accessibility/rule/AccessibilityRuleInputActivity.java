@@ -453,8 +453,9 @@ public class AccessibilityRuleInputActivity extends AppCompatActivity {
         //关键词组合添加按钮
         binding.keywordGroupAddBtn.setOnClickListener(view -> {
             String keywordGroup = getString(R.string.keyword_group);
-            new EditTextDialogBuilder(this, "输入" + keywordGroup, keywordGroup)
+            new EditTextDialogBuilder(this, keywordGroup)
                     .setHelpText("可通过空格隔开不同的词语")
+                    .setTitle("输入" + keywordGroup)
                     .setNegativeButton("取消", null)
                     .setPositiveButton("确定", inputStr -> {
                         long ruleId = initBundle == null ? 0 : initBundle.getLong(KeyStrings.ACCESSIBILITY_RULE_ID.v());

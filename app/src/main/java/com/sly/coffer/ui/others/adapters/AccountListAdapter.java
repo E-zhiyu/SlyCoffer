@@ -18,15 +18,19 @@ import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnClickListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.AdapterOnLongClickListener;
 import com.sly.coffer.auxiliary.interfaces.adapter.ViewHolderListener;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
+import com.sly.coffer.data.save.db.entities.LocationEntity;
 import com.sly.coffer.data.save.db.entities.composite.ui.AccountUiModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountListUnionModel;
 import com.sly.coffer.databinding.ViewHolderRunningAccountListBinding;
 import com.sly.coffer.databinding.ViewHolderSeparatorTextChipBinding;
+import com.sly.coffer.helpers.LocationHelper;
 import com.sly.coffer.helpers.TextHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
 import com.sly.coffer.ui.others.decoration.sticky.StickyHeaderAdapter;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 
 import java.util.Locale;
+import java.util.Objects;
 
 public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView.ViewHolder>
         implements StickyHeaderAdapter<String> {
@@ -38,7 +42,7 @@ public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView
             if (oldItem instanceof AccountUiModel.Item && newItem instanceof AccountUiModel.Item) {
                 AccountUiModel.Item oldI = (AccountUiModel.Item) oldItem;
                 AccountUiModel.Item newI = (AccountUiModel.Item) newItem;
-                return oldI.entity.getAccountId() == newI.entity.getAccountId();
+                return oldI.model.getAccount().getAccountId() == newI.model.getAccount().getAccountId();
             } else if (oldItem instanceof AccountUiModel.Separator && newItem instanceof AccountUiModel.Separator) {
                 AccountUiModel.Separator oldS = (AccountUiModel.Separator) oldItem;
                 AccountUiModel.Separator newS = (AccountUiModel.Separator) newItem;
@@ -53,19 +57,22 @@ public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView
             if (oldItem instanceof AccountUiModel.Item && newItem instanceof AccountUiModel.Item) {
                 AccountUiModel.Item oldI = (AccountUiModel.Item) oldItem;
                 AccountUiModel.Item newI = (AccountUiModel.Item) newItem;
-                AccountEntity oldAccount = oldI.entity;
-                AccountEntity newAccount = newI.entity;
+                LocationEntity oldLocation = oldI.model.getLocation();
+                LocationEntity newLocation = newI.model.getLocation();
+                AccountEntity oldAccount = oldI.model.getAccount();
+                AccountEntity newAccount = newI.model.getAccount();
                 return oldAccount.getAmount() == newAccount.getAmount() &&
                         oldAccount.getRemark().equals(newAccount.getRemark()) &&
                         oldAccount.getType() == newAccount.getType() &&
-                        oldAccount.getDateTime().isEqual(newAccount.getDateTime());
+                        oldAccount.getDateTime().isEqual(newAccount.getDateTime()) &&
+                        Objects.equals(oldLocation, newLocation);
             } else
                 return oldItem instanceof AccountUiModel.Separator && newItem instanceof AccountUiModel.Separator;
         }
     };
 
-    private final AdapterOnClickListener<AccountEntity> clickListener;
-    private final AdapterOnLongClickListener<AccountEntity> longClickListener;
+    private final AdapterOnClickListener<AccountListUnionModel> clickListener;
+    private final AdapterOnLongClickListener<AccountListUnionModel> longClickListener;
 
     static class ItemViewHolder extends RecyclerView.ViewHolder {
         ViewHolderRunningAccountListBinding binding;
@@ -97,7 +104,7 @@ public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView
         }
     }
 
-    public AccountListAdapter(AdapterOnClickListener<AccountEntity> clickListener, AdapterOnLongClickListener<AccountEntity> longClickListener) {
+    public AccountListAdapter(AdapterOnClickListener<AccountListUnionModel> clickListener, AdapterOnLongClickListener<AccountListUnionModel> longClickListener) {
         super(ITEM_CALLBACK);
         this.clickListener = clickListener;
         this.longClickListener = longClickListener;
@@ -140,7 +147,9 @@ public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView
         if (model instanceof AccountUiModel.Separator) {
             return ((AccountUiModel.Separator) model).text;
         } else if (model instanceof AccountUiModel.Item) {
-            return ((AccountUiModel.Item) model).entity.getDateTime().format(CustomDateTimeFormatter.DATE_WITH_WEEK);
+            return ((AccountUiModel.Item) model).model.getAccount().getDateTime().format(
+                    CustomDateTimeFormatter.DATE_WITH_WEEK
+            );
         } else {
             return context.getString(R.string.not_applicable);
         }
@@ -169,7 +178,7 @@ public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView
                         public void onClick(int pos, View anchor) {
                             AccountUiModel uiModel = getItem(pos);
                             if (uiModel instanceof AccountUiModel.Item) {
-                                clickListener.onClick(((AccountUiModel.Item) uiModel).entity, anchor);
+                                clickListener.onClick(((AccountUiModel.Item) uiModel).model, anchor);
                             }
                         }
 
@@ -177,7 +186,7 @@ public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView
                         public void onLongClick(int pos, View anchor) {
                             AccountUiModel uiModel = getItem(pos);
                             if (uiModel instanceof AccountUiModel.Item) {
-                                longClickListener.onLongClick(((AccountUiModel.Item) uiModel).entity, anchor);
+                                longClickListener.onLongClick(((AccountUiModel.Item) uiModel).model, anchor);
                             }
                         }
 
@@ -201,7 +210,7 @@ public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         AccountUiModel model = getItem(position);
         if (model instanceof AccountUiModel.Item && holder instanceof ItemViewHolder) {
-            AccountEntity account = ((AccountUiModel.Item) model).entity;
+            AccountEntity account = ((AccountUiModel.Item) model).model.getAccount();
             ItemViewHolder itemHolder = (ItemViewHolder) holder;
 
             //获取流水数据
@@ -222,14 +231,32 @@ public class AccountListAdapter extends ListAdapter<AccountUiModel, RecyclerView
             }
 
             //初始化文本视图
-            itemHolder.binding.amountText.setText(TextHelper.abbreviate(amount, TextHelper.THRESHOLD_MILLION));
-            itemHolder.binding.remarkText.setText(remark.isEmpty() ? "<无备注>" : remark);
+
+
+            itemHolder.binding.amountText.setText(TextHelper.abbreviate(
+                    amount,
+                    TextHelper.THRESHOLD_MILLION)
+            );                                                                              //金额
+            itemHolder.binding.remarkText.setText(remark.isEmpty() ? "<无备注>" : remark);     //备注
             String typeTimeAutoTag = String.format(
                     Locale.getDefault(),
                     "%s%s · %s",
                     autoBookkeepingType, type, datetime
             );
-            itemHolder.binding.typeTimeAutoTagText.setText(typeTimeAutoTag);
+            itemHolder.binding.typeTimeAutoTagText.setText(typeTimeAutoTag);                //时间、种类、自动记账类型
+
+            //位置
+            LocationEntity location = ((AccountUiModel.Item) model).model.getLocation();
+            if (location != null) {
+                itemHolder.binding.locationText.setText(LocationHelper.locationToString(
+                        location.getLatitude(),
+                        location.getLongitude(),
+                        location.getAltitude(),
+                        location.isFineLocation()
+                ));
+            } else {
+                itemHolder.binding.locationText.setText("无位置信息");
+            }
 
             //设置圆角
             setRadius(itemHolder.binding.getRoot(), holder.getBindingAdapterPosition());

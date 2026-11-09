@@ -1,6 +1,7 @@
 package com.sly.coffer.data.backup;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.room.Dao;
 import androidx.room.Insert;
@@ -9,6 +10,7 @@ import androidx.room.Query;
 import androidx.room.Transaction;
 
 import com.sly.coffer.auxiliary.classes.ImportResult;
+import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.data.backup.maps.AccessibilityRuleDataMap;
 import com.sly.coffer.data.backup.maps.BudgetDataMap;
 import com.sly.coffer.data.backup.maps.NotificationRuleDataMap;
@@ -22,6 +24,7 @@ import com.sly.coffer.data.backup.pojo.ExtraLoanPojo;
 import com.sly.coffer.data.backup.pojo.ExtraTransferPojo;
 import com.sly.coffer.data.backup.pojo.BudgetPojo;
 import com.sly.coffer.data.backup.pojo.BudgetTagRefPojo;
+import com.sly.coffer.data.backup.pojo.LocationPojo;
 import com.sly.coffer.data.backup.pojo.MediaPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleGroupPojo;
 import com.sly.coffer.data.backup.pojo.NotificationRuleGroupRefPojo;
@@ -38,6 +41,7 @@ import com.sly.coffer.data.save.db.entities.BudgetEntity;
 import com.sly.coffer.data.save.db.entities.BudgetTagRefEntity;
 import com.sly.coffer.data.save.db.entities.ExtraLoanEntity;
 import com.sly.coffer.data.save.db.entities.ExtraTransferEntity;
+import com.sly.coffer.data.save.db.entities.LocationEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleEntity;
 import com.sly.coffer.data.save.db.entities.NotificationRuleGroupEntity;
@@ -89,6 +93,10 @@ public interface DataBackupDao {
         List<ExtraLoanEntity> extraLoanEntityList = readExtraLoanById(loanIdSet);
         List<ExtraLoanPojo> extraLoanPojoList = mapper.toExtraLoanPojoList(extraLoanEntityList);
 
+        //读取位置数据
+        List<LocationEntity> locationEntityList = readLocationData();
+        List<LocationPojo> locationPojoList = mapper.toLocationPojoList(locationEntityList);
+
         //媒体数据
         List<MediaEntity> mediaEntityList = readMedia();
         List<MediaPojo> mediaPojoList = mapper.toMediaPojoList(mediaEntityList);
@@ -101,17 +109,16 @@ public interface DataBackupDao {
         List<TagEntity> tagEntityList = readTag();
         List<TagPojo> tagPojoList = mapper.toTagPojoList(tagEntityList);
 
-        //实例化 Map 类
-        RunningAccountDataMap map = new RunningAccountDataMap();
-        map.setAccountList(accountPojoList);
-        map.setAccountTagRefList(accountTagRefPojoList);
-        map.setExtraTransferList(extraTransferPojoList);
-        map.setExtraLoanList(extraLoanPojoList);
-        map.setMediaList(mediaPojoList);
-        map.setTagGroupList(tagGroupPojoList);
-        map.setTagList(tagPojoList);
-
-        return map;
+        return new RunningAccountDataMap(
+                accountPojoList,
+                accountTagRefPojoList,
+                extraTransferPojoList,
+                extraLoanPojoList,
+                locationPojoList,
+                mediaPojoList,
+                tagGroupPojoList,
+                tagPojoList
+        );
     }
 
     /**
@@ -137,6 +144,7 @@ public interface DataBackupDao {
         //清空旧数据
         clearRunningAccount();
         clearAccountTagRef();
+        clearLocationData();
         clearMedia();
         clearTagGroup();
         clearTag();
@@ -266,6 +274,17 @@ public interface DataBackupDao {
             exceptionList.add(e);
         }
 
+        //位置数据
+        try {
+            List<LocationPojo> locationPojoList = data.getLocationList();
+            if (locationPojoList != null && !locationPojoList.isEmpty()) {
+                List<LocationEntity> locationEntityList = mapper.toLocationEntityList(locationPojoList);
+                writeLocationData(locationEntityList);
+            }
+        } catch (Exception e) {
+            exceptionList.add(e);
+        }
+
         //媒体数据
         try {
             List<MediaPojo> mediaPojoList = data.getMediaList();
@@ -294,6 +313,9 @@ public interface DataBackupDao {
         }
 
         //返回导入结果
+        for (Throwable e : exceptionList) {
+            Log.e(LogTags.DATA_BACKUP_DAO.n(), "导入出错：\n" + e.getMessage());
+        }
         if (exceptionList.isEmpty()) {
             return ImportResult.success();
         } else {
@@ -340,16 +362,14 @@ public interface DataBackupDao {
         List<NotificationRuleGroupRefEntity> notificationRuleGroupRefEntityList = readNotificationRuleGroupRef();
         List<NotificationRuleGroupRefPojo> notificationRuleGroupRefPojoList = mapper.toNotificationRuleGroupRefPojoList(notificationRuleGroupRefEntityList);
 
-        //实例化 Map
-        NotificationRuleDataMap map = new NotificationRuleDataMap();
-        map.setNotificationRuleList(notificationRulePojoList);
-        map.setNotificationRuleTagRefList(notificationRuleTagRefPojoList);
-        map.setExtraTransferList(extraTransferPojoList);
-        map.setExtraLoanList(extraLoanPojoList);
-        map.setNotificationRuleGroupList(notificationRuleGroupPojoList);
-        map.setNotificationRuleGroupRefList(notificationRuleGroupRefPojoList);
-
-        return map;
+        return new NotificationRuleDataMap(
+                notificationRulePojoList,
+                notificationRuleTagRefPojoList,
+                extraTransferPojoList,
+                extraLoanPojoList,
+                notificationRuleGroupPojoList,
+                notificationRuleGroupRefPojoList
+        );
     }
 
     /**
@@ -482,6 +502,9 @@ public interface DataBackupDao {
         }
 
         //返回导入结果
+        for (Throwable e : exceptionList) {
+            Log.e(LogTags.DATA_BACKUP_DAO.n(), "导入出错：\n" + e.getMessage());
+        }
         if (exceptionList.isEmpty()) {
             return ImportResult.success();
         } else {
@@ -506,12 +529,10 @@ public interface DataBackupDao {
         List<BudgetTagRefEntity> budgetTagRefEntityList = readBudgetTagRef();
         List<BudgetTagRefPojo> budgetTagRefPojoList = mapper.toBudgetTagRefPojoList(budgetTagRefEntityList);
 
-        //实例化 Map
-        BudgetDataMap map = new BudgetDataMap();
-        map.setBudgetList(budgetPojoList);
-        map.setBudgetTagRefList(budgetTagRefPojoList);
-
-        return map;
+        return new BudgetDataMap(
+                budgetPojoList,
+                budgetTagRefPojoList
+        );
     }
 
     /**
@@ -556,6 +577,9 @@ public interface DataBackupDao {
         }
 
         //返回导入结果
+        for (Throwable e : exceptionList) {
+            Log.e(LogTags.DATA_BACKUP_DAO.n(), "导入出错：\n" + e.getMessage());
+        }
         if (exceptionList.isEmpty()) {
             return ImportResult.success();
         } else {
@@ -585,7 +609,7 @@ public interface DataBackupDao {
                 .map(AccessibilityRuleEntity::getTransferId)
                 .collect(Collectors.toSet());
         List<ExtraTransferEntity> transferEntityList = readExtraTransferById(transferIdSet);
-        List<ExtraTransferPojo> transferPojoList = mapper.toExtraTransferPojoList(transferEntityList);
+        List<ExtraTransferPojo> extraTransferPojoList = mapper.toExtraTransferPojoList(transferEntityList);
 
         //借款记录
         Set<Long> loanIdSet = ruleEntityList.stream()
@@ -598,15 +622,13 @@ public interface DataBackupDao {
         List<AccessibilityRuleKeywordGroupEntity> keywordGroupEntityList = readAccessibilityRuleKeywordGroup();
         List<AccessibilityRuleKeywordGroupPojo> keywordGroupPojoList = mapper.toAccessibilityRuleKeywordGroupPojoList(keywordGroupEntityList);
 
-        //实例化 Map
-        AccessibilityRuleDataMap map = new AccessibilityRuleDataMap();
-        map.setRuleList(rulePojoList);
-        map.setTagRefList(tagRefPojoList);
-        map.setExtraTransferList(transferPojoList);
-        map.setExtraLoanList(extraLoanPojoList);
-        map.setKeywordGroupList(keywordGroupPojoList);
-
-        return map;
+        return new AccessibilityRuleDataMap(
+                rulePojoList,
+                tagRefPojoList,
+                extraTransferPojoList,
+                extraLoanPojoList,
+                keywordGroupPojoList
+        );
     }
 
     /**
@@ -729,6 +751,9 @@ public interface DataBackupDao {
         }
 
         //返回导入结果
+        for (Throwable e : exceptionList) {
+            Log.e(LogTags.DATA_BACKUP_DAO.n(), "导入出错：\n" + e.getMessage());
+        }
         if (exceptionList.isEmpty()) {
             return ImportResult.success();
         } else {
@@ -871,6 +896,28 @@ public interface DataBackupDao {
      */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     void writeMedia(List<MediaEntity> entityList);
+
+    /**
+     * 读取段落位置信息
+     *
+     * @return 段落位置信息
+     */
+    @Query("SELECT * FROM locations")
+    List<LocationEntity> readLocationData();
+
+    /**
+     * 清空段落位置信息
+     */
+    @Query("DELETE FROM locations")
+    void clearLocationData();
+
+    /**
+     * 写入段落位置信息
+     *
+     * @param list 段落位置数据
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    void writeLocationData(List<LocationEntity> list);
 
     /**
      * 读取标签分组数据

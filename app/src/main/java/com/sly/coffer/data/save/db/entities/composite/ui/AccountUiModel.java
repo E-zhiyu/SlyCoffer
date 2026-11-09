@@ -1,13 +1,13 @@
 package com.sly.coffer.data.save.db.entities.composite.ui;
 
-import com.sly.coffer.data.save.db.entities.AccountEntity;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountListUnionModel;
 
 public class AccountUiModel {
     public static class Item extends AccountUiModel {
-        public final AccountEntity entity;
+        public final AccountListUnionModel model;
 
-        public Item(AccountEntity entity) {
-            this.entity = entity;
+        public Item(AccountListUnionModel model) {
+            this.model = model;
         }
     }
 

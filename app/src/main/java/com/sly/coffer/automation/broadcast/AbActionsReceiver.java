@@ -159,7 +159,7 @@ public class AbActionsReceiver extends BroadcastReceiver {
 
         //保存数据
         disposable.add(saveExtraDataFirstly(account, bundle, typeOrdinal, context)
-                .andThen(AccountService.addNewAccount(account, null, tagIdList, context))
+                .andThen(AccountService.addNewAccount(account, null, tagIdList, null, context))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(

@@ -1,6 +1,8 @@
 package com.sly.coffer.data.save.db.daos;
 
+import android.location.Location;
 import android.net.Uri;
+import android.util.Pair;
 
 import androidx.annotation.Nullable;
 import androidx.room.Dao;
@@ -16,8 +18,10 @@ import androidx.sqlite.db.SupportSQLiteQuery;
 import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.data.save.db.entities.AccountTagRefEntity;
 import com.sly.coffer.data.save.db.entities.AccountEntity;
+import com.sly.coffer.data.save.db.entities.LocationEntity;
 import com.sly.coffer.data.save.db.entities.MediaEntity;
-import com.sly.coffer.data.save.db.entities.composite.union.AccountUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountDetailUnionModel;
+import com.sly.coffer.data.save.db.entities.composite.union.AccountListUnionModel;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -76,7 +80,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE accountId = :accountId")
-    Single<Optional<AccountUnionModel>> getAccountWithDetailSingleById(long accountId);
+    Single<Optional<AccountDetailUnionModel>> getAccountWithDetailSingleById(long accountId);
 
     /**
      * 通过日期区间获取流水记录的 ID
@@ -97,7 +101,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE dateTime >= :start AND dateTime < :end")
-    Flowable<List<AccountUnionModel>> getAccountWithDetailFlowableByDateRange(LocalDate start, LocalDate end);
+    Flowable<List<AccountDetailUnionModel>> getAccountWithDetailFlowableByDateRange(LocalDate start, LocalDate end);
 
     /**
      * 通过流水记录的 ID 获取流水记录数据
@@ -107,7 +111,7 @@ public interface AccountDao {
      */
     @Transaction
     @Query("SELECT * FROM accounts WHERE accountId IN (:ids)")
-    Flowable<List<AccountUnionModel>> getAccountWithDetailFlowableById(Set<Long> ids);
+    Flowable<List<AccountDetailUnionModel>> getAccountWithDetailFlowableById(Set<Long> ids);
 
     /**
      * 获取数据库中储存的转出和转入账户
@@ -181,14 +185,28 @@ public interface AccountDao {
     void limitBudgetBalanceByTagId(List<Long> tagIdList, LocalDateTime accountDateTime);
 
     /**
+     * 插入位置信息
+     *
+     * @param location 位置信息实体
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    void insertLocation(LocationEntity location);
+
+    /**
      * 流水记录添加事务
      *
      * @param account         新流水记录实体
      * @param mediaEntityList 附带的位于永久目录下的媒体文件实体列表
      * @param tagIdList       与该记录绑定的标签的 ID 列表
+     * @param locationPair    位置信息（first:是否为精确位置, second:位置）
      */
     @Transaction
-    default long addAccount(AccountEntity account, @Nullable List<MediaEntity> mediaEntityList, @Nullable List<Long> tagIdList) {
+    default long addAccount(
+            AccountEntity account,
+            @Nullable List<MediaEntity> mediaEntityList,
+            @Nullable List<Long> tagIdList,
+            @Nullable Pair<Boolean, Location> locationPair
+    ) {
         long accountId = insertAccount(account);
 
         //生成媒体实体列表并写入数据
@@ -205,6 +223,19 @@ public interface AccountDao {
                     .map(id -> new AccountTagRefEntity(accountId, id))
                     .collect(Collectors.toList());
             insertAccountTagRef(tagRefEntityList);
+        }
+
+        //写入位置信息
+        if (locationPair != null) {
+            Location location = locationPair.second;
+            double latitude = location.getLatitude();
+            double longitude = location.getLongitude();
+            double altitude = location.getAltitude();
+            String provider = location.getProvider();
+            LocationEntity locationEntity = new LocationEntity(
+                    accountId, latitude, longitude, altitude, locationPair.first, provider
+            );
+            insertLocation(locationEntity);
         }
 
         //更新预算余额
@@ -262,13 +293,22 @@ public interface AccountDao {
     AccountEntity getAccountById(long accountId);
 
     /**
-     * 通过流水记录编号获取流水记录
+     * 通过流水记录编号获取流水记录列表数据模型
      *
      * @param idList 流水记录编号列表
-     * @return 编号列表包含的流水记录数据
+     * @return 编号列表包含的流水记录列表数据模型
      */
+    @Transaction
     @Query("SELECT * FROM accounts WHERE accountId IN (:idList) ORDER BY dateTime DESC")
-    Flowable<List<AccountEntity>> getAccountByIdFlowable(List<Long> idList);
+    Flowable<List<AccountListUnionModel>> getAccountListByIdFlowable(List<Long> idList);
+
+    /**
+     * 通过流水记录编号删除位置
+     *
+     * @param id 流水记录编号
+     */
+    @Query("DELETE FROM locations WHERE accountId = :id")
+    void deleteLocationByAccountId(long id);
 
     /**
      * 修改流水记录的事务
@@ -276,6 +316,7 @@ public interface AccountDao {
      * @param account         修改后的流水数据
      * @param mediaEntityList 位于永久目录下的媒体文件实体列表，可能包含主键值为0的媒体实体
      * @param tagIdList       修改后的标签列表
+     * @param locationPair    位置信息（first:是否为精确位置, second:位置）
      * @param extraDataDao    额外数据操作接口
      */
     @Transaction
@@ -283,6 +324,7 @@ public interface AccountDao {
             AccountEntity account,
             List<MediaEntity> mediaEntityList,
             List<Long> tagIdList,
+            Pair<Boolean, Location> locationPair,
             ExtraDataDao extraDataDao
     ) {
         if (account == null) return null;
@@ -319,6 +361,20 @@ public interface AccountDao {
                 .map(id -> new AccountTagRefEntity(accountId, id))
                 .collect(Collectors.toList());
         insertAccountTagRef(tagRefEntityList);
+
+        //更新位置信息
+        deleteLocationByAccountId(accountId);
+        if (locationPair != null) {
+            Location location = locationPair.second;
+            double latitude = location.getLatitude();
+            double longitude = location.getLongitude();
+            double altitude = location.getAltitude();
+            String provider = location.getProvider();
+            LocationEntity locationEntity = new LocationEntity(
+                    accountId, latitude, longitude, altitude, locationPair.first, provider
+            );
+            insertLocation(locationEntity);
+        }
 
         //更新媒体
         deleteMediaByAccountId(accountId);

@@ -10,7 +10,17 @@ import com.sly.coffer.R;
 import com.sly.coffer.ui.others.dialogs.MarkdownDialogBuilder;
 
 public class AboutHelper {
-    private static final String UPDATE_LOG_MD = "# v1.13.8\n" +
+    private static final String UPDATE_LOG_MD = "# v1.14.0\n" +
+            "\n" +
+            "### 新增功能\n" +
+            "\n" +
+            "- 流水记录能够保存位置信息\n" +
+            "\n" +
+            "### BUG修复\n" +
+            "\n" +
+            "- 修复合并标签时无法更新除了流水记录以外的标签映射的BUG\n" +
+            "\n" +
+            "# v1.13.8\n" +
             "\n" +
             "> 从该版本开始应用名称更改为“斯莱账本”\n" +
             "\n" +
@@ -789,7 +799,8 @@ public class AboutHelper {
      * @param context 上下文
      */
     public static void showUpdateLogDialog(Context context) {
-        new MarkdownDialogBuilder(context, context.getString(R.string.changelog), UPDATE_LOG_MD)
+        new MarkdownDialogBuilder(context, UPDATE_LOG_MD)
+                .setTitle(R.string.changelog)
                 .setNegativeButton("关闭", null)
                 .show();
     }

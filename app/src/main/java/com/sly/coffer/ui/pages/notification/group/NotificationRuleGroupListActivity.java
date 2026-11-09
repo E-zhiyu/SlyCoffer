@@ -101,7 +101,8 @@ public class NotificationRuleGroupListActivity extends AppCompatActivity {
                     "\n" +
                     "> 例：第一组包含A、B、C规则，第二组包含B、D、E规则，当B触发时，C、D、E规则都会被排斥。\n" +
                     "\n";
-            new MarkdownDialogBuilder(this, "功能介绍", EXPLANATION)
+            new MarkdownDialogBuilder(this, EXPLANATION)
+                    .setTitle("功能介绍")
                     .setNegativeButton("关闭", null)
                     .show();
         });

@@ -154,7 +154,8 @@ public class BudgetListActivity extends AppCompatActivity {
                     "\n" +
                     "预算中的`流水标签`用于实现预算`余额`自动更新，仅当流水记录的流水标签与预算的流水标签匹配，且其他条件均符合要求时，预算`余额`才能自动更新。\n" +
                     "> 例：某预算的标签中包含“早中晚餐”，当新增一条标记了“早中晚餐”的流水记录时，若其他条件都符合要求，预算`余额`才能自动更新。\n";
-            new MarkdownDialogBuilder(this, "功能介绍", EXPLANATION)
+            new MarkdownDialogBuilder(this, EXPLANATION)
+                    .setTitle("功能介绍")
                     .setNegativeButton("关闭", null)
                     .show();
         });
