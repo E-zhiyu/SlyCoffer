@@ -1,7 +1,8 @@
 package com.sly.coffer.ui.pages.main.bookkeeping;
 
-import android.Manifest;
 import android.content.Intent;
+import android.location.Location;
+import android.location.LocationListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,7 +22,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
@@ -41,6 +41,7 @@ import androidx.transition.TransitionSet;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.hjq.permissions.XXPermissions;
 import com.hjq.permissions.permission.PermissionLists;
+import com.hjq.permissions.permission.base.IPermission;
 import com.sly.coffer.R;
 import com.sly.coffer.SlyAccountBook;
 import com.sly.coffer.auxiliary.classes.CustomDateTimeFormatter;
@@ -64,6 +65,8 @@ import com.sly.coffer.auxiliary.enums.types.AccountType;
 import com.sly.coffer.auxiliary.enums.unique.LogTags;
 import com.sly.coffer.auxiliary.enums.unique.TagStrings;
 import com.sly.coffer.helpers.BackPressedCallbackHelper;
+import com.sly.coffer.helpers.LocationHelper;
+import com.sly.coffer.helpers.permission.PermissionHelper;
 import com.sly.coffer.helpers.time.DateTimePickerHelper;
 import com.sly.coffer.helpers.ExceptionHelper;
 import com.sly.coffer.helpers.appearence.AppearanceHelper;
@@ -90,6 +93,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -110,7 +114,13 @@ public class RunningAccountInputActivity extends AppCompatActivity {
     private AccountTagAdapter tagAdapter;                   //标签适配器
     private ActivityResultLauncher<PickVisualMediaRequest> albumLauncher;   //相册图片选择启动器
     private ActivityResultLauncher<Uri> takePictureLauncher;    //调用系统相机的启动器
-    private ActivityResultLauncher<String> permissionLauncher;  //权限申请启动器
+    @Nullable
+    private List<LocationListener> locationListenerList;        //位置监听器的列表
+
+    {
+        //初始化意图启动器
+        initLaunchers();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,7 +149,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
         initBundle = getIntent().getExtras();
         initViews();
         observeLiveData();
-        initLaunchers();
         initOnBackPressedHandlers();
     }
 
@@ -147,6 +156,7 @@ public class RunningAccountInputActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
+        requestLocation(false); //清理位置监听器
         disposable.dispose();
 
         //移除临时媒体目录中的文件
@@ -523,6 +533,63 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             TipPreference.showTipWithoutKey(view, Gravity.START, EXPLANATION);
         });
 
+        //定位按钮
+        binding.locationBtn.setOnClickListener(v -> {
+            LocationViewModel viewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+            boolean isLocationOn = viewModel.isLocationOn();
+
+            if (isLocationOn) {
+                requestLocation(false);
+            } else {
+                PermissionHelper.requestLocationPermission(
+                        this,
+                        permissionList -> {
+                            StringBuilder builder = new StringBuilder();
+
+                            if (XXPermissions.containsPermission(permissionList, PermissionLists.getAccessFineLocationPermission()) ||
+                                    XXPermissions.containsPermission(permissionList, PermissionLists.getAccessCoarseLocationPermission())) {
+                                builder.append("该功能需要使用定位权限，请授予定位权限以允许APP获取保存段落时所处的位置。\n");
+                            }
+
+                            return builder.toString();
+                        },
+                        new PermissionHelper.LocationPermissionCallback() {
+                            @Override
+                            public void hasFineLocation() {
+                                requestLocation(true);
+                            }
+
+                            @Override
+                            public void justCoarseLocation() {
+                                requestLocation(true);
+                            }
+
+                            @Override
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, @Nullable Function<List<IPermission>, String> descriptionFun) {
+                                if (!grantedList.isEmpty()) {
+                                    requestLocation(true);
+                                } else {
+                                    String message;
+                                    if (descriptionFun == null) {
+                                        message = "权限申请被拒绝，是否跳转至权限设置界面授予权限？";
+                                    } else {
+                                        message = descriptionFun.apply(deniedList);
+                                    }
+                                    new MaterialAlertDialogBuilder(RunningAccountInputActivity.this)
+                                            .setTitle("请求被拒绝")
+                                            .setMessage(message)
+                                            .setPositiveButton("前往设置", (dialog, which) ->
+                                                    XXPermissions.startPermissionActivity(RunningAccountInputActivity.this, deniedList)
+                                            )
+                                            .setNegativeButton("取消", null)
+                                            .show();
+                                }
+                            }
+                        }
+                );
+            }
+        });
+
         //媒体添加按钮
         binding.mediaAddBtn.setOnClickListener(view -> {
             MediaAddBottomSheet bottomSheet = new MediaAddBottomSheet();
@@ -673,11 +740,48 @@ public class RunningAccountInputActivity extends AppCompatActivity {
             MediaAddOption option = MediaAddOption.values()[integer];
 
             if (option == MediaAddOption.TAKE_PICTURE) {
-                if (XXPermissions.isGrantedPermission(this, PermissionLists.getCameraPermission())) {
-                    launchSystemCamera();
-                } else {
-                    permissionLauncher.launch(Manifest.permission.CAMERA);
-                }
+                PermissionHelper.requestPermission(
+                        this,
+                        permissionList -> {
+                            StringBuilder builder = new StringBuilder();
+                            if (XXPermissions.containsPermission(permissionList, PermissionLists.getCameraPermission())) {
+                                builder.append("请授予相机权限以用于拍摄图片。");
+                            }
+                            return builder.toString();
+                        },
+                        new PermissionHelper.PermissionCallback() {
+                            @Override
+                            public void allGranted(List<IPermission> permissionList) {
+                                launchSystemCamera();
+                            }
+
+                            @Override
+                            public void requested(List<IPermission> grantedList, List<IPermission> deniedList, @Nullable Function<List<IPermission>, String> descriptionFun) {
+                                boolean noDenied = deniedList.isEmpty();
+                                boolean noGranted = grantedList.isEmpty();
+                                if (noDenied && !noGranted) {
+                                    launchSystemCamera();
+                                } else {
+                                    String message;
+                                    if (descriptionFun == null) {
+                                        message = noGranted ? "权限申请被拒绝，是否跳转至权限设置界面授予权限？" :
+                                                "有权限没有授予，是否跳转至权限设置界面授予权限？";
+                                    } else {
+                                        message = descriptionFun.apply(deniedList);
+                                    }
+                                    new MaterialAlertDialogBuilder(RunningAccountInputActivity.this)
+                                            .setTitle("请求被拒绝")
+                                            .setMessage(message)
+                                            .setPositiveButton("前往设置", (dialog, which) ->
+                                                    XXPermissions.startPermissionActivity(RunningAccountInputActivity.this, deniedList)
+                                            )
+                                            .setNegativeButton("取消", null)
+                                            .show();
+                                }
+                            }
+                        },
+                        PermissionLists.getCameraPermission()
+                );
             } else if (option == MediaAddOption.OPEN_ALBUM) {
                 albumLauncher.launch(
                         new PickVisualMediaRequest.Builder()
@@ -721,6 +825,12 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                     )
             );
         });
+
+        //位置记录开关
+        LocationViewModel locationViewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+        locationViewModel.getIsLocationOnLiveData().observe(this, isLocationOn ->
+                binding.locationBtn.setImageResource(isLocationOn ? R.drawable.outline_location_on_24 : R.drawable.outline_location_off_24)
+        );
     }
 
     /**
@@ -748,30 +858,6 @@ public class RunningAccountInputActivity extends AppCompatActivity {
                         MediaAddOptionViewModel viewModel = new ViewModelProvider(this)
                                 .get(MediaAddOptionViewModel.class);
                         FileHelper.deleteFile(viewModel.getCameraFileUri(), this);
-                    }
-                }
-        );
-
-        //权限申请启动器
-        permissionLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestPermission(),
-                result -> {
-                    if (result) {
-                        launchSystemCamera();
-                    } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-                        //弹出解释对话框
-                        new MaterialAlertDialogBuilder(this)
-                                .setTitle("申请权限")
-                                .setMessage("使用相机拍照需要先授予摄像头权限")
-                                .setNegativeButton("取消", null)
-                                .setPositiveButton(
-                                        "确定",
-                                        (dialogInterface, i) ->
-                                                permissionLauncher.launch(Manifest.permission.CAMERA)
-                                )
-                                .show();
-                    } else {
-                        Toast.makeText(this, "请授予相机权限后再拍照", Toast.LENGTH_SHORT).show();
                     }
                 }
         );
@@ -1240,6 +1326,62 @@ public class RunningAccountInputActivity extends AppCompatActivity {
 
         if (binding.mediaRecycler.getAdapter() instanceof AccountMediaAdapter) {
             ((AccountMediaAdapter) binding.mediaRecycler.getAdapter()).setSelectMode(isSelectMode); //切换适配器选择模式
+        }
+    }
+
+    /**
+     * 监听当前位置
+     *
+     * @param open 是否监听
+     */
+    private void requestLocation(boolean open) {
+        LocationViewModel viewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+
+        if (open && !viewModel.isLocationOn()) {
+            //监听位置
+            LocationHelper.removeLocationListeners(this, locationListenerList);  //清理旧的监听器
+            locationListenerList = LocationHelper.requestCurrentLocation(this, new LocationHelper.CurrentLocationListener() {
+                @Override
+                public void onUpdated(Location location) {
+                    viewModel.setLocation(location);
+                }
+
+                @Override
+                public void onProviderDisabled(String provider) {
+                    requestLocation(false);
+                }
+
+                @Override
+                public void onListenStarted() {
+                    //弹出提示
+                    IPermission fineLocation = PermissionLists.getAccessFineLocationPermission();
+                    IPermission coarseLocation = PermissionLists.getAccessCoarseLocationPermission();
+                    boolean isFineGranted = XXPermissions.isGrantedPermission(RunningAccountInputActivity.this, fineLocation);
+                    boolean isCoarseGranted = XXPermissions.isGrantedPermission(RunningAccountInputActivity.this, coarseLocation);
+                    if (isFineGranted && isCoarseGranted) {
+                        Toast.makeText(RunningAccountInputActivity.this, "流水记录将记录地理位置", Toast.LENGTH_SHORT).show();
+                    } else if (isCoarseGranted) {
+                        Toast.makeText(RunningAccountInputActivity.this, "流水记录将记录粗略的地理位置", Toast.LENGTH_SHORT).show();
+                    }
+
+                    viewModel.setLocationOn(true);
+                }
+
+                @Override
+                public void onRequestFailed(String message) {
+                    Toast.makeText(RunningAccountInputActivity.this, message, Toast.LENGTH_SHORT).show();
+                    requestLocation(false);
+                }
+            });
+        } else if (!open) {
+            if (viewModel.isLocationOn()) {
+                Toast.makeText(this, "已关闭位置记录", Toast.LENGTH_SHORT).show();
+            }
+
+            LocationHelper.removeLocationListeners(this, locationListenerList); //清理旧的监听器
+            locationListenerList = null;
+            viewModel.setLocationOn(false);
+            viewModel.setLocation(null);
         }
     }
 }

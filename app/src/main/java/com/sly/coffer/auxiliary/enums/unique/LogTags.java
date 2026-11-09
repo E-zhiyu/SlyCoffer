@@ -10,6 +10,7 @@ public enum LogTags {
     AUTH_ACTIVITY("AuthActivity"),
     FULL_SCREEN_MEDIA_ACTIVITY("FullScreenMediaActivity"),
     FILE_HELPER("FileHelper"),
+    LOCATION_HELPER("LocationHelper"),
     ACCOUNT_INPUT("RunningAccountInputActivity"),
     NOTIFICATION_AB_SERVICE("NotificationAbService"),
     AB_ACTIONS_RECEIVER("AbActionsReceiver"),
