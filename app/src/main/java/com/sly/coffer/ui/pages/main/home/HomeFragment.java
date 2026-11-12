@@ -264,7 +264,7 @@ public class HomeFragment extends Fragment {
             );
             new MarkdownDialogBuilder(requireContext(), detail)
                     .setTitle("债务信息")
-                    .setNegativeButton("取消", null)
+                    .setNegativeButton("关闭", null)
                     .show();
 
             return true;
